@@ -25,3 +25,5 @@
 `0x0203f4a4`: Custscreen chips, same format, gets copied to `0x020349c0` after cust screen exit
 
 `0x02036820`: Player input data, 0x8 in size per player, offset 2 is keys pressed
+
+`0x020013F0`: `u32` RNG state, must be synced on link battle
