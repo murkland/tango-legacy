@@ -10,6 +10,11 @@
 
 `0x080032dc + objectype * 0x10`: `u8` Pointer to size of objects.
 
--   Type 1: start = `0x0203a9a0`, end = `0x0203c4a0`, size = `0xd8`
--   Type 3: start = `0x0203cfd0`, end = `0x0203ead0`, size = `0xd8`
--   Type 4: start = `0x02036860`, end = `0x02038160`, size = `0xc8`
+-   Type 1: start = `0x0203a9b0`, end = `0x0203c4a0`, size = `0xd8`
+-   Type 3: start = `0x0203cfe0`, end = `0x0203ead0`, size = `0xd8`
+-   Type 4: start = `0x02036870`, end = `0x02038160`, size = `0xc8`
+
+Player 1 chip locations:
+
+-   `0x020349c0` -- index
+-   `0x020349c4` -- actually checked
