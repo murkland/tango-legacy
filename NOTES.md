@@ -18,4 +18,8 @@
 `0x020349c2`: `u16` Player 1 chip 0
 `0x020349c4`: `u16` Player 1 chip 1, etc.
 
+`0x02034a10`: `u16` Player 2 chip index
+`0x02034a12`: `u16` Player 2 chip 0
+`0x02034a14`: `u16` Player 2 chip 1, etc.
+
 `0x0203f4a4`: Custscreen chips, same format, gets copied to `0x020349c0` after cust screen exit
