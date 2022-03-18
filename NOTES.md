@@ -27,3 +27,7 @@
 `0x02036820`: Player input data, 0x8 in size per player, offset 2 is keys pressed
 
 `0x020013F0`: `u32` RNG state, must be synced on link battle
+
+AI must be `02 00` for player-controlled Mega Man.
+
+`0x2036782`: Actual input handler?
