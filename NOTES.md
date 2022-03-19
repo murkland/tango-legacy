@@ -31,3 +31,5 @@
 AI must be `02 00` for player-controlled Mega Man.
 
 `0x2036782`: Actual input handler?
+
+`0x200AF60`: Link battle settings.
