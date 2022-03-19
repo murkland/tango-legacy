@@ -17,9 +17,16 @@ memory.on_exec(
         -- The next 4 bytes is a call to battle_handleLinkSIO, which expects r0 to be 0x2 if input is ready. Input is always ready, so we just skip the call and write the appropriate value.
         memory.write_reg("r0", 0x2)
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+    end
+)
+
+memory.on_exec(
+    0x08007a6c,  -- battle_update
+    function ()
+        memory.write_reg("r15", memory.read_reg("r15") + 0x4)
 
         local inpflags = input.get_flags(0)
-        battle.set_p1_input(inpflags)
-        battle.set_p2_input(inpflags)
+        battle.set_player_input(0, inpflags)
+        battle.set_player_input(1, inpflags)
     end
 )
