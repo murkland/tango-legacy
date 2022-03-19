@@ -1,5 +1,6 @@
-local memory = require("./memory")
-local joypad = require("./joypad")
+local memory = require("./platform/require")("memory")
+
+local input = require("./input")
 local battle = require("./battle")
 
 memory.on_exec(
@@ -17,8 +18,8 @@ memory.on_exec(
         memory.write_reg("r0", 0x2)
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
 
-        local joyflags = joypad.get_flags(0)
-        battle.set_p1_input(joyflags)
-        battle.set_p2_input(joyflags)
+        local inpflags = input.get_flags(0)
+        battle.set_p1_input(inpflags)
+        battle.set_p2_input(inpflags)
     end
 )

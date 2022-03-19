@@ -1,3 +1,5 @@
+local joypad = require("./platform/require")("joypad")
+
 local JOYPAD = {
     DEFAULT = 0xFC00,
 
@@ -13,7 +15,7 @@ local JOYPAD = {
     L       = 0x0200,
 }
 
-function get_flags(i)
+local function get_flags(i)
     local flags = JOYPAD.DEFAULT
     for k, v in pairs(joypad.get(i)) do
         if v then

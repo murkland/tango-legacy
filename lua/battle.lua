@@ -1,50 +1,49 @@
-local memory = require("./memory")
+local memory = require("./platform/require")("memory")
 
-
-function set_battle_rng(val)
+local function set_battle_rng(val)
     memory.write_u32(0x020013f0, val)
 end
 
-function set_p1_input(joyflags)
+local function set_p1_input(joyflags)
     memory.write_u16(0x02009488, joyflags)
 end
 
-function set_p2_input(joyflags)
+local function set_p2_input(joyflags)
     memory.write_u16(0x0200948a, joyflags)
 end
 
-function get_p1_hand(hand)
+local function get_p1_hand(hand)
     return memory.read_range(0x020349c0, 0x50)
 end
 
-function set_p1_hand(hand)
+local function set_p1_hand(hand)
     assert(#hand == 0x50)
     memory.write_range(0x020349c0, hand)
 end
 
-function get_p2_hand(hand)
+local function get_p2_hand(hand)
     return memory.read_range(0x02034a10, 0x50)
 end
 
-function set_p2_hand(hand)
+local function set_p2_hand(hand)
     assert(#hand == 0x50)
     memory.write_range(0x02034a10, hand)
 end
 
-function get_p1_navistats(navistats)
+local function get_p1_navistats(navistats)
     return memory.read_range(0x0203ce00, 0x64)
 end
 
-function set_p1_navistats(navistats)
+local function set_p1_navistats(navistats)
     assert(#navistats == 0x64)
     memory.write_range(0x0203ce00, navistats)
 end
 
-function get_p2_navistats(navistats)
+local function get_p2_navistats(navistats)
     return memory.read_range(0x0203ce64, 0x64)
 end
 
-function set_p2_navistats(navistats)
+local function set_p2_navistats(navistats)
     assert(#navistats == 0x64)
     memory.write_range(0x0203ce64, navistats)
 end
