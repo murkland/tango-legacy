@@ -26,3 +26,13 @@ memory.on_exec(
         battle.set_player_input(1, inpflags)
     end
 )
+
+
+memory.on_exec(
+    romoffsets.battle_custom_complete__ret,
+    function ()
+        local tc = battle.get_local_turn_commit()
+        battle.set_player_turn_commit(0, tc)
+        battle.set_player_turn_commit(1, tc)
+    end
+)
