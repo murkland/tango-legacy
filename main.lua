@@ -2,7 +2,6 @@ local memory = require("./memory")
 local joypad = require("./joypad")
 local battle = require("./battle")
 
-
 memory.on_exec(
     0x080071d4,  -- battle_start
     function ()
