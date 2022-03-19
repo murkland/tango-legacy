@@ -1,17 +1,11 @@
 local memory = require("./platform/require")("memory")
 
+local romoffsets = require("./romoffsets")
 local input = require("./input")
 local battle = require("./battle")
 
 memory.on_exec(
-    0x080071d4,  -- battle_start
-    function ()
-        print("battle start!")
-    end
-)
-
-memory.on_exec(
-    0x0803eb04,  -- battle_handleLinkCableInput
+    romoffsets.battle_handleLinkCableInput__call__battle_handleLinkSIO,
     function ()
         -- Stub out the call to battle_handleLinkSIO: we will be handling IO on our own here without involving SIO.
         -- The next 4 bytes is a call to battle_handleLinkSIO, which expects r0 to be 0x2 if input is ready. Input is always ready, so we just skip the call and write the appropriate value.
@@ -21,7 +15,7 @@ memory.on_exec(
 )
 
 memory.on_exec(
-    0x08007a6c,  -- battle_update
+    romoffsets.battle_update__call__battle_copyInputData,
     function ()
         -- Stub out the call to battle_copyInputData: this handles setting the input and copying CustomInit data in 32-bit chunks.
         -- We're going to handle all of this ourselves, so no need to run this function.
