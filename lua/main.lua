@@ -23,6 +23,8 @@ memory.on_exec(
 memory.on_exec(
     0x08007a6c,  -- battle_update
     function ()
+        -- Stub out the call to battle_copyInputData: this handles setting the input and copying CustomInit data in 32-bit chunks.
+        -- We're going to handle all of this ourselves, so no need to run this function.
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
 
         local inpflags = input.get_flags(0)
