@@ -1,7 +1,9 @@
 local socket = require("socket")
 local struct = require("struct")
 
+local PACKET_TYPE_INIT = 0
 local PACKET_TYPE_INPUT = 1
+local PACKET_TYPE_TURN = 2
 
 local Client = {}
 Client.__index = Client
@@ -13,30 +15,25 @@ function Client.new(addr, port)
     return client
 end
 
-function Client:send_input(joyflags)
+function Client:send_input(tick, joyflags)
+    self.sock.send(PACKET_TYPE_INPUT)
 end
 
-function Client:recv()
-    local type = assert(self.sock:receive(1)):byte(1)
-    if type == PACKET_TYPE_INPUT then
-        local body = struct.read(assert(self.sock:receive(2)), "w")
-        return {
-            type = type,
-            joyflags = body[1],
-        }
-    end
+function Client:take_input()
+end
 
-    assert(false, "unknown packet type: " .. type)
-end,
+function Client:send_init(init)
+    self.sock.send(PACKET_TYPE_INIT)
+end
 
-function Client:recv_input()
-    local packet = self:recv()
-    assert(packet.type == PACKET_TYPE_INPUT)
-    return packet.joyflags
-end,
+function Client:take_init()
+end
 
-function Client:send_marshaled_state(marshaled_state)
-    print("would send marshaled state.")
+function Client:send_turn(turn)
+    self.sock.send(PACKET_TYPE_TURN)
+end
+
+function Client:take_turn()
 end
 
 return Client

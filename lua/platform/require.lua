@@ -8,6 +8,8 @@ local function _get_platform()
     if bizstring ~= nil then
         return "bizhawk"
     end
+
+    assert(false, "could not detect emulator platform")
 end
 
 local _platform = _get_platform()

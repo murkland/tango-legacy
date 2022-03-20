@@ -56,7 +56,6 @@ memory.on_exec(
 memory.on_exec(
     romoffsets.battle_init_marshal__ret,
     function ()
-        -- Inject code at the end of battle_custom_complete.
         log.debug("init ending")
 
         local local_init = battle.get_tx_marshaled_state()
@@ -75,10 +74,10 @@ memory.on_exec(
     romoffsets.battle_update__call__battle_copyInputData,
     function ()
         local local_input = input.get_flags(0)
-        battle.set_player_input(local_index, local_input)
+        battle.set_rx_input(local_index, local_input)
 
         if battle.is_in_turn() then
-            client:send_input(local_input)
+            client:send_input(battle.get_elapsed_active_time(), local_input)
         end
 
         local remote_input = client:take_input()
@@ -93,7 +92,7 @@ memory.on_exec(
         if remote_input == nil then
             return
         end
-        battle.set_player_input(remote_index, remote_input)
+        battle.set_rx_input(remote_index, remote_input)
     end
 )
 

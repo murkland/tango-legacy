@@ -2,7 +2,7 @@ local memory = require("./platform/require")("memory")
 
 local g_player_input_attr = 0x02036820
 
-local function set_player_input(index, keys_pressed) -- input_setPlayerInputKeys @ 0x0800a0d6
+local function set_rx_input(index, keys_pressed) -- input_setPlayerInputKeys @ 0x0800a0d6
     local keys_held = memory.read_u16(g_player_input_attr + index * 8 + 2)
     memory.write_u16(g_player_input_attr + index * 8 + 2 --[[ keys_held ]], keys_pressed)
     memory.write_u8(g_player_input_attr + index * 8 + 4 --[[ keys_pressed ]], bit.band(keys_pressed, bit.bnot(keys_held)))
@@ -35,7 +35,7 @@ local function get_elapsed_active_time()
 end
 
 return {
-    set_player_input = set_player_input,
+    set_rx_input = set_rx_input,
     set_rx_marshaled_state = set_rx_marshaled_state,
     get_tx_marshaled_state = get_tx_marshaled_state,
     is_in_custom_screen = is_in_custom_screen,

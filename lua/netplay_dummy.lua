@@ -19,7 +19,7 @@ function Client.new(player_index)
     return client
 end
 
-function Client:send_input(joyflags)
+function Client:send_input(tick, joyflags)
     self.joyflags = joyflags
 end
 
