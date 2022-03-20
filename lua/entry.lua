@@ -18,6 +18,13 @@ function entry(sock, local_index)
     local remote_index = 1 - local_index
 
     memory.on_exec(
+        romoffsets.commMenu_handleLinkCableInput__entry,
+        function ()
+            log.error("unhandled call to SIO at 0x%08x: uh oh!", memory.read_reg("r14") - 1)
+        end
+    )
+
+    memory.on_exec(
         romoffsets.battle_isRemote__ret,
         function()
             memory.write_reg("r0", local_index)
@@ -32,9 +39,22 @@ function entry(sock, local_index)
     )
 
     memory.on_exec(
-        romoffsets.commMenu_handleLinkCableInput__entry,
+        romoffsets.battle_init_marshal__ret,
         function ()
-            log.error("unhandled call to SIO at 0x%08x: uh oh!", memory.read_reg("r14") - 1)
+            local local_init = battle.get_tx_marshaled_state()
+            client:give_init(local_init)
+            battle.set_rx_marshaled_state(local_index, local_init)
+            log.debug("init ending")
+        end
+    )
+
+    memory.on_exec(
+        romoffsets.battle_turn_marshal__ret,
+        function ()
+            local local_turn = battle.get_tx_marshaled_state()
+            client:give_turn(local_turn)
+            battle.set_rx_marshaled_state(local_index, local_turn)
+            log.debug("turn resuming")
         end
     )
 
@@ -50,34 +70,31 @@ function entry(sock, local_index)
         function ()
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
             memory.write_reg("r0", 0x0)
-        end
-    )
-
-    memory.on_exec(
-        romoffsets.battle_init_marshal__ret,
-        function ()
-            log.debug("init ending")
-
-            local local_init = battle.get_tx_marshaled_state()
-            client:give_init(loop, local_init)
-            battle.set_rx_marshaled_state(local_index, local_init)
 
             local remote_init = client:take_init()
-            if remote_init == nil then
-                return
+            if remote_init ~= nil then
+                battle.set_rx_marshaled_state(remote_index, remote_init)
             end
-            battle.set_rx_marshaled_state(remote_index, remote_init)
         end
     )
 
     memory.on_exec(
         romoffsets.battle_update__call__battle_copyInputData,
         function ()
+            if battle.get_state() == battle.State.CUSTOM_SCREEN then
+                local remote_turn = client:take_turn()
+                if remote_turn ~= nil then
+                    battle.set_rx_marshaled_state(remote_index, remote_turn)
+                    memory.write_reg("r0", 0x0)
+                    return
+                end
+            end
+
             local local_input = input.get_flags(0)
             battle.set_rx_input(local_index, local_input)
 
             if battle.get_state() == battle.State.IN_TURN then
-                client:give_input(loop, battle.get_elapsed_active_time(), local_input)
+                client:give_input(battle.get_elapsed_active_time(), local_input)
             end
 
             local remote_input = client:take_input()
@@ -104,24 +121,6 @@ function entry(sock, local_index)
     )
 
     memory.on_exec(
-        romoffsets.battle_turn_marshal__ret,
-        function ()
-            -- Inject code at the end of battle_custom_complete.
-            log.debug("turn resuming")
-
-            local local_turn = battle.get_tx_marshaled_state()
-            client:give_turn(loop, local_turn)
-            battle.set_rx_marshaled_state(local_index, local_turn)
-
-            local remote_turn = client:take_turn()
-            if remote_turn == nil then
-                return
-            end
-            battle.set_rx_marshaled_state(remote_index, remote_turn)
-        end
-    )
-
-    memory.on_exec(
         romoffsets.commMenu_waitForFriend__call__commMenu_handleLinkCableInput,
         function ()
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
@@ -140,9 +139,14 @@ function entry(sock, local_index)
         end
     )
 
-    log.info("memory hijack complete, starting event loop.")
+    log.info("execution hijack complete, starting event loop.")
 
     client:start(loop)
+    local function cb()
+        emulator.advance_frame()
+        loop:add_callback(cb)
+    end
+    cb()
     loop:run()
 end
 

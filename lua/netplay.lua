@@ -3,6 +3,7 @@ local emulator = require("./platform/require")("emulator")
 local coroutine = require("coroutine")
 local Cosocket = require("./aio/cosocket")
 local coutil = require("./aio/coutil")
+local log = require("./log")
 local struct = require("struct")
 
 local PACKET_TYPE_INIT = '\0'
@@ -31,7 +32,7 @@ function Client.new(sock)
     return self
 end
 
-function Client:give_input(loop, tick, joyflags)
+function Client:give_input(tick, joyflags)
     self.local_input = joyflags
 end
 
@@ -41,7 +42,7 @@ function Client:take_input()
     return input
 end
 
-function Client:give_init(loop, init)
+function Client:give_init(init)
     self.local_init = init
     self.is_in_battle = true
 end
@@ -52,7 +53,7 @@ function Client:take_init()
     return init
 end
 
-function Client:give_turn(loop, turn)
+function Client:give_turn(turn)
     self.local_turn = turn
 end
 
@@ -83,40 +84,42 @@ function Client:run(loop)
         if self.is_in_battle then
             if self.local_init ~= nil then
                 local init = self.local_init
-                self.sock:send(PACKET_TYPE_INIT .. u8arr_to_string(init))
+                self.sock:send(loop, PACKET_TYPE_INIT .. u8table_to_string(init))
                 self.local_init = nil
             end
 
             if self.local_input ~= nil then
                 local input = self.local_input
-                self.sock:send(PACKET_TYPE_INPUT .. struct.write("w", input))
+                self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("w", input))
                 self.local_input = nil
             end
 
             if self.local_turn ~= nil then
                 local turn = self.local_turn
-                self.sock:send(PACKET_TYPE_TURN .. u8arr_to_string(turn))
+                self.sock:send(loop, PACKET_TYPE_TURN .. u8table_to_string(turn))
                 self.local_turn = nil
             end
 
             if self.sock:readable() then
                 local op = self.sock:receive(loop, 1)
                 if op == PACKET_TYPE_INIT then
-                    self.remote_init = string_to_u8arr(self.sock:receive(loop, 256))
+                    self.remote_init = string_to_u8table(self.sock:receive(loop, 0x100))
                 elseif op == PACKET_TYPE_INPUT then
-                    self.remote_input = struct.read(self.sock:receive(loop, 4), "w")[1]
+                    local l = self.sock:receive(loop, 4)
+                    self.remote_input = struct.read(l, "w")[1]
                 elseif op == PACKET_TYPE_TURN then
-                    self.remote_turn = string_to_u8arr(self.sock:receive(loop, 256))
+                    self.remote_turn = string_to_u8table(self.sock:receive(loop, 0x100))
                 end
             end
         end
-        loop:add_callback(function () emulator.advance_frame() end)
         coutil.yield(loop)
     end
 end
 
 function Client:start(loop)
-    loop:add_callback(coroutine.wrap(function () self:run(loop) end))
+    loop:add_callback(coroutine.wrap(function ()
+        self:run(loop)
+    end))
 end
 
 return Client

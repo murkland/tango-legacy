@@ -12,23 +12,23 @@ function Client.new()
         init = nil,
         input = nil,
         turn = nil,
-        joyflags = 0xfc00,
+        input = 0xfc00,
     }
     setmetatable(client, Client)
     return client
 end
 
-function Client:send_input(tick, joyflags)
-    self.joyflags = joyflags
+function Client:give_input(tick, input)
+    self.input = input
 end
 
 function Client:take_input()
-    local joyflags = self.joyflags
-    self.joyflags = nil
-    return joyflags
+    local input = self.input
+    self.input = nil
+    return input
 end
 
-function Client:send_init(init)
+function Client:give_init(init)
     self.init = init
 end
 
@@ -38,7 +38,7 @@ function Client:take_init()
     return init
 end
 
-function Client:send_turn(turn)
+function Client:give_turn(turn)
     self.turn = turn
 end
 
@@ -48,7 +48,7 @@ function Client:take_turn()
     return turn
 end
 
-function Client:run_on_loop(loop)
+function Client:start(loop)
 end
 
 return Client

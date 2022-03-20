@@ -14,7 +14,7 @@ end
 function Cosocket:send(loop, data, i, j)
     local co = coroutine.running()
     loop:add_write_callback(self.sock, function ()
-        coroutine.resume(co, self.sock:send(data, i, j))
+        assert(coroutine.resume(co, self.sock:send(data, i, j)))
     end)
     return coroutine.yield()
 end
@@ -22,7 +22,13 @@ end
 function Cosocket:receive(loop, pattern)
     local co = coroutine.running()
     loop:add_read_callback(self.sock, function ()
-        coroutine.resume(co, self.sock:receive(pattern))
+        local r = self.sock:receive(pattern)
+        if r == nil then
+            -- No input received, reschedule for read.
+            self:receive(loop, pattern)
+            return
+        end
+        assert(coroutine.resume(co, r))
     end)
     return coroutine.yield()
 end

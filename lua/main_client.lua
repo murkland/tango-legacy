@@ -7,7 +7,7 @@ local entry = require("./entry")
 
 log.info("this is the CLIENT!")
 
-local sock = socket.connect(HOST, PORT)
+local sock = assert(socket.connect(HOST, PORT))
 local host, port = sock:getpeername()
 
 log.info("connected to %s:%d", host, port)

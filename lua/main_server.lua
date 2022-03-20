@@ -9,7 +9,7 @@ local socket = require("socket")
 
 log.info("this is the SERVER!")
 
-local lis = socket.bind(HOST, PORT)
+local lis = assert(socket.bind(HOST, PORT))
 local host, port = lis:getsockname()
 
 log.info("listening on %s:%d", host, port)
@@ -25,7 +25,7 @@ while true do
     emulator.advance_frame()
 end
 
-local sock = lis:accept()
+local sock = assert(lis:accept())
 local host, port = sock:getsockname()
 log.info("received client on %s:%d", host, port)
 
