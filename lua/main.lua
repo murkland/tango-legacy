@@ -53,10 +53,10 @@ memory.on_exec(
         local tc = battle.get_local_turn_commit()
         client:send_turn_commit(tc)
         print("DEBUG: turn resuming")
-        print("cross: " .. memory.read_u8(0x0203ced0))
-        print("cross: " .. memory.read_u8(0x0203cc98))
 
         battle.set_player_turn_commit(local_index, tc)
+
+        -- TODO: This has to be asynchronous.
         battle.set_player_turn_commit(remote_index, client:recv_turn_commit())
     end
 )
