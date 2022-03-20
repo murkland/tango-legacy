@@ -28,5 +28,6 @@ end
 local sock = assert(lis:accept())
 local host, port = sock:getsockname()
 log.info("received client on %s:%d", host, port)
+sock:setoption("tcp-nodelay", true)
 
 entry(sock, 0)

@@ -105,7 +105,7 @@ function Client:run(loop)
                 if op == PACKET_TYPE_INIT then
                     self.remote_init = string_to_u8table(self.sock:receive(loop, 0x100))
                 elseif op == PACKET_TYPE_INPUT then
-                    local l = self.sock:receive(loop, 4)
+                    local l = self.sock:receive(loop, 2)
                     self.remote_input = struct.read(l, "w")[1]
                 elseif op == PACKET_TYPE_TURN then
                     self.remote_turn = string_to_u8table(self.sock:receive(loop, 0x100))

@@ -9,7 +9,7 @@ log.info("this is the CLIENT!")
 
 local sock = assert(socket.connect(HOST, PORT))
 local host, port = sock:getpeername()
-
 log.info("connected to %s:%d", host, port)
+sock:setoption("tcp-nodelay", true)
 
 entry(sock, 1)

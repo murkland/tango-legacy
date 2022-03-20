@@ -1,3 +1,5 @@
+local log = require("./log")
+
 local coroutine = require("coroutine")
 local socket = require("socket")
 
@@ -24,6 +26,7 @@ function Cosocket:receive(loop, pattern)
     loop:add_read_callback(self.sock, function ()
         local r = self.sock:receive(pattern)
         if r == nil then
+            log.warn("no input received, rescheduled for read")
             -- No input received, reschedule for read.
             self:receive(loop, pattern)
             return
