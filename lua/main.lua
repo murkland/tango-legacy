@@ -1,3 +1,6 @@
+local log = require("./log")
+log.info("welcome to bingus battle network 6.")
+
 local memory = require("./platform/require")("memory")
 
 local romoffsets = require("./romoffsets")
@@ -15,14 +18,14 @@ local client = netplay_dummy.new_client(local_index)
 memory.on_exec(
     romoffsets.commMenu_handleLinkCableInput__entry,
     function ()
-        print("DEBUG: unexpected call to SIO at " .. string.format("0x%08x", memory.read_reg("r14") - 1))
+        log.error("unexpected call to SIO at 0x%08x", memory.read_reg("r14") - 1)
     end
 )
 
 memory.on_exec(
     romoffsets.battle_start__ret,
     function ()
-        print("DEBUG: battle started")
+        log.debug("battle started")
     end
 )
 
@@ -55,7 +58,7 @@ memory.on_exec(
 memory.on_exec(
     romoffsets.battle_updating__ret__go_to_custom_screen,
     function ()
-        print("DEBUG: turn ended")
+        log.debug("turn ended")
     end
 )
 
@@ -63,7 +66,7 @@ memory.on_exec(
     romoffsets.battle_init_marshal__ret,
     function ()
         -- Inject code at the end of battle_custom_complete.
-        print("DEBUG: init ending")
+        log.debug("init ending")
 
         local state = battle.get_local_marshaled_state()
         client:send_marshaled_state(state)
@@ -77,7 +80,7 @@ memory.on_exec(
     romoffsets.battle_turn_marshal__ret,
     function ()
         -- Inject code at the end of battle_custom_complete.
-        print("DEBUG: turn resuming")
+        log.debug("turn resuming")
 
         local state = battle.get_local_marshaled_state()
         client:send_marshaled_state(state)

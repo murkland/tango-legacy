@@ -1,7 +1,8 @@
+local log = require("./log")
 local rom = require("./rom")
 
 local title = rom.get_title()
-print("detected game: " .. title)
+log.info("detected game: " .. title)
 
 local offsets = {
     MEGAMAN6_FXX = {

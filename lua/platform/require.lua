@@ -1,3 +1,5 @@
+local log = require("./log")
+
 local function _get_platform()
     if vba ~= nil then
         return "vba"
@@ -10,7 +12,7 @@ end
 
 local _platform = _get_platform()
 
-print("detected emulator platform: " .. _platform)
+log.info("detected emulator platform: %s", _platform)
 
 local _require = function(path)
     return require("./platform/" .. path .. "_" .. _platform)
