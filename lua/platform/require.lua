@@ -10,6 +10,10 @@ end
 
 local _platform = _get_platform()
 
-return function(path)
+print("detected emulator platform: " .. _platform)
+
+local _require = function(path)
     return require("./platform/" .. path .. "_" .. _platform)
 end
+
+return _require

@@ -13,21 +13,42 @@ local remote_index = 1 - local_index
 local client = netplay_dummy.new_client(local_index)
 
 memory.on_exec(
-    romoffsets.battle_handleLinkCableInput__call__battle_handleLinkSIO,
+    romoffsets.commMenu_handleLinkCableInput__entry,
     function ()
-        -- Stub out the call to battle_handleLinkSIO: we will be handling IO on our own here without involving SIO.
-        -- The next 4 bytes is a call to battle_handleLinkSIO, which expects r0 to be 0x2 if input is ready. Input is always ready, so we just skip the call and write the appropriate value.
-        memory.write_reg("r0", 0x2)
+        print("DEBUG: unexpected call to SIO at " .. string.format("0x%08x", memory.read_reg("r14") - 1))
+    end
+)
+
+memory.on_exec(
+    romoffsets.battle_start__ret,
+    function ()
+        print("DEBUG: battle started")
+    end
+)
+
+memory.on_exec(
+    romoffsets.commMenu_inBattle__call__commMenu_handleLinkCableInput,
+    function ()
+        -- Skip the SIO call.
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+    end
+)
+
+memory.on_exec(
+    romoffsets.battle_init__call__battle_copyInputData,
+    function ()
+        memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+        -- This is the value at 0x0203F7D8 read earlier, set it to 0.
+        memory.write_reg("r4", 0)
     end
 )
 
 memory.on_exec(
     romoffsets.battle_update__call__battle_copyInputData,
     function ()
-        -- Stub out the call to battle_copyInputData: this handles setting the input and copying CustomInit data in 32-bit chunks.
-        -- We're going to handle all of this ourselves, so no need to run this function.
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+        -- This is the value at 0x0203F7D8 read earlier, set it to 0.
+        memory.write_reg("r4", 0)
 
         local inpflags = input.get_flags(0)
         if not battle.is_in_custom_screen() then
@@ -47,16 +68,51 @@ memory.on_exec(
 )
 
 memory.on_exec(
+    romoffsets.battle_init_complete__ret,
+    function ()
+        -- Inject code at the end of battle_custom_complete.
+        print("DEBUG: init ending")
+
+        local tc = battle.get_local_marshaled_state()
+        client:send_marshaled_state(tc)
+        battle.set_player_marshaled_state(local_index, tc)
+        -- TODO: This has to be asynchronous.
+        battle.set_player_marshaled_state(remote_index, client:recv_marshaled_state())
+    end
+)
+
+memory.on_exec(
     romoffsets.battle_custom_complete__ret,
     function ()
         -- Inject code at the end of battle_custom_complete.
-        local tc = battle.get_local_turn_commit()
-        client:send_turn_commit(tc)
         print("DEBUG: turn resuming")
 
-        battle.set_player_turn_commit(local_index, tc)
-
+        local tc = battle.get_local_marshaled_state()
+        client:send_marshaled_state(tc)
+        battle.set_player_marshaled_state(local_index, tc)
         -- TODO: This has to be asynchronous.
-        battle.set_player_turn_commit(remote_index, client:recv_turn_commit())
+        battle.set_player_marshaled_state(remote_index, client:recv_marshaled_state())
+    end
+)
+
+memory.on_exec(
+    romoffsets.commMenu_waitForFriend__call__commMenu_handleLinkCableInput,
+    function ()
+        -- Skip the SIO call.
+        memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+
+        memory.write_reg("r0", 2)
+    end
+)
+
+memory.on_exec(
+    romoffsets.commMenu_connecting__call__commMenu_handleLinkCableInput,
+    function ()
+        -- TODO: Do we need to sync RNGs here?
+
+        -- Skip the SIO call.
+        memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+
+        memory.write_reg("r0", 4)
     end
 )

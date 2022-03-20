@@ -26,8 +26,8 @@ local Client = {
         return packet.joyflags
     end,
 
-    send_turn_commit = function (self, turn_commit)
-        print("would send turn commit.")
+    send_marshaled_state = function (self, marshaled_state)
+        print("would send marshaled state.")
     end
 }
 

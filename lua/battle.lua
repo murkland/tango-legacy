@@ -15,21 +15,17 @@ end
 
 -- TODO: Find where custom screen init is committed.
 
-local g_player_turn_commit_ptr = 0x0203f4a0
+local g_player_marshaled_state_ptr = 0x0203f4a0
 
-local function get_player_turn_commit(index, turn_commit)
-    return memory.read_range(g_player_turn_commit_ptr, 0x100)
+local function set_player_marshaled_state(index, marshaled_state)
+    assert(#marshaled_state == 0x100)
+    memory.write_range(g_player_marshaled_state_ptr + index * 0x100, marshaled_state)
 end
 
-local function set_player_turn_commit(index, turn_commit)
-    assert(#turn_commit == 0x100)
-    memory.write_range(g_player_turn_commit_ptr + index * 0x100, turn_commit)
-end
+local g_local_marshaled_state_ptr = 0x0203cbe0
 
-local g_local_turn_commit_ptr = 0x0203cbe0
-
-local function get_local_turn_commit(index, turn_commit)
-    return memory.read_range(g_local_turn_commit_ptr, 0x100)
+local function get_local_marshaled_state(index, marshaled_state)
+    return memory.read_range(g_local_marshaled_state_ptr, 0x100)
 end
 
 local g_battle_state = 0x02034880
@@ -41,8 +37,7 @@ end
 return {
     set_battle_rng = set_battle_rng,
     set_player_input = set_player_input,
-    get_player_turn_commit = get_player_turn_commit,
-    set_player_turn_commit = set_player_turn_commit,
-    get_local_turn_commit = get_local_turn_commit,
+    set_player_marshaled_state = set_player_marshaled_state,
+    get_local_marshaled_state = get_local_marshaled_state,
     is_in_custom_screen = is_in_custom_screen,
 }

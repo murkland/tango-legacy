@@ -14,20 +14,20 @@ local Client = {
         return self.joyflags
     end,
 
-    send_turn_commit = function (self, turn_commit)
+    send_marshaled_state = function (self, marshaled_state)
         -- not sure what this business is, but it works
-        self.turn_commit = table_copy(turn_commit)
+        self.marshaled_state = table_copy(marshaled_state)
         if self.player_index == 0 then
-            self.turn_commit[0xb8 + 0x08 + 1] = 0xb0
-            self.turn_commit[0xb8 + 0x09 + 1] = 0xa9
+            self.marshaled_state[0xb8 + 0x08 + 1] = 0xb0
+            self.marshaled_state[0xb8 + 0x09 + 1] = 0xa9
         else
-            self.turn_commit[0xb8 + 0x08 + 1] = 0x88
-            self.turn_commit[0xb8 + 0x09 + 1] = 0xaa
+            self.marshaled_state[0xb8 + 0x08 + 1] = 0x88
+            self.marshaled_state[0xb8 + 0x09 + 1] = 0xaa
         end
     end,
 
-    recv_turn_commit = function (self)
-        return self.turn_commit
+    recv_marshaled_state = function (self)
+        return self.marshaled_state
     end
 }
 
