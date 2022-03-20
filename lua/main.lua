@@ -4,13 +4,13 @@ local romoffsets = require("./romoffsets")
 local input = require("./input")
 local battle = require("./battle")
 
-local netplay = require("./netplay_dummy")
-
-local client = netplay.new_client("localhost", 12345)
+local netplay_dummy = require("./netplay_dummy")
 
 -- TODO: Dynamically initialize this.
 local local_index = 1
 local remote_index = 1 - local_index
+
+local client = netplay_dummy.new_client(local_index)
 
 memory.on_exec(
     romoffsets.battle_handleLinkCableInput__call__battle_handleLinkSIO,
