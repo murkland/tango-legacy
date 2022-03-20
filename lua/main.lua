@@ -90,6 +90,9 @@ memory.on_exec(
         end
         memory.write_reg("r0", 0x0)
 
+        if remote_input == nil then
+            return
+        end
         battle.set_player_input(remote_index, remote_input)
     end
 )
