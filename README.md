@@ -1,6 +1,6 @@
 # bingus battle network 6 (bbn6)
 
-!(bingus battle network)[logo.png]
+![bingus battle network 6](logo.png)
 
 netplay for mega man battle network 6 in the style of https://github.com/ssbmars/BBN3-netcode. the b in bbn6 does NOT stand for "better".
 
