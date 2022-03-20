@@ -7,12 +7,11 @@ local function table_copy(t)
 local Client = {}
 Client.__index = Client
 
-function Client.new(player_index)
+function Client.new()
     local client = {
         init = nil,
         input = nil,
         turn = nil,
-        player_index = player_index,
         joyflags = 0xfc00,
     }
     setmetatable(client, Client)
@@ -47,6 +46,9 @@ function Client:take_turn()
     local turn = self.turn
     self.turn = nil
     return turn
+end
+
+function Client:run_on_loop(loop)
 end
 
 return Client

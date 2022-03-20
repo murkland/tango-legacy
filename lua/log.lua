@@ -12,19 +12,19 @@ local LEVEL_NAMES = {
     [FATAL] = "FATAL",
 }
 
-function format(level, fmt, ...)
+local function format(level, fmt, ...)
     return os.date() .. ": " .. LEVEL_NAMES[level] .. ": " .. string.format(fmt, unpack(arg))
 end
 
-function make_log_func(level)
+local function log(level, fmt, ...)
+    print(format(level, fmt, unpack(arg)))
+    assert(level ~= FATAL)
+end
+
+local function make_log_func(level)
     return function(fmt, ...)
         log(level, fmt, unpack(arg))
     end
-end
-
-function log(level, fmt, ...)
-    print(format(level, fmt, unpack(arg)))
-    assert(level ~= FATAL)
 end
 
 return {

@@ -36,4 +36,7 @@ end
 function Client:take_turn()
 end
 
+function Client:run_on_loop(loop)
+end
+
 return Client

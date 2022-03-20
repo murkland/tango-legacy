@@ -4,7 +4,7 @@ log.info("welcome to bingus battle network 6.")
 local memory = require("./platform/require")("memory")
 local emulator = require("./platform/require")("emulator")
 
-local EventLoop = require("./eventloop")
+local EventLoop = require("./aio/eventloop")
 local romoffsets = require("./romoffsets")
 local input = require("./input")
 local battle = require("./battle")
@@ -15,7 +15,7 @@ local Client = require("./netplay_dummy")
 local local_index = 0
 local remote_index = 1 - local_index
 
-local client = Client.new(local_index)
+local client = Client.new()
 
 memory.on_exec(
     romoffsets.battle_isRemote__ret,
@@ -76,14 +76,14 @@ memory.on_exec(
         local local_input = input.get_flags(0)
         battle.set_rx_input(local_index, local_input)
 
-        if battle.is_in_turn() then
+        if battle.get_state() == battle.State.IN_TURN then
             client:send_input(battle.get_elapsed_active_time(), local_input)
         end
 
         local remote_input = client:take_input()
 
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
-        if remote_input == nil and battle.is_in_turn() then
+        if remote_input == nil and battle.get_state() == battle.State.IN_TURN then
             memory.write_reg("r0", 0xff)
             return
         end
@@ -146,4 +146,5 @@ function run_emu()
     loop:add_callback(run_emu)
 end
 run_emu()
+client.run_on_loop(loop)
 loop:run()

@@ -1,0 +1,3 @@
+local cosocket = {}
+
+return cosocket
