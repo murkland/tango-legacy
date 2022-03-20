@@ -18,7 +18,7 @@ local client = netplay_dummy.new_client(local_index)
 memory.on_exec(
     romoffsets.commMenu_handleLinkCableInput__entry,
     function ()
-        log.fatal("unexpected call to SIO at 0x%08x", memory.read_reg("r14") - 1)
+        log.error("unhandled call to SIO at 0x%08x: uh oh!", memory.read_reg("r14") - 1)
     end
 )
 
@@ -117,5 +117,21 @@ memory.on_exec(
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
 
         memory.write_reg("r0", 4)
+    end
+)
+
+memory.on_exec(
+    romoffsets.battle_isRemote__entry,
+    function()
+        memory.write_reg("r0", local_index)
+        memory.write_reg("r15", memory.read_reg("r14")) -- mov lr, pc
+    end
+)
+
+memory.on_exec(
+    romoffsets.link_isRemote__entry,
+    function()
+        memory.write_reg("r0", local_index)
+        memory.write_reg("r15", memory.read_reg("r14")) -- mov lr, pc
     end
 )
