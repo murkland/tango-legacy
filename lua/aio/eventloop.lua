@@ -4,15 +4,15 @@ local EventLoop = {}
 EventLoop.__index = EventLoop
 
 function EventLoop.new()
-    local reactor = {
+    local self = {
         running = false,
         read_callbacks = {},
         write_callbacks = {},
         callbacks = {},
     }
 
-    setmetatable(reactor, EventLoop)
-    return reactor
+    setmetatable(self, EventLoop)
+    return self
 end
 
 function EventLoop:add_read_callback(sock, cb)
