@@ -68,7 +68,7 @@ memory.on_exec(
 )
 
 memory.on_exec(
-    romoffsets.battle_init_complete__ret,
+    romoffsets.battle_init_marshal__ret,
     function ()
         -- Inject code at the end of battle_custom_complete.
         print("DEBUG: init ending")
@@ -82,7 +82,7 @@ memory.on_exec(
 )
 
 memory.on_exec(
-    romoffsets.battle_custom_complete__ret,
+    romoffsets.battle_turn_marshal__ret,
     function ()
         -- Inject code at the end of battle_custom_complete.
         print("DEBUG: turn resuming")
