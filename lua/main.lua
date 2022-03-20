@@ -27,14 +27,6 @@ memory.on_exec(
 )
 
 memory.on_exec(
-    romoffsets.commMenu_inBattle__call__commMenu_handleLinkCableInput,
-    function ()
-        -- Skip the SIO call.
-        memory.write_reg("r15", memory.read_reg("r15") + 0x4)
-    end
-)
-
-memory.on_exec(
     romoffsets.battle_init__call__battle_copyInputData,
     function ()
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
@@ -73,9 +65,9 @@ memory.on_exec(
         -- Inject code at the end of battle_custom_complete.
         print("DEBUG: init ending")
 
-        local tc = battle.get_local_marshaled_state()
-        client:send_marshaled_state(tc)
-        battle.set_player_marshaled_state(local_index, tc)
+        local state = battle.get_local_marshaled_state()
+        client:send_marshaled_state(state)
+        battle.set_player_marshaled_state(local_index, state)
         -- TODO: This has to be asynchronous.
         battle.set_player_marshaled_state(remote_index, client:recv_marshaled_state())
     end
@@ -87,11 +79,19 @@ memory.on_exec(
         -- Inject code at the end of battle_custom_complete.
         print("DEBUG: turn resuming")
 
-        local tc = battle.get_local_marshaled_state()
-        client:send_marshaled_state(tc)
-        battle.set_player_marshaled_state(local_index, tc)
+        local state = battle.get_local_marshaled_state()
+        client:send_marshaled_state(state)
+        battle.set_player_marshaled_state(local_index, state)
         -- TODO: This has to be asynchronous.
         battle.set_player_marshaled_state(remote_index, client:recv_marshaled_state())
+    end
+)
+
+memory.on_exec(
+    romoffsets.commMenu_inBattle__call__commMenu_handleLinkCableInput,
+    function ()
+        -- Skip the SIO call.
+        memory.write_reg("r15", memory.read_reg("r15") + 0x4)
     end
 )
 
