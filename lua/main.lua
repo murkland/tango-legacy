@@ -18,7 +18,7 @@ local client = netplay_dummy.new_client(local_index)
 memory.on_exec(
     romoffsets.commMenu_handleLinkCableInput__entry,
     function ()
-        log.error("unexpected call to SIO at 0x%08x", memory.read_reg("r14") - 1)
+        log.fatal("unexpected call to SIO at 0x%08x", memory.read_reg("r14") - 1)
     end
 )
 
