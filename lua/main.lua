@@ -21,7 +21,6 @@ memory.on_exec(
     romoffsets.battle_isRemote__ret,
     function()
         memory.write_reg("r0", local_index)
-        memory.write_reg("r15", memory.read_reg("r14") - 1) -- mov lr, pc
     end
 )
 
@@ -29,7 +28,6 @@ memory.on_exec(
     romoffsets.link_isRemote__ret,
     function()
         memory.write_reg("r0", local_index)
-        -- memory.write_reg("r15", memory.read_reg("r14") - 1) -- mov lr, pc
     end
 )
 
