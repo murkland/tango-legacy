@@ -32,10 +32,17 @@ local function get_local_turn_commit(index, turn_commit)
     return memory.read_range(g_local_turn_commit_ptr, 0x100)
 end
 
+local g_battle_state = 0x02034880
+
+local function is_in_custom_screen()
+    return memory.read_u8(g_battle_state + 0x1) == 8
+end
+
 return {
     set_battle_rng = set_battle_rng,
     set_player_input = set_player_input,
     get_player_turn_commit = get_player_turn_commit,
     set_player_turn_commit = set_player_turn_commit,
     get_local_turn_commit = get_local_turn_commit,
+    is_in_custom_screen = is_in_custom_screen,
 }

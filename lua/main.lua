@@ -4,6 +4,14 @@ local romoffsets = require("./romoffsets")
 local input = require("./input")
 local battle = require("./battle")
 
+local netplay = require("./netplay_dummy")
+
+local client = netplay.new_client("localhost", 12345)
+
+-- TODO: Dynamically initialize this.
+local local_index = 1
+local remote_index = 1 - local_index
+
 memory.on_exec(
     romoffsets.battle_handleLinkCableInput__call__battle_handleLinkSIO,
     function ()
@@ -22,17 +30,33 @@ memory.on_exec(
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
 
         local inpflags = input.get_flags(0)
-        battle.set_player_input(0, inpflags)
-        battle.set_player_input(1, inpflags)
+        if not battle.is_in_custom_screen() then
+            client:send_input(inpflags)
+        end
+
+        battle.set_player_input(local_index, inpflags)
+        battle.set_player_input(remote_index, client:recv_input())
     end
 )
 
+memory.on_exec(
+    romoffsets.battle_updating__ret__go_to_custom_screen,
+    function ()
+        print("DEBUG: turn ended")
+    end
+)
 
 memory.on_exec(
     romoffsets.battle_custom_complete__ret,
     function ()
+        -- Inject code at the end of battle_custom_complete.
         local tc = battle.get_local_turn_commit()
-        battle.set_player_turn_commit(0, tc)
-        battle.set_player_turn_commit(1, tc)
+        client:send_turn_commit(tc)
+        print("DEBUG: turn resuming")
+        print("cross: " .. memory.read_u8(0x0203ced0))
+        print("cross: " .. memory.read_u8(0x0203cc98))
+
+        battle.set_player_turn_commit(local_index, tc)
+        battle.set_player_turn_commit(remote_index, client:recv_turn_commit())
     end
 )

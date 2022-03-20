@@ -22,4 +22,5 @@ return {
     write_reg = memory.setregister,
 
     on_exec = memory.registerexec,
+    on_write = memory.registerwrite,
 }
