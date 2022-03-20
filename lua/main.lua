@@ -16,6 +16,22 @@ local remote_index = 1 - local_index
 local client = netplay_dummy.new_client(local_index)
 
 memory.on_exec(
+    romoffsets.battle_isRemote__ret,
+    function()
+        memory.write_reg("r0", local_index)
+        memory.write_reg("r15", memory.read_reg("r14") - 1) -- mov lr, pc
+    end
+)
+
+memory.on_exec(
+    romoffsets.link_isRemote__ret,
+    function()
+        memory.write_reg("r0", local_index)
+        -- memory.write_reg("r15", memory.read_reg("r14") - 1) -- mov lr, pc
+    end
+)
+
+memory.on_exec(
     romoffsets.commMenu_handleLinkCableInput__entry,
     function ()
         log.error("unhandled call to SIO at 0x%08x: uh oh!", memory.read_reg("r14") - 1)
@@ -51,7 +67,7 @@ memory.on_exec(
         end
 
         battle.set_player_input(local_index, inpflags)
-        battle.set_player_input(remote_index, client:recv_input())
+        -- battle.set_player_input(remote_index, client:recv_input())
     end
 )
 
