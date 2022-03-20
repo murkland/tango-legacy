@@ -12,6 +12,8 @@ local battle = require("./battle")
 local Client = require("./netplay")
 
 function entry(sock, local_index)
+    local loop = EventLoop.new()
+
     local client = Client.new(sock)
     local remote_index = 1 - local_index
 
@@ -57,7 +59,7 @@ function entry(sock, local_index)
             log.debug("init ending")
 
             local local_init = battle.get_tx_marshaled_state()
-            client:send_init(local_init)
+            client:give_init(loop, local_init)
             battle.set_rx_marshaled_state(local_index, local_init)
 
             local remote_init = client:take_init()
@@ -75,7 +77,7 @@ function entry(sock, local_index)
             battle.set_rx_input(local_index, local_input)
 
             if battle.get_state() == battle.State.IN_TURN then
-                client:send_input(battle.get_elapsed_active_time(), local_input)
+                client:give_input(loop, battle.get_elapsed_active_time(), local_input)
             end
 
             local remote_input = client:take_input()
@@ -108,7 +110,7 @@ function entry(sock, local_index)
             log.debug("turn resuming")
 
             local local_turn = battle.get_tx_marshaled_state()
-            client:send_turn(local_turn)
+            client:give_turn(loop, local_turn)
             battle.set_rx_marshaled_state(local_index, local_turn)
 
             local remote_turn = client:take_turn()
@@ -140,13 +142,7 @@ function entry(sock, local_index)
 
     log.info("memory hijack complete, starting event loop.")
 
-    local loop = EventLoop.new()
-    function run_emu()
-        emulator.advance_frame()
-        loop:add_callback(run_emu)
-    end
-    run_emu()
-    client:run_on_loop(loop)
+    client:start(loop)
     loop:run()
 end
 

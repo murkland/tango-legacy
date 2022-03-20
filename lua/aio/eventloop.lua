@@ -42,6 +42,7 @@ function EventLoop:_get_read_sockets()
     for sock, _ in pairs(self.read_callbacks) do
         sockets[#sockets+1] = sock
     end
+    return sockets
 end
 
 function EventLoop:_get_write_sockets()
@@ -49,6 +50,7 @@ function EventLoop:_get_write_sockets()
     for sock, _ in pairs(self.write_callbacks) do
         sockets[#sockets+1] = sock
     end
+    return sockets
 end
 
 function EventLoop:_step()
