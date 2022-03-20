@@ -2,18 +2,20 @@ local log = require("./log")
 log.info("welcome to bingus battle network 6.")
 
 local memory = require("./platform/require")("memory")
+local emulator = require("./platform/require")("emulator")
 
+local EventLoop = require("./eventloop")
 local romoffsets = require("./romoffsets")
 local input = require("./input")
 local battle = require("./battle")
 
-local netplay_dummy = require("./netplay_dummy")
+local Client = require("./netplay_dummy")
 
 -- TODO: Dynamically initialize this.
-local local_index = 1
+local local_index = 0
 local remote_index = 1 - local_index
 
-local client = netplay_dummy.new_client(local_index)
+local client = Client.new(local_index)
 
 memory.on_exec(
     romoffsets.battle_isRemote__ret,
@@ -67,7 +69,7 @@ memory.on_exec(
         end
 
         battle.set_player_input(local_index, inpflags)
-        -- battle.set_player_input(remote_index, client:recv_input())
+        battle.set_player_input(remote_index, client:recv_input())
     end
 )
 
@@ -124,3 +126,12 @@ memory.on_exec(
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
     end
 )
+
+local loop = EventLoop.new()
+function run_emu()
+    emulator.advance_frame()
+    loop:add_callback(run_emu)
+end
+
+loop:add_callback(run_emu)
+loop:run()
