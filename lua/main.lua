@@ -51,25 +51,48 @@ memory.on_exec(
     romoffsets.battle_init__call__battle_copyInputData,
     function ()
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
-        -- This is the value at 0x0203F7D8 read earlier, set it to 0.
-        memory.write_reg("r4", 0)
+        memory.write_reg("r0", 0x0)
+    end
+)
+
+memory.on_exec(
+    romoffsets.battle_init_marshal__ret,
+    function ()
+        -- Inject code at the end of battle_custom_complete.
+        log.debug("init ending")
+
+        local local_init = battle.get_tx_marshaled_state()
+        client:send_init(local_init)
+        battle.set_rx_marshaled_state(local_index, local_init)
+
+        local remote_init = client:take_init()
+        if remote_init == nil then
+            return
+        end
+        battle.set_rx_marshaled_state(remote_index, remote_init)
     end
 )
 
 memory.on_exec(
     romoffsets.battle_update__call__battle_copyInputData,
     function ()
-        memory.write_reg("r15", memory.read_reg("r15") + 0x4)
-        -- This is the value at 0x0203F7D8 read earlier, set it to 0.
-        memory.write_reg("r4", 0)
+        local local_input = input.get_flags(0)
+        battle.set_player_input(local_index, local_input)
 
-        local inpflags = input.get_flags(0)
-        if not battle.is_in_custom_screen() then
-            client:send_input(inpflags)
+        if battle.is_in_turn() then
+            client:send_input(local_input)
         end
 
-        battle.set_player_input(local_index, inpflags)
-        battle.set_player_input(remote_index, client:recv_input())
+        local remote_input = client:take_input()
+
+        memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+        if remote_input == nil and battle.is_in_turn() then
+            memory.write_reg("r0", 0xff)
+            return
+        end
+        memory.write_reg("r0", 0x0)
+
+        battle.set_player_input(remote_index, remote_input)
     end
 )
 
@@ -81,30 +104,20 @@ memory.on_exec(
 )
 
 memory.on_exec(
-    romoffsets.battle_init_marshal__ret,
-    function ()
-        -- Inject code at the end of battle_custom_complete.
-        log.debug("init ending")
-
-        local state = battle.get_tx_marshaled_state()
-        client:send_marshaled_state(state)
-        battle.set_rx_marshaled_state(local_index, state)
-        -- TODO: This has to be asynchronous.
-        battle.set_rx_marshaled_state(remote_index, client:recv_marshaled_state())
-    end
-)
-
-memory.on_exec(
     romoffsets.battle_turn_marshal__ret,
     function ()
         -- Inject code at the end of battle_custom_complete.
         log.debug("turn resuming")
 
-        local state = battle.get_tx_marshaled_state()
-        client:send_marshaled_state(state)
-        battle.set_rx_marshaled_state(local_index, state)
-        -- TODO: This has to be asynchronous.
-        battle.set_rx_marshaled_state(remote_index, client:recv_marshaled_state())
+        local local_turn = battle.get_tx_marshaled_state()
+        client:send_turn(local_turn)
+        battle.set_rx_marshaled_state(local_index, local_turn)
+
+        local remote_turn = client:take_turn()
+        if remote_turn == nil then
+            return
+        end
+        battle.set_rx_marshaled_state(remote_index, remote_turn)
     end
 )
 
@@ -132,6 +145,5 @@ function run_emu()
     emulator.advance_frame()
     loop:add_callback(run_emu)
 end
-
-loop:add_callback(run_emu)
+run_emu()
 loop:run()

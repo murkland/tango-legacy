@@ -34,10 +34,15 @@ local function is_in_custom_screen()
     return memory.read_u8(g_battle_state + 0x1) == 8
 end
 
+local function is_in_turn()
+    return memory.read_u8(g_battle_state + 0x1) == 12
+end
+
 return {
     set_battle_rng = set_battle_rng,
     set_player_input = set_player_input,
     set_rx_marshaled_state = set_rx_marshaled_state,
     get_tx_marshaled_state = get_tx_marshaled_state,
     is_in_custom_screen = is_in_custom_screen,
+    is_in_turn = is_in_turn,
 }

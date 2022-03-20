@@ -16,6 +16,7 @@ function EventLoop.new()
 end
 
 function EventLoop:add_read_callback(sock, cb)
+    sock:settimeout(0, "b")
     if self.read_callbacks[sock] == nil then
         self.read_callbacks[sock] = {}
     end
@@ -27,6 +28,7 @@ function EventLoop:remove_read_socket(sock)
 end
 
 function EventLoop:add_write_callback(sock, cb)
+    sock:settimeout(0, "b")
     if self.write_callbacks[sock] == nil then
         self.write_callbacks[sock] = {}
     end
