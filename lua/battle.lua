@@ -15,17 +15,17 @@ end
 
 -- TODO: Find where custom screen init is committed.
 
-local g_player_marshaled_state_ptr = 0x0203f4a0
+local g_rx_marshaled_state_ptr = 0x0203f4a0
 
-local function set_player_marshaled_state(index, marshaled_state)
+local function set_rx_marshaled_state(index, marshaled_state)
     assert(#marshaled_state == 0x100)
-    memory.write_range(g_player_marshaled_state_ptr + index * 0x100, marshaled_state)
+    memory.write_range(g_rx_marshaled_state_ptr + index * 0x100, marshaled_state)
 end
 
-local g_local_marshaled_state_ptr = 0x0203cbe0
+local g_tx_marshaled_state_ptr = 0x0203cbe0
 
-local function get_local_marshaled_state(index, marshaled_state)
-    return memory.read_range(g_local_marshaled_state_ptr, 0x100)
+local function get_tx_marshaled_state(index, marshaled_state)
+    return memory.read_range(g_tx_marshaled_state_ptr, 0x100)
 end
 
 local g_battle_state = 0x02034880
@@ -37,7 +37,7 @@ end
 return {
     set_battle_rng = set_battle_rng,
     set_player_input = set_player_input,
-    set_player_marshaled_state = set_player_marshaled_state,
-    get_local_marshaled_state = get_local_marshaled_state,
+    set_rx_marshaled_state = set_rx_marshaled_state,
+    get_tx_marshaled_state = get_tx_marshaled_state,
     is_in_custom_screen = is_in_custom_screen,
 }

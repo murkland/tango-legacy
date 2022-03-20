@@ -68,11 +68,11 @@ memory.on_exec(
         -- Inject code at the end of battle_custom_complete.
         log.debug("init ending")
 
-        local state = battle.get_local_marshaled_state()
+        local state = battle.get_tx_marshaled_state()
         client:send_marshaled_state(state)
-        battle.set_player_marshaled_state(local_index, state)
+        battle.set_rx_marshaled_state(local_index, state)
         -- TODO: This has to be asynchronous.
-        battle.set_player_marshaled_state(remote_index, client:recv_marshaled_state())
+        battle.set_rx_marshaled_state(remote_index, client:recv_marshaled_state())
     end
 )
 
@@ -82,56 +82,29 @@ memory.on_exec(
         -- Inject code at the end of battle_custom_complete.
         log.debug("turn resuming")
 
-        local state = battle.get_local_marshaled_state()
+        local state = battle.get_tx_marshaled_state()
         client:send_marshaled_state(state)
-        battle.set_player_marshaled_state(local_index, state)
+        battle.set_rx_marshaled_state(local_index, state)
         -- TODO: This has to be asynchronous.
-        battle.set_player_marshaled_state(remote_index, client:recv_marshaled_state())
-    end
-)
-
-memory.on_exec(
-    romoffsets.commMenu_inBattle__call__commMenu_handleLinkCableInput,
-    function ()
-        -- Skip the SIO call.
-        memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+        battle.set_rx_marshaled_state(remote_index, client:recv_marshaled_state())
     end
 )
 
 memory.on_exec(
     romoffsets.commMenu_waitForFriend__call__commMenu_handleLinkCableInput,
     function ()
-        -- Skip the SIO call.
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
 
-        memory.write_reg("r0", 2)
+        -- Just start the battle!
+        memory.write_u8(0x02009a31, 0x18)
+        memory.write_u8(0x02009a32, 0x00)
+        memory.write_u8(0x02009a33, 0x00)
     end
 )
 
 memory.on_exec(
-    romoffsets.commMenu_connecting__call__commMenu_handleLinkCableInput,
+    romoffsets.commMenu_inBattle__call__commMenu_handleLinkCableInput,
     function ()
-        -- TODO: Do we need to sync RNGs here?
-
-        -- Skip the SIO call.
         memory.write_reg("r15", memory.read_reg("r15") + 0x4)
-
-        memory.write_reg("r0", 4)
-    end
-)
-
-memory.on_exec(
-    romoffsets.battle_isRemote__entry,
-    function()
-        memory.write_reg("r0", local_index)
-        memory.write_reg("r15", memory.read_reg("r14")) -- mov lr, pc
-    end
-)
-
-memory.on_exec(
-    romoffsets.link_isRemote__entry,
-    function()
-        memory.write_reg("r0", local_index)
-        memory.write_reg("r15", memory.read_reg("r14")) -- mov lr, pc
     end
 )
