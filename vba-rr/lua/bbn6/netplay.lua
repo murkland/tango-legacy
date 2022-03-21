@@ -15,21 +15,22 @@ local PACKET_TYPE_TURN = '\2'
 local Client = {}
 Client.__index = Client
 
-function Client.new(sock, delay)
+function Client.new(sock, min_delay, max_delay)
     local local_input_queue = Deque.new()
     local remote_input_queue = Deque.new()
 
-    if delay == nil then
+    if min_delay == nil then
         -- random guess
-        delay = 3
+        min_delay = 3
     end
-    for i = 1, delay do
-        local_input_queue:pushright({tick = i - delay - 1, joyflags = 0xfc00, custom_state = 0})
-        remote_input_queue:pushright({tick = i - delay - 1, joyflags = 0xfc00, custom_state = 0})
+    for i = 1, min_delay do
+        local_input_queue:pushright({tick = i - min_delay - 1, joyflags = 0xfc00, custom_state = 0})
+        remote_input_queue:pushright({tick = i - min_delay - 1, joyflags = 0xfc00, custom_state = 0})
     end
 
     local self = {
-        delay = delay,
+        min_delay = min_delay,
+        max_delay = max_delay,
 
         sock = Cosocket.new(sock),
 
@@ -51,7 +52,7 @@ function Client.new(sock, delay)
 end
 
 function Client:queue_local_input(tick, joyflags, custom_state)
-    if self.pending_local_input_queue:len() >= self.delay then
+    if self.pending_local_input_queue:len() >= self.max_delay then
         return false
     end
     self.pending_local_input_queue:pushright({tick = tick, joyflags = joyflags, custom_state = custom_state})
@@ -59,11 +60,7 @@ function Client:queue_local_input(tick, joyflags, custom_state)
 end
 
 function Client:dequeue_inputs()
-    if self.local_input_queue:len() < self.delay then
-        return nil
-    end
-
-    if self.remote_input_queue:len() == 0 or self.local_input_queue:len() == 0 then
+    if self.local_input_queue:len() < self.min_delay or self.remote_input_queue:len() == 0 then
         return nil
     end
 
