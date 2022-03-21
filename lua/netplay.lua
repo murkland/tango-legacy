@@ -4,6 +4,7 @@ local coroutine = require("coroutine")
 local Cosocket = require("./aio/cosocket")
 local coutil = require("./aio/coutil")
 local log = require("./log")
+local input = require("./input")
 local Deque = require("deque")
 local struct = require("struct")
 
@@ -22,8 +23,8 @@ function Client.new(sock, min_delay, max_delay)
         -- random guess
         min_delay = 3
         for i = 1, min_delay do
-            local_input_queue:pushright({tick = i - min_delay - 1, joyflags = 0xfc00})
-            remote_input_queue:pushright({tick = i - min_delay - 1, joyflags = 0xfc00})
+            local_input_queue:pushright({tick = i - min_delay - 1, joyflags = input.Joyflag.DEFAULT})
+            remote_input_queue:pushright({tick = i - min_delay - 1, joyflags = input.Joyflag.DEFAULT})
         end
     end
 

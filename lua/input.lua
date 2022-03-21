@@ -2,7 +2,7 @@ local input = {}
 
 local joypad = require("./platform/require")("joypad")
 
-local JOYPAD = {
+input.Joyflag = {
     DEFAULT = 0xFC00,
 
     A       = 0x0001,
@@ -18,10 +18,10 @@ local JOYPAD = {
 }
 
 function input.get_flags(i)
-    local flags = JOYPAD.DEFAULT
+    local flags = input.Joyflag.DEFAULT
     for k, v in pairs(joypad.get(i)) do
         if v then
-            flags = bit.bor(flags, JOYPAD[k])
+            flags = bit.bor(flags, input.Joyflag[k])
         end
     end
     return flags
