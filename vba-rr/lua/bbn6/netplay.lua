@@ -5,7 +5,6 @@ local coroutine = require("coroutine")
 local Cosocket = require("bbn6.aio.cosocket")
 local coutil = require("bbn6.aio.coutil")
 local log = require("bbn6.log")
-local input = require("bbn6.input")
 local Deque = require("bbn6.deque")
 local struct = require("bbn6.struct")
 
@@ -24,8 +23,8 @@ function Client.new(sock, min_delay, max_delay)
         -- random guess
         min_delay = 3
         for i = 1, min_delay do
-            local_input_queue:pushright({tick = i - min_delay - 1, joyflags = input.Joyflag.DEFAULT, custom_state = 0})
-            remote_input_queue:pushright({tick = i - min_delay - 1, joyflags = input.Joyflag.DEFAULT, custom_state = 0})
+            local_input_queue:pushright({tick = i - min_delay - 1, joyflags = 0xfc00, custom_state = 0})
+            remote_input_queue:pushright({tick = i - min_delay - 1, joyflags = 0xfc00, custom_state = 0})
         end
     end
 

@@ -14,6 +14,10 @@ function battle.set_rx_input_state(index, keys_pressed, custom_state) -- joyflag
     memory.write_u8(0x02034880 + 0x14 + index, custom_state)
 end
 
+function battle.get_local_joyflags()
+    return memory.read_u16(0x0200a270 + 0x00)
+end
+
 function battle.get_local_custom_state()
     return memory.read_u8(0x02034880 + 0x11)
 end

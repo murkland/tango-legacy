@@ -6,7 +6,6 @@ local emulator = require("bbn6.platform.require")("emulator")
 
 local EventLoop = require("bbn6.aio.eventloop")
 local romoffsets = require("bbn6.romoffsets")
-local input = require("bbn6.input")
 local battle = require("bbn6.battle")
 
 function hijack(Client, sock, local_index)
@@ -108,7 +107,7 @@ function hijack(Client, sock, local_index)
             end
 
             local local_tick = battle.get_active_in_battle_time()
-            local local_joyflags = input.get_flags(0)
+            local local_joyflags = battle.get_local_joyflags()
             local local_custom_state = battle.get_local_custom_state()
 
             if last_tick < local_tick then
