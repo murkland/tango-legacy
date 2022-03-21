@@ -94,13 +94,10 @@ function entry(Client, sock, local_index)
             local local_joyflags = input.get_flags(0)
             battle.set_rx_joyflags(local_index, local_joyflags)
 
-            if battle.get_state() == battle.State.IN_TURN then
-                client:give_input(local_tick, local_joyflags)
-            end
-
+            client:give_input(local_tick, local_joyflags)
             local remote_input = client:take_input()
 
-            if remote_input == nil and battle.get_state() == battle.State.IN_TURN then
+            if remote_input == nil then
                 memory.write_reg("r0", 0xff)
                 return
             end
