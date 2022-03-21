@@ -18,6 +18,7 @@ function Client.new(sock)
         sock = Cosocket.new(sock),
 
         is_in_battle = false,
+        last_tick_sent = -1,
 
         local_init = nil,
         remote_init = nil,
@@ -89,8 +90,10 @@ function Client:run(loop)
             end
 
             if self.local_input ~= nil then
-                local input = self.local_input
-                self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("dw", input.tick, input.joyflags))
+                if self.local_input.tick > self.last_tick_sent then
+                    local input = self.local_input
+                    self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("dw", input.tick, input.joyflags))
+                end
                 self.local_input = nil
             end
 
