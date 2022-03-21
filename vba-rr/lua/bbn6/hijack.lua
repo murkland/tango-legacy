@@ -70,9 +70,12 @@ function hijack(Client, sock, local_index)
         end
     )
 
+    local last_tick = -1
+
     memory.on_exec(
         romoffsets.battle_end__entry,
         function ()
+            last_tick = -1
             log.debug("battle ended")
         end
     )
@@ -89,8 +92,6 @@ function hijack(Client, sock, local_index)
             end
         end
     )
-
-    local last_tick = -1
 
     memory.on_exec(
         romoffsets.battle_update__call__battle_copyInputData,
