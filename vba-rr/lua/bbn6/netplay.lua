@@ -24,8 +24,8 @@ function Client.new(sock, min_delay, max_delay)
         -- random guess
         min_delay = 3
         for i = 1, min_delay do
-            local_input_queue:pushright({tick = i - min_delay - 1, joyflags = input.Joyflag.DEFAULT})
-            remote_input_queue:pushright({tick = i - min_delay - 1, joyflags = input.Joyflag.DEFAULT})
+            local_input_queue:pushright({tick = i - min_delay - 1, joyflags = input.Joyflag.DEFAULT, custom_state = 0})
+            remote_input_queue:pushright({tick = i - min_delay - 1, joyflags = input.Joyflag.DEFAULT, custom_state = 0})
         end
     end
 
@@ -56,11 +56,11 @@ function Client.new(sock, min_delay, max_delay)
     return self
 end
 
-function Client:queue_local_input(tick, joyflags)
+function Client:queue_local_input(tick, joyflags, custom_state)
     if self.pending_local_input_queue:len() >= self.max_delay then
         return false
     end
-    self.pending_local_input_queue:pushright({tick = tick, joyflags = joyflags})
+    self.pending_local_input_queue:pushright({tick = tick, joyflags = joyflags, custom_state = custom_state})
     return true
 end
 
@@ -130,7 +130,7 @@ function Client:run(loop)
 
             while self.pending_local_input_queue:len() > 0 do
                 local input = self.pending_local_input_queue:popleft()
-                assert(self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("dw", input.tick, input.joyflags)))
+                assert(self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("dwb", input.tick, input.joyflags, input.custom_state)))
                 self.local_input_queue:pushright(input)
             end
 
@@ -146,8 +146,8 @@ function Client:run(loop)
                 if op == PACKET_TYPE_INIT then
                     self.remote_init = string_to_u8table(assert(self.sock:receive(loop, 0x100)))
                 elseif op == PACKET_TYPE_INPUT then
-                    local l = struct.read(assert(self.sock:receive(loop, 6), "dw"))
-                    self.remote_input_queue:pushright({tick = l[1], joyflags = l[2]})
+                    local l = struct.read(assert(self.sock:receive(loop, 7), "dwb"))
+                    self.remote_input_queue:pushright({tick = l[1], joyflags = l[2], custom_state = l[3]})
                 elseif op == PACKET_TYPE_TURN then
                     self.remote_turn = string_to_u8table(assert(self.sock:receive(loop, 0x100)))
                 end

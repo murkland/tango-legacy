@@ -109,9 +109,10 @@ function hijack(Client, sock, local_index)
 
             local local_tick = battle.get_active_in_battle_time()
             local local_joyflags = input.get_flags(0)
+            local local_custom_state = battle.get_local_custom_state()
 
             if last_tick < local_tick then
-                if not client:queue_local_input(local_tick, local_joyflags) then
+                if not client:queue_local_input(local_tick, local_joyflags, local_custom_state) then
                     -- log.warn("local input queue full, input processing will be stalled!")
                     return
                 end
@@ -126,8 +127,8 @@ function hijack(Client, sock, local_index)
             end
             memory.write_reg("r0", 0x0)
 
-            battle.set_rx_joyflags(local_index, inputs.local_.joyflags)
-            battle.set_rx_joyflags(remote_index, inputs.remote.joyflags)
+            battle.set_rx_input_state(local_index, inputs.local_.joyflags, inputs.local_.custom_state)
+            battle.set_rx_input_state(remote_index, inputs.remote.joyflags, inputs.remote.custom_state)
         end
     )
 
