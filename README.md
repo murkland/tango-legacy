@@ -10,8 +10,6 @@ netplay for mega man battle network 6 in the style of https://github.com/ssbmars
 
 -   a copy of MEGAMAN6_FXX (MEGAMAN6_GXX is not supported yet)
 
--   [vba-rerecording v23.6 svn480 LRC4](https://github.com/TASEmulators/vba-rerecording/releases/download/480LRC4/VBA-rr-svn480.LRC4-xp140.7z)
-
 -   an indefinite amount of patience
 
 ## thank you
