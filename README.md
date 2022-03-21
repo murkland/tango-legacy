@@ -2,6 +2,8 @@
 
 ![bingus battle network 6](logo.png)
 
+[![murkland](https://discordapp.com/api/guilds/936475149069336596/widget.png?style=shield)](https://discord.gg/zbQngJHwSg)
+
 netplay for mega man battle network 6 in the style of https://github.com/ssbmars/BBN3-netcode. the b in bbn6 does NOT stand for "better".
 
 ## thank you
