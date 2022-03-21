@@ -15,6 +15,7 @@ local offsets = {
         battle_turn_marshal__ret                                    = 0x0800b3d6,
         battle_updating__ret__go_to_custom_screen                   = 0x080093ae,
         battle_start__ret                                           = 0x08007304,
+        battle_end__entry                                           = 0x08007ca0,
         commMenu_waitForFriend__call__commMenu_handleLinkCableInput = 0x08129f8a,
         commMenu_inBattle__call__commMenu_handleLinkCableInput      = 0x0812b5ca,
         battle_isRemote__ret                                        = 0x0803dd52,

@@ -71,6 +71,13 @@ function hijack(Client, sock, local_index)
     )
 
     memory.on_exec(
+        romoffsets.battle_end__entry,
+        function ()
+            log.debug("battle ended")
+        end
+    )
+
+    memory.on_exec(
         romoffsets.battle_init__call__battle_copyInputData,
         function ()
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
