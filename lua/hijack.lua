@@ -9,7 +9,7 @@ local romoffsets = require("./romoffsets")
 local input = require("./input")
 local battle = require("./battle")
 
-function entry(Client, sock, local_index)
+function hijack(Client, sock, local_index)
     local loop = EventLoop.new()
 
     local client = Client.new(sock)
@@ -149,4 +149,4 @@ function entry(Client, sock, local_index)
     loop:run()
 end
 
-return entry
+return hijack

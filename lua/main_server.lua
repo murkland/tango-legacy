@@ -3,7 +3,7 @@ local PORT = 12345
 
 local log = require("./log")
 
-local entry = require("./entry")
+local hijack = require("./hijack")
 
 local socket = require("socket")
 
@@ -32,4 +32,4 @@ sock:setoption("tcp-nodelay", true)
 
 local Client = require("./netplay")
 
-entry(Client, sock, 0)
+hijack(Client, sock, 0)
