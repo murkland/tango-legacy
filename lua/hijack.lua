@@ -57,6 +57,13 @@ function hijack(Client, sock, local_index)
     )
 
     memory.on_exec(
+        romoffsets.battle_getSettingsForLink__ret,
+        function ()
+            log.warn("UNIMPLEMENTED: a random battle settings pointer should be returned here")
+        end
+    )
+
+    memory.on_exec(
         romoffsets.battle_start__ret,
         function ()
             log.debug("battle started")
