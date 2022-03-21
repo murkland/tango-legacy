@@ -22,5 +22,3 @@ local offsets = {
 
 assert(offsets[title] ~= nil, "game not supported")
 return offsets[title]
-
--- 0x0812b640: CommMenuLinkBattleStart
