@@ -8,6 +8,7 @@ local e_joypad = 0x0200a270
 local e_local_marshaled_state = 0x0203cbe0
 local e_player_marshaled_state_arr = 0x0203f4a0
 local e_menu_control = 0x02009a30
+local e_rng2 = 0x020013f0
 
 function battle.start_from_comm_menu()
     memory.write_u8(e_menu_control + 0x0, 0x18)
@@ -45,6 +46,10 @@ end
 
 function battle.get_active_in_battle_time()
     return memory.read_u32(e_battle_state + 0x64)
+end
+
+function battle.get_rng2()
+    return memory.read_u32(e_rng2)
 end
 
 return battle
