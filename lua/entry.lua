@@ -76,10 +76,13 @@ function entry(Client, sock, local_index)
         end
     )
 
+    local last_tick = -1
+
     memory.on_exec(
         romoffsets.battle_update__call__battle_copyInputData,
         function ()
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+            memory.write_reg("r0", 0xff)
 
             if battle.get_state() == battle.State.CUSTOM_SCREEN then
                 local remote_turn = client:take_turn()
@@ -91,26 +94,25 @@ function entry(Client, sock, local_index)
 
             local local_tick = battle.get_active_in_battle_time()
             local local_joyflags = input.get_flags(0)
-            battle.set_rx_joyflags(local_index, local_joyflags)
 
-            client:give_input(local_tick, local_joyflags)
-            local remote_input = client:take_input()
+            if last_tick < local_tick then
+                if not client:queue_local_input(local_tick, local_joyflags) then
+                    -- log.warn("local input queue full, input processing will be stalled!")
+                    return
+                end
+                last_tick = local_tick
+            end
 
-            if remote_input == nil then
-                memory.write_reg("r0", 0xff)
+            local inputs = client:dequeue_inputs()
+
+            if inputs == nil then
+                -- log.warn("remote input is not available, input processing will be stalled!")
                 return
             end
             memory.write_reg("r0", 0x0)
 
-            if remote_input == nil then
-                return
-            end
-
-            if local_tick ~= remote_input.tick then
-                log.fatal("local tick != remote tick: %d != %d", local_tick, remote_input.tick)
-            end
-
-            battle.set_rx_joyflags(remote_index, remote_input.joyflags)
+            battle.set_rx_joyflags(local_index, inputs.local_.joyflags)
+            battle.set_rx_joyflags(remote_index, inputs.remote.joyflags)
         end
     )
 
@@ -141,7 +143,7 @@ function entry(Client, sock, local_index)
         end
     )
 
-    log.info("execution hijack complete, starting event loop.")
+    log.info("hijack complete, starting event loop.")
 
     client:start(loop)
     loop:run()

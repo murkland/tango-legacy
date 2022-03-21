@@ -4,6 +4,7 @@ local coroutine = require("coroutine")
 local Cosocket = require("./aio/cosocket")
 local coutil = require("./aio/coutil")
 local log = require("./log")
+local Deque = require("deque")
 local struct = require("struct")
 
 local PACKET_TYPE_INIT = '\0'
@@ -13,20 +14,38 @@ local PACKET_TYPE_TURN = '\2'
 local Client = {}
 Client.__index = Client
 
-function Client.new(sock)
+function Client.new(sock, min_delay, max_delay)
+    local local_input_queue = Deque.new()
+    local remote_input_queue = Deque.new()
+
+    if min_delay == nil then
+        -- random guess
+        min_delay = 3
+        for i = 1, min_delay do
+            local_input_queue:pushright({tick = i - min_delay - 1, joyflags = 0xfc00})
+            remote_input_queue:pushright({tick = i - min_delay - 1, joyflags = 0xfc00})
+        end
+    end
+
+    if max_delay == nil then
+        -- random guess
+        max_delay = 6
+    end
+
     local self = {
+        min_delay = min_delay,
+        max_delay = max_delay,
+
         sock = Cosocket.new(sock),
 
         is_in_battle = false,
 
-        last_tick_received = -1,
-        last_tick_sent = -1,
-
         local_init = nil,
         remote_init = nil,
 
-        local_input = nil,
-        remote_input = nil,
+        pending_local_input_queue = Deque.new(),
+        local_input_queue = local_input_queue,
+        remote_input_queue = remote_input_queue,
 
         local_turn = nil,
         remote_turn = nil,
@@ -35,14 +54,30 @@ function Client.new(sock)
     return self
 end
 
-function Client:give_input(tick, joyflags)
-    self.local_input = {tick = tick, joyflags = joyflags}
+function Client:queue_local_input(tick, joyflags)
+    if self.pending_local_input_queue:len() >= self.max_delay then
+        return false
+    end
+    self.pending_local_input_queue:pushright({tick = tick, joyflags = joyflags})
+    return true
 end
 
-function Client:take_input()
-    local input = self.remote_input
-    self.remote_input = nil
-    return input
+function Client:dequeue_inputs()
+    if self.local_input_queue:len() < self.min_delay then
+        return nil
+    end
+
+    if self.remote_input_queue:len() == 0 or self.local_input_queue:len() == 0 then
+        return nil
+    end
+
+    local local_ = self.local_input_queue:popleft()
+    local remote = self.remote_input_queue:popleft()
+    assert(local_.ticks == remote.ticks)
+    return {
+        local_ = local_,
+        remote = remote,
+    }
 end
 
 function Client:give_init(init)
@@ -91,13 +126,10 @@ function Client:run(loop)
                 self.local_init = nil
             end
 
-            if self.local_input ~= nil then
-                if self.local_input.tick > self.last_tick_sent then
-                    local input = self.local_input
-                    assert(self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("dw", input.tick, input.joyflags)))
-                    self.last_tick_sent = self.local_input.tick
-                end
-                self.local_input = nil
+            while self.pending_local_input_queue:len() > 0 do
+                local input = self.pending_local_input_queue:popleft()
+                assert(self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("dw", input.tick, input.joyflags)))
+                self.local_input_queue:pushright(input)
             end
 
             if self.local_turn ~= nil then
@@ -113,7 +145,7 @@ function Client:run(loop)
                     self.remote_init = string_to_u8table(assert(self.sock:receive(loop, 0x100)))
                 elseif op == PACKET_TYPE_INPUT then
                     local l = struct.read(assert(self.sock:receive(loop, 6), "dw"))
-                    self.remote_input = {tick = l[1], joyflags = l[2]}
+                    self.remote_input_queue:pushright({tick = l[1], joyflags = l[2]})
                 elseif op == PACKET_TYPE_TURN then
                     self.remote_turn = string_to_u8table(assert(self.sock:receive(loop, 0x100)))
                 end
