@@ -118,6 +118,8 @@ function hijack(sock, local_index)
             -- Writing 0x0 to r0 indicates data is available.
             memory.write_reg("r0", 0x0)
 
+            assert(inputs.tick + client.min_delay == local_tick, string.format("received tick != expected tick: %d != %d", inputs.tick + client.min_delay, local_tick))
+
             battle.set_rx_input_state(local_index, inputs.local_.joyflags, inputs.local_.custom_state)
             battle.set_rx_input_state(remote_index, inputs.remote.joyflags, inputs.remote.custom_state)
 
