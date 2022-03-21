@@ -22,7 +22,7 @@ local offsets = {
         link_isRemote__ret                                          = 0x0803dd86,
     },
 
-    MEGAMAN6_GXX = {
+    _MEGAMAN6_GXX = {  -- TODO: figure out why ths is busted
         commMenu_handleLinkCableInput__entry                        = 0x0803eaae,
         battle_init__call__battle_copyInputData                     = 0x080078f8,
         battle_update__call__battle_copyInputData                   = 0x08007a64,
