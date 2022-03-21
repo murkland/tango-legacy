@@ -6,6 +6,14 @@
 
 netplay for mega man battle network 6 in the style of https://github.com/ssbmars/BBN3-netcode. the b in bbn6 does NOT stand for "better".
 
+## you will need
+
+-   a copy of MEGAMAN6_FXX (MEGAMAN6_GXX is not supported yet)
+
+-   [vba-rerecording v23.6 svn480](https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/vba-rerecording/vba-rerecording-svn480-win32.7z)
+
+-   an indefinite amount of patience
+
 ## thank you
 
 -   the **[National Security Agency](https://nsa.gov)**
