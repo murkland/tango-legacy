@@ -50,9 +50,7 @@ function hijack(sock, local_index)
         romoffsets.battle_turn_marshal__ret,
         function ()
             local local_turn = battle.get_tx_marshaled_state()
-            client:give_turn(local_turn)
-            battle.set_rx_marshaled_state(local_index, local_turn)
-            log.debug("turn resuming")
+            client:queue_turn(battle.get_active_in_battle_time(), local_turn)
         end
     )
 
@@ -99,14 +97,6 @@ function hijack(sock, local_index)
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
             memory.write_reg("r0", 0xff)
 
-            if battle.get_state() == battle.State.CUSTOM_SCREEN then
-                local remote_turn = client:take_turn()
-                if remote_turn ~= nil then
-                    battle.set_rx_marshaled_state(remote_index, remote_turn)
-                    memory.write_reg("r0", 0x0)
-                end
-            end
-
             local local_tick = battle.get_active_in_battle_time()
             local local_joyflags = battle.get_local_joyflags()
             local local_custom_state = battle.get_local_custom_state()
@@ -125,17 +115,28 @@ function hijack(sock, local_index)
                 -- log.warn("remote input is not available, input processing will be stalled!")
                 return
             end
+            -- Writing 0x0 to r0 indicates data is available.
             memory.write_reg("r0", 0x0)
 
             battle.set_rx_input_state(local_index, inputs.local_.joyflags, inputs.local_.custom_state)
             battle.set_rx_input_state(remote_index, inputs.remote.joyflags, inputs.remote.custom_state)
+
+            if inputs.local_turn ~= nil then
+                battle.set_rx_marshaled_state(local_index, inputs.local_turn)
+                log.info("local turn committed on %df", local_tick)
+            end
+
+            if inputs.remote_turn ~= nil then
+                battle.set_rx_marshaled_state(remote_index, inputs.remote_turn)
+                log.info("remote turn committed on %df", local_tick)
+            end
         end
     )
 
     memory.on_exec(
         romoffsets.battle_updating__ret__go_to_custom_screen,
         function ()
-            log.debug("turn ended")
+            log.debug("turn ended on %df", battle.get_active_in_battle_time())
         end
     )
 

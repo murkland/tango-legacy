@@ -42,6 +42,7 @@ function Client.new(sock, delay)
         local_input_queue = local_input_queue,
         remote_input_queue = remote_input_queue,
 
+        pending_local_turn = nil,
         local_turn = nil,
         remote_turn = nil,
     }
@@ -68,11 +69,25 @@ function Client:dequeue_inputs()
 
     local local_ = self.local_input_queue:popleft()
     local remote = self.remote_input_queue:popleft()
-    assert(local_.ticks == remote.ticks)
-    return {
+
+    assert(local_.tick == remote.tick)
+    local ret = {
+        tick = local_.tick,
         local_ = local_,
         remote = remote,
     }
+
+    if self.local_turn ~= nil and self.local_turn.tick + 1 == local_.tick then
+        ret.local_turn = self.local_turn.marshaled
+        self.local_turn = nil
+    end
+
+    if self.remote_turn ~= nil and self.remote_turn.tick + 1 == remote.tick then
+        ret.remote_turn = self.remote_turn.marshaled
+        self.remote_turn = nil
+    end
+
+    return ret
 end
 
 function Client:give_init(init)
@@ -86,14 +101,9 @@ function Client:take_init()
     return init
 end
 
-function Client:give_turn(turn)
-    self.local_turn = turn
-end
-
-function Client:take_turn()
-    local turn = self.remote_turn
-    self.remote_turn = nil
-    return turn
+function Client:queue_turn(tick, marshaled)
+    assert(self.pending_local_turn == nil)
+    self.pending_local_turn = {tick = tick, marshaled = marshaled}
 end
 
 function u8table_to_string(t)
@@ -127,10 +137,11 @@ function Client:run(loop)
                 self.local_input_queue:pushright(input)
             end
 
-            if self.local_turn ~= nil then
-                local turn = self.local_turn
-                assert(self.sock:send(loop, PACKET_TYPE_TURN .. u8table_to_string(turn)))
-                self.local_turn = nil
+            if self.pending_local_turn ~= nil then
+                local turn = self.pending_local_turn
+                self.pending_local_turn = nil
+                assert(self.sock:send(loop, PACKET_TYPE_TURN .. struct.write("d", turn.tick) .. u8table_to_string(turn.marshaled)))
+                self.local_turn = turn
             end
 
             if self.sock:readable() then
@@ -142,7 +153,8 @@ function Client:run(loop)
                     local l = struct.read(assert(self.sock:receive(loop, 7), "dwb"))
                     self.remote_input_queue:pushright({tick = l[1], joyflags = l[2], custom_state = l[3]})
                 elseif op == PACKET_TYPE_TURN then
-                    self.remote_turn = string_to_u8table(assert(self.sock:receive(loop, 0x100)))
+                    assert(self.remote_turn == nil, "remote turn was not nil")
+                    self.remote_turn = {tick = struct.read(assert(self.sock:receive(loop, 4)), "d")[1], marshaled = string_to_u8table(assert(self.sock:receive(loop, 0x100)))}
                 end
             end
         end
