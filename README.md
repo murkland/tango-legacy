@@ -23,3 +23,5 @@ netplay for mega man battle network 6 in the style of https://github.com/ssbmars
 -   **[Playerzero_exe](https://twitter.com/Playerzero_exe)** for digging through frame data
 
 -   **[aldelaro5](https://github.com/aldelaro5)** for help with using Ghidra with mGBA and defending me from everyone telling me to use NO$GBA
+
+-   **[ExeDesmond](https://twitter.com/exedesmond)** for playtesting and finding horrible desync bugs
