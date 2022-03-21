@@ -12,14 +12,14 @@ function Client.new()
         init = nil,
         input = nil,
         turn = nil,
-        input = 0xfc00,
+        input = {tick = 0, joyflags = 0xfc00},
     }
     setmetatable(client, Client)
     return client
 end
 
-function Client:give_input(tick, input)
-    self.input = input
+function Client:give_input(tick, joyflags)
+    self.input = {tick = tick, joyflags = joyflags}
 end
 
 function Client:take_input()

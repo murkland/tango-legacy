@@ -9,9 +9,7 @@ local romoffsets = require("./romoffsets")
 local input = require("./input")
 local battle = require("./battle")
 
-local Client = require("./netplay")
-
-function entry(sock, local_index)
+function entry(Client, sock, local_index)
     local loop = EventLoop.new()
 
     local client = Client.new(sock)
@@ -69,8 +67,8 @@ function entry(sock, local_index)
         romoffsets.battle_init__call__battle_copyInputData,
         function ()
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
-            memory.write_reg("r0", 0x0)
 
+            memory.write_reg("r0", 0x0)
             local remote_init = client:take_init()
             if remote_init ~= nil then
                 battle.set_rx_marshaled_state(remote_index, remote_init)
@@ -81,6 +79,8 @@ function entry(sock, local_index)
     memory.on_exec(
         romoffsets.battle_update__call__battle_copyInputData,
         function ()
+            memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+
             if battle.get_state() == battle.State.CUSTOM_SCREEN then
                 local remote_turn = client:take_turn()
                 if remote_turn ~= nil then
@@ -90,16 +90,16 @@ function entry(sock, local_index)
                 end
             end
 
-            local local_input = input.get_flags(0)
-            battle.set_rx_input(local_index, local_input)
+            local local_tick = battle.get_active_in_battle_time()
+            local local_joyflags = input.get_flags(0)
+            battle.set_rx_joyflags(local_index, local_joyflags)
 
             if battle.get_state() == battle.State.IN_TURN then
-                client:give_input(battle.get_elapsed_active_time(), local_input)
+                client:give_input(local_tick, local_joyflags)
             end
 
             local remote_input = client:take_input()
 
-            memory.write_reg("r15", memory.read_reg("r15") + 0x4)
             if remote_input == nil and battle.get_state() == battle.State.IN_TURN then
                 memory.write_reg("r0", 0xff)
                 return
@@ -109,7 +109,12 @@ function entry(sock, local_index)
             if remote_input == nil then
                 return
             end
-            battle.set_rx_input(remote_index, remote_input)
+
+            if local_tick ~= remote_input.tick then
+                log.fatal("local tick != remote tick: %d != %d", local_tick, remote_input.tick)
+            end
+
+            battle.set_rx_joyflags(remote_index, remote_input.joyflags)
         end
     )
 

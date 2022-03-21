@@ -33,7 +33,7 @@ function Client.new(sock)
 end
 
 function Client:give_input(tick, joyflags)
-    self.local_input = joyflags
+    self.local_input = {tick = tick, joyflags = joyflags}
 end
 
 function Client:take_input()
@@ -90,7 +90,7 @@ function Client:run(loop)
 
             if self.local_input ~= nil then
                 local input = self.local_input
-                self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("w", input))
+                self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("dw", input.tick, input.joyflags))
                 self.local_input = nil
             end
 
@@ -105,8 +105,8 @@ function Client:run(loop)
                 if op == PACKET_TYPE_INIT then
                     self.remote_init = string_to_u8table(self.sock:receive(loop, 0x100))
                 elseif op == PACKET_TYPE_INPUT then
-                    local l = self.sock:receive(loop, 2)
-                    self.remote_input = struct.read(l, "w")[1]
+                    local l = struct.read(self.sock:receive(loop, 6), "dw")
+                    self.remote_input = {tick = l[1], joyflags = l[2]}
                 elseif op == PACKET_TYPE_TURN then
                     self.remote_turn = string_to_u8table(self.sock:receive(loop, 0x100))
                 end

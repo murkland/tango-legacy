@@ -12,4 +12,6 @@ local host, port = sock:getpeername()
 log.info("connected to %s:%d", host, port)
 sock:setoption("tcp-nodelay", true)
 
-entry(sock, 1)
+local Client = require("./netplay")
+
+entry(Client, sock, 1)
