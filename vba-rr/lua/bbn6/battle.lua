@@ -2,55 +2,49 @@ local battle = {}
 
 local memory = require("bbn6.platform.require")("memory")
 
-local g_player_joyflags_attr = 0x02036820
+local g_player_input_data_arr = 0x02036820
+local g_battle_state = 0x02034880
+local g_joypad = 0x0200a270
+local g_local_marshaled_state = 0x0203cbe0
+local g_player_marshaled_state_arr = 0x0203f4a0
+local g_menu_control = 0x02009a30
 
-function battle.set_rx_input_state(index, keys_pressed, custom_state) -- joyflags_setPlayerInputKeys @ 0x0800a0d6
-    local keys_held = memory.read_u16(g_player_joyflags_attr + index * 8 + 2)
-    memory.write_u16(g_player_joyflags_attr + index * 8 + 2 --[[ keys_held ]], keys_pressed)
-    memory.write_u8(g_player_joyflags_attr + index * 8 + 4 --[[ keys_pressed ]], bit.band(keys_pressed, bit.bnot(keys_held)))
-    memory.write_u8(g_player_joyflags_attr + index * 8 + 6 --[[ keys_up ]], bit.band(keys_held, bit.bnot(keys_pressed)))
-
-    -- Set player custom state.
-    memory.write_u8(0x02034880 + 0x14 + index, custom_state)
+function battle.start_from_comm_menu()
+    memory.write_u8(g_menu_control + 0x0, 0x18)
+    memory.write_u8(g_menu_control + 0x1, 0x18)
+    memory.write_u8(g_menu_control + 0x2, 0x00)
+    memory.write_u8(g_menu_control + 0x3, 0x00)
 end
 
 function battle.get_local_joyflags()
-    return memory.read_u16(0x0200a270 + 0x00)
+    return memory.read_u16(g_joypad + 0x00)
 end
 
 function battle.get_local_custom_state()
-    return memory.read_u8(0x02034880 + 0x11)
+    return memory.read_u8(g_battle_state + 0x11)
 end
 
-function battle.set_rx_marshaled_state(index, marshaled_state)
+function battle.get_local_marshaled_state(index, marshaled_state)
+    return memory.read_range(g_local_marshaled_state, 0x100)
+end
+
+function battle.set_player_input_state(index, keys_pressed, custom_state) -- joyflags_setPlayerInputKeys @ 0x0800a0d6
+    local keys_held = memory.read_u16(g_player_input_data_arr + index * 8 + 0x02)
+    memory.write_u16(g_player_input_data_arr + index * 8 + 0x02 --[[ keys_held ]], keys_pressed)
+    memory.write_u8(g_player_input_data_arr + index * 8 + 0x04 --[[ keys_pressed ]], bit.band(keys_pressed, bit.bnot(keys_held)))
+    memory.write_u8(g_player_input_data_arr + index * 8 + 0x06 --[[ keys_up ]], bit.band(keys_held, bit.bnot(keys_pressed)))
+
+    -- Set player custom state.
+    memory.write_u8(g_battle_state + 0x14 + index, custom_state)
+end
+
+function battle.set_player_marshaled_state(index, marshaled_state)
     assert(#marshaled_state == 0x100)
-    memory.write_range(0x0203f4a0 + index * 0x100, marshaled_state)
-end
-
-function battle.get_tx_marshaled_state(index, marshaled_state)
-    return memory.read_range(0x0203cbe0, 0x100)
-end
-
-function battle.get_state()
-    return memory.read_u8(0x02034880 + 0x1)
-end
-
-function battle.get_active_unpaused_time()
-    return memory.read_u16(0x020348c0)
-end
-
-function battle.get_active_total_time()
-    return memory.read_u32(0x020348e0)
+    memory.write_range(g_player_marshaled_state_arr + index * 0x100, marshaled_state)
 end
 
 function battle.get_active_in_battle_time()
-    return memory.read_u32(0x020348e4)
+    return memory.read_u32(g_battle_state + 0x64)
 end
-
-battle.State = {
-    INIT = 0,
-    CUSTOM_SCREEN = 8,
-    IN_TURN = 12,
-}
 
 return battle

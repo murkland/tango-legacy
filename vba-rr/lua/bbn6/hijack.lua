@@ -39,9 +39,9 @@ function hijack(sock, local_index)
     memory.on_exec(
         romoffsets.battle_init_marshal__ret,
         function ()
-            local local_init = battle.get_tx_marshaled_state()
+            local local_init = battle.get_local_marshaled_state()
             client:give_init(local_init)
-            battle.set_rx_marshaled_state(local_index, local_init)
+            battle.set_player_marshaled_state(local_index, local_init)
             log.debug("init ending")
         end
     )
@@ -49,7 +49,7 @@ function hijack(sock, local_index)
     memory.on_exec(
         romoffsets.battle_turn_marshal__ret,
         function ()
-            local local_turn = battle.get_tx_marshaled_state()
+            local local_turn = battle.get_local_marshaled_state()
             client:queue_turn(battle.get_active_in_battle_time(), local_turn)
         end
     )
@@ -86,7 +86,7 @@ function hijack(sock, local_index)
             memory.write_reg("r0", 0x0)
             local remote_init = client:take_init()
             if remote_init ~= nil then
-                battle.set_rx_marshaled_state(remote_index, remote_init)
+                battle.set_player_marshaled_state(remote_index, remote_init)
             end
         end
     )
@@ -120,16 +120,16 @@ function hijack(sock, local_index)
 
             assert(inputs.tick + client.min_delay == local_tick, string.format("received tick != expected tick: %d != %d", inputs.tick + client.min_delay, local_tick))
 
-            battle.set_rx_input_state(local_index, inputs.local_.joyflags, inputs.local_.custom_state)
-            battle.set_rx_input_state(remote_index, inputs.remote.joyflags, inputs.remote.custom_state)
+            battle.set_player_input_state(local_index, inputs.local_.joyflags, inputs.local_.custom_state)
+            battle.set_player_input_state(remote_index, inputs.remote.joyflags, inputs.remote.custom_state)
 
             if inputs.local_turn ~= nil then
-                battle.set_rx_marshaled_state(local_index, inputs.local_turn)
+                battle.set_player_marshaled_state(local_index, inputs.local_turn)
                 log.info("local turn committed on %df", local_tick)
             end
 
             if inputs.remote_turn ~= nil then
-                battle.set_rx_marshaled_state(remote_index, inputs.remote_turn)
+                battle.set_player_marshaled_state(remote_index, inputs.remote_turn)
                 log.info("remote turn committed on %df", local_tick)
             end
         end
@@ -146,12 +146,7 @@ function hijack(sock, local_index)
         romoffsets.commMenu_waitForFriend__call__commMenu_handleLinkCableInput,
         function ()
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
-
-            -- Just start the battle!
-            memory.write_u8(0x02009a30 + 0x0, 0x18)
-            memory.write_u8(0x02009a30 + 0x1, 0x18)
-            memory.write_u8(0x02009a30 + 0x2, 0x00)
-            memory.write_u8(0x02009a30 + 0x3, 0x00)
+            battle.start_from_comm_menu()
         end
     )
 
