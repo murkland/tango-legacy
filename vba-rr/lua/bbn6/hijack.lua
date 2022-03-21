@@ -8,12 +8,15 @@ local Client = require("bbn6.netplay")
 local EventLoop = require("bbn6.aio.eventloop")
 local romoffsets = require("bbn6.romoffsets")
 local battle = require("bbn6.battle")
+local InputLog = require("bbn6.inputlog")
 
 function hijack(sock, local_index)
     local loop = EventLoop.new()
 
     local client = Client.new(sock)
     local remote_index = 1 - local_index
+
+    local input_log = nil
 
     memory.on_exec(
         romoffsets.commMenu_handleLinkCableInput__entry,
@@ -42,6 +45,7 @@ function hijack(sock, local_index)
             local local_init = battle.get_local_marshaled_state()
             client:give_init(local_init)
             battle.set_player_marshaled_state(local_index, local_init)
+            input_log:write_init(false, local_init)
             log.debug("init ending")
         end
     )
@@ -65,6 +69,7 @@ function hijack(sock, local_index)
         romoffsets.battle_start__ret,
         function ()
             log.debug("battle started")
+            input_log = InputLog.new()
         end
     )
 
@@ -75,6 +80,8 @@ function hijack(sock, local_index)
         function ()
             last_tick = -1
             log.debug("battle ended")
+            input_log:close()
+            input_log = nil
         end
     )
 
@@ -86,6 +93,7 @@ function hijack(sock, local_index)
             memory.write_reg("r0", 0x0)
             local remote_init = client:take_init()
             if remote_init ~= nil then
+                input_log:write_init(true, remote_init)
                 battle.set_player_marshaled_state(remote_index, remote_init)
             end
         end
@@ -119,6 +127,8 @@ function hijack(sock, local_index)
             memory.write_reg("r0", 0x0)
 
             assert(inputs.tick + client.min_delay == local_tick, string.format("received tick != expected tick: %d != %d", inputs.tick + client.min_delay, local_tick))
+
+            input_log:write_input(local_tick, battle.get_rng2_state(), inputs)
 
             battle.set_player_input_state(local_index, inputs.local_.joyflags, inputs.local_.custom_state)
             battle.set_player_input_state(remote_index, inputs.remote.joyflags, inputs.remote.custom_state)

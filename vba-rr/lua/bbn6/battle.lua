@@ -48,7 +48,7 @@ function battle.get_active_in_battle_time()
     return memory.read_u32(e_battle_state + 0x64)
 end
 
-function battle.get_rng2()
+function battle.get_rng2_state()
     return memory.read_u32(e_rng2)
 end
 
