@@ -86,7 +86,6 @@ function entry(Client, sock, local_index)
                 if remote_turn ~= nil then
                     battle.set_rx_marshaled_state(remote_index, remote_turn)
                     memory.write_reg("r0", 0x0)
-                    return
                 end
             end
 
@@ -97,7 +96,7 @@ function entry(Client, sock, local_index)
             client:give_input(local_tick, local_joyflags)
             local remote_input = client:take_input()
 
-            if remote_input == nil or remote_input.tick < local_tick then
+            if remote_input == nil then
                 memory.write_reg("r0", 0xff)
                 return
             end
@@ -128,9 +127,10 @@ function entry(Client, sock, local_index)
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
 
             -- Just start the battle!
-            memory.write_u8(0x02009a31, 0x18)
-            memory.write_u8(0x02009a32, 0x00)
-            memory.write_u8(0x02009a33, 0x00)
+            memory.write_u8(0x02009a30 + 0x0, 0x18)
+            memory.write_u8(0x02009a30 + 0x1, 0x18)
+            memory.write_u8(0x02009a30 + 0x2, 0x00)
+            memory.write_u8(0x02009a30 + 0x3, 0x00)
         end
     )
 

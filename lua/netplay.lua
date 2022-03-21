@@ -18,6 +18,8 @@ function Client.new(sock)
         sock = Cosocket.new(sock),
 
         is_in_battle = false,
+
+        last_tick_received = -1,
         last_tick_sent = -1,
 
         local_init = nil,
@@ -85,33 +87,35 @@ function Client:run(loop)
         if self.is_in_battle then
             if self.local_init ~= nil then
                 local init = self.local_init
-                self.sock:send(loop, PACKET_TYPE_INIT .. u8table_to_string(init))
+                assert(self.sock:send(loop, PACKET_TYPE_INIT .. u8table_to_string(init)))
                 self.local_init = nil
             end
 
             if self.local_input ~= nil then
                 if self.local_input.tick > self.last_tick_sent then
                     local input = self.local_input
-                    self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("dw", input.tick, input.joyflags))
+                    assert(self.sock:send(loop, PACKET_TYPE_INPUT .. struct.write("dw", input.tick, input.joyflags)))
+                    self.last_tick_sent = self.local_input.tick
                 end
                 self.local_input = nil
             end
 
             if self.local_turn ~= nil then
                 local turn = self.local_turn
-                self.sock:send(loop, PACKET_TYPE_TURN .. u8table_to_string(turn))
+                assert(self.sock:send(loop, PACKET_TYPE_TURN .. u8table_to_string(turn)))
                 self.local_turn = nil
             end
 
             if self.sock:readable() then
-                local op = self.sock:receive(loop, 1)
+                local op = assert(self.sock:receive(loop, 1))
+                assert(#op == 1)
                 if op == PACKET_TYPE_INIT then
-                    self.remote_init = string_to_u8table(self.sock:receive(loop, 0x100))
+                    self.remote_init = string_to_u8table(assert(self.sock:receive(loop, 0x100)))
                 elseif op == PACKET_TYPE_INPUT then
-                    local l = struct.read(self.sock:receive(loop, 6), "dw")
+                    local l = struct.read(assert(self.sock:receive(loop, 6), "dw"))
                     self.remote_input = {tick = l[1], joyflags = l[2]}
                 elseif op == PACKET_TYPE_TURN then
-                    self.remote_turn = string_to_u8table(self.sock:receive(loop, 0x100))
+                    self.remote_turn = string_to_u8table(assert(self.sock:receive(loop, 0x100)))
                 end
             end
         end
