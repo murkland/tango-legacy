@@ -112,6 +112,9 @@ function Client:run(loop)
                 end
             end
         end
+        loop:add_callback(function()
+            emulator.advance_frame()
+        end)
         coutil.yield(loop)
     end
 end

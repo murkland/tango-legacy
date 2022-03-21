@@ -97,7 +97,7 @@ function entry(Client, sock, local_index)
             client:give_input(local_tick, local_joyflags)
             local remote_input = client:take_input()
 
-            if remote_input == nil then
+            if remote_input == nil or remote_input.tick < local_tick then
                 memory.write_reg("r0", 0xff)
                 return
             end
@@ -144,11 +144,6 @@ function entry(Client, sock, local_index)
     log.info("execution hijack complete, starting event loop.")
 
     client:start(loop)
-    local function cb()
-        emulator.advance_frame()
-        loop:add_callback(cb)
-    end
-    cb()
     loop:run()
 end
 
