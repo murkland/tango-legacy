@@ -30,6 +30,4 @@ local host, port = sock:getsockname()
 log.info("received client on %s:%d", host, port)
 sock:setoption("tcp-nodelay", true)
 
-local Client = require("bbn6.netplay")
-
-hijack(Client, sock, 0)
+hijack(sock, 0)

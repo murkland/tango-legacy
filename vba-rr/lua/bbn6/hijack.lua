@@ -3,12 +3,13 @@ log.info("welcome to bingus battle network 6.")
 
 local memory = require("bbn6.platform.require")("memory")
 local emulator = require("bbn6.platform.require")("emulator")
+local Client = require("bbn6.netplay")
 
 local EventLoop = require("bbn6.aio.eventloop")
 local romoffsets = require("bbn6.romoffsets")
 local battle = require("bbn6.battle")
 
-function hijack(Client, sock, local_index)
+function hijack(sock, local_index)
     local loop = EventLoop.new()
 
     local client = Client.new(sock)
