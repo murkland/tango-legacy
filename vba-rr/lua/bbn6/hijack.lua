@@ -42,6 +42,7 @@ function hijack(sock, local_index)
             log.debug("battle started: effects = %08x", battle.get_effects())
             battle_state = {
                 input_log = InputLog.new(local_index),
+                is_started = false,
                 start_frame_number = nil,
                 last_tick = -1,
             }
@@ -89,10 +90,16 @@ function hijack(sock, local_index)
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
 
             memory.write_reg("r0", 0x0)
+            if battle_state.is_started then
+                return
+            end
+
             local remote_init = client:take_init()
             if remote_init ~= nil then
+                log.info("received init from remote")
                 battle_state.input_log:write_init(true, remote_init)
                 battle.set_player_marshaled_state(remote_index, remote_init)
+                battle_state.is_started = true
             end
         end
     )

@@ -28,7 +28,7 @@ netplay for mega man battle network 6 in the style of https://github.com/ssbmars
 
 ## you will need
 
--   a copy of MEGAMAN6_FXX (MEGAMAN6_GXX is not supported yet)
+-   a copy of MEGAMAN6_FXX or MEGAMAN6_GXX
 
 -   an indefinite amount of patience
 
