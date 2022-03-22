@@ -10,6 +10,8 @@ netplay for mega man battle network 6 in the style of https://github.com/ssbmars
 
 1.  start the bundled vba-rr in `vba-rr/VBA-rr-svn480+LRC4.exe`
 
+1.  go to _File > Open GBA Rom..._ and load the game (either MEGAMAN6_FXX or MEGAMAN6_GXX)
+
 1.  if you are:
 
     -   **server:**
