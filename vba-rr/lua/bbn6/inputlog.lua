@@ -15,7 +15,7 @@ InputLog.__index = InputLog
 
 function InputLog.new(local_index)
     local fn = "input_p" .. (local_index + 1) .. "_" .. os.date("%Y%m%d%H%M%S") .. ".log"
-    local f = io.open(fn, "w")
+    local f = assert(io.open(fn, "w"))
     log.info("starting input log to %s", fn)
     local self = {f = f, local_index = local_index}
     setmetatable(self, InputLog)
