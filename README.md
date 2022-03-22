@@ -24,7 +24,7 @@ netplay for mega man battle network 6 in the style of https://github.com/ssbmars
 
         3. go to _Tools > Lua Scripting > New Lua Script Window..._ and load `main_client.lua`.
 
-1.  in game, go to _Comm > LINK CBL > NetBattl > SnglBatt > Practice_. once both players have connected, you should both be in battle. have fun!
+1.  in game, go to _Comm > LINK CBL > NetBattl > SnglBatt > Practice_. once both players have connected, you should both be in battle. glhf!
 
 ## you will need
 
