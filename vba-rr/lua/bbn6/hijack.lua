@@ -69,7 +69,7 @@ function hijack(sock, local_index)
         romoffsets.battle_start__ret,
         function ()
             log.debug("battle started")
-            input_log = InputLog.new()
+            input_log = InputLog.new(local_index)
         end
     )
 
@@ -128,7 +128,7 @@ function hijack(sock, local_index)
 
             assert(inputs.tick + client.min_delay == local_tick, string.format("received tick != expected tick: %d != %d", inputs.tick + client.min_delay, local_tick))
 
-            input_log:write_input(local_tick, battle.get_rng2_state(), inputs)
+            input_log:write_input(battle.get_rng2_state(), inputs)
 
             battle.set_player_input_state(local_index, inputs.local_.joyflags, inputs.local_.custom_state)
             battle.set_player_input_state(remote_index, inputs.remote.joyflags, inputs.remote.custom_state)
