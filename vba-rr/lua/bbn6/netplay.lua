@@ -43,11 +43,6 @@ function Client.new(sock, delay)
         remote_input_queue:pushright({tick = i - delay - 1, joyflags = 0xfc00, custom_state = 0})
     end
 
-    if max_delay == nil then
-        -- random guess
-        max_delay = 6
-    end
-
     local self = {
         sock = sock,
 

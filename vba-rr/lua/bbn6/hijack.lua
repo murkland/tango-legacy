@@ -23,7 +23,7 @@ function hijack(sock, local_index)
     )
 
     memory.on_exec(
-        romoffsets.battle_isRemote__ret,
+        romoffsets.battle_isRemote__tst,
         function()
             memory.write_reg("r0", local_index)
         end
