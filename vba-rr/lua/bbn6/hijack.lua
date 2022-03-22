@@ -5,18 +5,15 @@ local memory = require("bbn6.platform.require")("memory")
 local emulator = require("bbn6.platform.require")("emulator")
 local Client = require("bbn6.netplay")
 
-local EventLoop = require("bbn6.aio.eventloop")
 local romoffsets = require("bbn6.romoffsets")
 local battle = require("bbn6.battle")
 local InputLog = require("bbn6.inputlog")
 
 function hijack(sock, local_index)
-    local loop = EventLoop.new()
-
     local client = Client.new(sock)
     local remote_index = 1 - local_index
 
-    local input_log = nil
+    local battle_state = nil
 
     memory.on_exec(
         romoffsets.commMenu_handleLinkCableInput__entry,
@@ -40,12 +37,33 @@ function hijack(sock, local_index)
     )
 
     memory.on_exec(
+        romoffsets.battle_start__ret,
+        function ()
+            log.debug("battle started: effects = %08x", battle.get_effects())
+            battle_state = {
+                input_log = InputLog.new(local_index),
+                start_frame_number = nil,
+                last_tick = -1,
+            }
+        end
+    )
+
+    memory.on_exec(
+        romoffsets.battle_end__entry,
+        function ()
+            log.debug("battle ended")
+            battle_state.input_log:close()
+            battle_state = nil
+        end
+    )
+
+    memory.on_exec(
         romoffsets.battle_init_marshal__ret,
         function ()
             local local_init = battle.get_local_marshaled_state()
             client:give_init(local_init)
             battle.set_player_marshaled_state(local_index, local_init)
-            input_log:write_init(false, local_init)
+            battle_state.input_log:write_init(false, local_init)
             log.debug("init ending")
         end
     )
@@ -54,7 +72,7 @@ function hijack(sock, local_index)
         romoffsets.battle_turn_marshal__ret,
         function ()
             local local_turn = battle.get_local_marshaled_state()
-            client:queue_turn(battle.get_active_in_battle_time(), local_turn)
+            client:queue_local_turn(emulator.current_frame_number() - battle_state.start_frame_number, local_turn)
         end
     )
 
@@ -66,26 +84,6 @@ function hijack(sock, local_index)
     )
 
     memory.on_exec(
-        romoffsets.battle_start__ret,
-        function ()
-            log.debug("battle started: effects = %08x", battle.get_effects())
-            input_log = InputLog.new(local_index)
-        end
-    )
-
-    local last_tick = -1
-
-    memory.on_exec(
-        romoffsets.battle_end__entry,
-        function ()
-            last_tick = -1
-            log.debug("battle ended")
-            input_log:close()
-            input_log = nil
-        end
-    )
-
-    memory.on_exec(
         romoffsets.battle_init__call__battle_copyInputData,
         function ()
             memory.write_reg("r15", memory.read_reg("r15") + 0x4)
@@ -93,7 +91,7 @@ function hijack(sock, local_index)
             memory.write_reg("r0", 0x0)
             local remote_init = client:take_init()
             if remote_init ~= nil then
-                input_log:write_init(true, remote_init)
+                battle_state.input_log:write_init(true, remote_init)
                 battle.set_player_marshaled_state(remote_index, remote_init)
             end
         end
@@ -102,33 +100,27 @@ function hijack(sock, local_index)
     memory.on_exec(
         romoffsets.battle_update__call__battle_copyInputData,
         function ()
-            memory.write_reg("r15", memory.read_reg("r15") + 0x4)
-            memory.write_reg("r0", 0xff)
+            if battle_state.start_frame_number == nil then
+                battle_state.start_frame_number = emulator.current_frame_number()
+            end
 
-            local local_tick = battle.get_active_in_battle_time()
+            memory.write_reg("r15", memory.read_reg("r15") + 0x4)
+            memory.write_reg("r0", 0x00)
+
+            local local_tick = emulator.current_frame_number() - battle_state.start_frame_number
             local local_joyflags = battle.get_local_joyflags()
             local local_custom_state = battle.get_local_custom_state()
 
-            if last_tick < local_tick then
-                if not client:queue_local_input(local_tick, local_joyflags, local_custom_state) then
-                    -- log.warn("local input queue full, input processing will be stalled!")
-                    return
-                end
-                last_tick = local_tick
+            if battle_state.last_tick < local_tick then
+                client:queue_local_input(local_tick, local_joyflags, local_custom_state)
+                battle_state.last_tick = local_tick
             end
 
             local inputs = client:dequeue_inputs()
 
-            if inputs == nil then
-                -- log.warn("remote input is not available, input processing will be stalled!")
-                return
-            end
-            -- Writing 0x0 to r0 indicates data is available.
-            memory.write_reg("r0", 0x0)
+            assert(inputs.tick + client.delay == local_tick, string.format("received tick != expected tick: %d != %d", inputs.tick + client.delay, local_tick))
 
-            assert(inputs.tick + client.min_delay == local_tick, string.format("received tick != expected tick: %d != %d", inputs.tick + client.min_delay, local_tick))
-
-            input_log:write_input(battle.get_rng2_state(), inputs)
+            battle_state.input_log:write_input(battle.get_rng2_state(), inputs)
 
             battle.set_player_input_state(local_index, inputs.local_.joyflags, inputs.local_.custom_state)
             battle.set_player_input_state(remote_index, inputs.remote.joyflags, inputs.remote.custom_state)
@@ -148,7 +140,7 @@ function hijack(sock, local_index)
     memory.on_exec(
         romoffsets.battle_updating__ret__go_to_custom_screen,
         function ()
-            log.debug("turn ended on %df, rng state = %08x, nontimestop time = %d", battle.get_active_in_battle_time(), battle.get_rng2_state(), battle.get_nontimestop_time())
+            log.debug("turn ended on %df, rng state = %08x", emulator.current_frame_number() - battle_state.start_frame_number, battle.get_rng2_state())
         end
     )
 
@@ -167,10 +159,7 @@ function hijack(sock, local_index)
         end
     )
 
-    log.info("hijack complete, starting event loop.")
-
-    client:start(loop)
-    loop:run()
+    log.info("hijack complete >:)")
 end
 
 return hijack
