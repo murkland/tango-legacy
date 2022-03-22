@@ -148,7 +148,7 @@ function hijack(sock, local_index)
     memory.on_exec(
         romoffsets.battle_updating__ret__go_to_custom_screen,
         function ()
-            log.debug("turn ended on %df", battle.get_active_in_battle_time())
+            log.debug("turn ended on %df, rng state = %08x", battle.get_active_in_battle_time(), battle.get_rng2_state())
         end
     )
 
