@@ -17,8 +17,8 @@ local offsets = {
         battle_end__entry                                           = 0x08007ca0,
         battle_isRemote__tst                                        = 0x0803dd52,
         link_isRemote__ret                                          = 0x0803dd86,
-        commMenu_waitForFriend__call__commMenu_handleLinkCableInput = 0x08129f8a,
         commMenu_handleLinkCableInput__entry                        = 0x0803eae4,
+        commMenu_waitForFriend__call__commMenu_handleLinkCableInput = 0x08129f8a,
         commMenu_inBattle__call__commMenu_handleLinkCableInput      = 0x0812b5ca,
     },
 
@@ -34,8 +34,8 @@ local offsets = {
         battle_end__entry                                           = 0x08007ca0,
         battle_isRemote__tst                                        = 0x0803dd26,
         link_isRemote__ret                                          = 0x0803dd5a,
-        commMenu_waitForFriend__call__commMenu_handleLinkCableInput = 0x0812bd66,
         commMenu_handleLinkCableInput__entry                        = 0x0803eab8,
+        commMenu_waitForFriend__call__commMenu_handleLinkCableInput = 0x0812bd66,
         commMenu_inBattle__call__commMenu_handleLinkCableInput      = 0x0812d3a6,
     }
 }
