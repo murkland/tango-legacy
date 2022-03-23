@@ -30,6 +30,18 @@ func (t *Thread) Start() bool {
 	return bool(C.mCoreThreadStart(t.t))
 }
 
+func (t *Thread) HasStarted() bool {
+	return bool(C.mCoreThreadHasStarted(t.t))
+}
+
+func (t *Thread) HasExited() bool {
+	return bool(C.mCoreThreadHasExited(t.t))
+}
+
+func (t *Thread) HasCrashed() bool {
+	return bool(C.mCoreThreadHasCrashed(t.t))
+}
+
 func (t *Thread) End() {
 	C.mCoreThreadEnd(t.t)
 }

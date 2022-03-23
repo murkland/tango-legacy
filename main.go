@@ -1,14 +1,13 @@
 package main
 
 import (
+	"errors"
 	"flag"
-	"image"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/oto/v2"
-	"github.com/murkland/bbn6/asm"
 	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/iobuf"
 	"github.com/murkland/bbn6/mgba"
@@ -21,11 +20,15 @@ var (
 type Game struct {
 	core   *mgba.Core
 	vb     *iobuf.VideoBuffer
-	fbuf   *image.RGBA
+	t      *mgba.Thread
 	player oto.Player
 }
 
 func (g *Game) Update() error {
+	if g.t.HasCrashed() {
+		return errors.New("mgba thread crashed")
+	}
+
 	g.player.Play()
 
 	var keys mgba.Keys
@@ -55,11 +58,6 @@ func (g *Game) Update() error {
 	}
 	g.core.SetKeys(keys)
 
-	if g.core.GBA().Sync().WaitFrameStart() {
-		g.fbuf = g.vb.CopyImage()
-	}
-	g.core.GBA().Sync().WaitFrameEnd()
-
 	return nil
 }
 
@@ -68,12 +66,11 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.fbuf == nil {
-		return
+	if g.core.GBA().Sync().WaitFrameStart() {
+		opts := &ebiten.DrawImageOptions{}
+		screen.DrawImage(ebiten.NewImageFromImage(g.vb.CopyImage()), opts)
 	}
-
-	opts := &ebiten.DrawImageOptions{}
-	screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
+	g.core.GBA().Sync().WaitFrameEnd()
 }
 
 func main() {
@@ -131,18 +128,8 @@ func main() {
 		log.Printf("failed to autoload save: is there a save file present?")
 	}
 
-	var irqTraps mgba.IRQTraps
-	irqTraps[0xff] = bn6.MakeIRQFFTrap(core, offsets)
-	core.InstallGBASWI16IRQHTraps(irqTraps)
-
-	core.RawWriteRange(offsets.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput, -1, asm.Flatten(
-		asm.SVC(0xff),
-		asm.NOP(),
-	))
-
-	core.RawWriteRange(offsets.A_commMenu_handleLinkCableInput__entry, -1, asm.Flatten(
-		asm.SVC(0xff),
-	))
+	core.InstallGBASWI16IRQHTraps(mgba.IRQTraps{0xff: bn6.MakeIRQFFTrap(core, offsets)})
+	bn6.PatchWithSVCFFs(core, offsets)
 
 	t := mgba.NewThread(core)
 	if !t.Start() {
@@ -156,7 +143,7 @@ func main() {
 	ebiten.SetMaxTPS(ebiten.UncappedTPS)
 	ebiten.SetWindowResizable(true)
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
-	if err := ebiten.RunGame(&Game{core, vb, nil, player}); err != nil {
+	if err := ebiten.RunGame(&Game{core, vb, t, player}); err != nil {
 		log.Fatalf("failed to start mgba: %s", err)
 	}
 
