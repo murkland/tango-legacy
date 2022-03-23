@@ -34,6 +34,10 @@ void bbn6_mgba_mCore_reset(struct mCore* core) {
 	core->reset(core);
 }
 
+void bbn6_mgba_mCore_setSync(struct mCore* core, struct mCoreSync* sync) {
+	core->setSync(core, sync);
+}
+
 void bbn6_mgba_mCore_runFrame(struct mCore* core) {
 	core->runFrame(core);
 }
@@ -59,10 +63,18 @@ import (
 	"unsafe"
 )
 
+type CoreOptions struct {
+	AudioBuffers int
+	SampleRate   int
+	AudioSync    bool
+	VideoSync    bool
+	Volume       int
+}
+
 type Core struct {
-	ptr          *C.struct_mCore
-	realSwi16irq *C.bbn6_mgba_swi16_handler_cb
-	swi16irqTrap IRQTrap
+	ptr           *C.struct_mCore
+	realSwi16irq  *C.bbn6_mgba_swi16_handler_cb
+	swi16irqTraps IRQTraps
 }
 
 func FindCore(fn string) (*Core, error) {
@@ -74,7 +86,7 @@ func FindCore(fn string) (*Core, error) {
 		return nil, fmt.Errorf("could not find core for %s", fn)
 	}
 
-	core := &Core{ptr, nil, nil}
+	core := &Core{ptr, nil, IRQTraps{}}
 
 	if !C.bbn6_mgba_mCore_init(core.ptr) {
 		return nil, errors.New("could not initialize core")
@@ -85,6 +97,24 @@ func FindCore(fn string) (*Core, error) {
 	})
 
 	return core, nil
+}
+
+func (c *Core) SetOptions(o CoreOptions) {
+	c.ptr.opts.audioBuffers = C.ulong(o.AudioBuffers)
+	c.ptr.opts.sampleRate = C.uint(o.SampleRate)
+	c.ptr.opts.audioSync = C.bool(o.AudioSync)
+	c.ptr.opts.videoSync = C.bool(o.VideoSync)
+	c.ptr.opts.volume = C.int(o.Volume)
+}
+
+func (c *Core) Options() CoreOptions {
+	return CoreOptions{
+		AudioBuffers: int(c.ptr.opts.audioBuffers),
+		SampleRate:   int(c.ptr.opts.sampleRate),
+		AudioSync:    bool(c.ptr.opts.audioSync),
+		VideoSync:    bool(c.ptr.opts.videoSync),
+		Volume:       int(c.ptr.opts.volume),
+	}
 }
 
 func (c *Core) DesiredVideoDimensions() (int, int) {
@@ -154,16 +184,19 @@ func (c *Core) FrameCounter() uint32 {
 	return uint32(C.bbn6_mgba_mCore_frameCounter(c.ptr))
 }
 
-func (c *Core) Register(r int) uint32 {
-	gba := ((*C.struct_GBA)(c.ptr.board))
-	registers := (*C.struct_ARMRegisterFile)(unsafe.Pointer(&gba.cpu.anon0))
-	return uint32(registers.anon0.gprs[r])
+func (c *Core) AudioChannel(ch int) *Blip {
+	return &Blip{C.bbn6_mgba_mCore_getAudioChannel(c.ptr, C.int(ch))}
 }
 
-func (c *Core) SetRegister(r int, v uint32) {
-	gba := ((*C.struct_GBA)(c.ptr.board))
-	registers := (*C.struct_ARMRegisterFile)(unsafe.Pointer(&gba.cpu.anon0))
-	registers.anon0.gprs[r] = C.int(v)
+func (c *Core) SetSync(sync *Sync) {
+	C.bbn6_mgba_mCore_setSync(c.ptr, sync.ptr)
+}
+
+func (c *Core) GBA() *GBA {
+	if c.ptr.board == nil {
+		return nil
+	}
+	return &GBA{(*C.struct_GBA)(c.ptr.board)}
 }
 
 func (c *Core) Close() {

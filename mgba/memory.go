@@ -25,12 +25,12 @@ void bbn6_mgba_mCore_rawWrite32(struct mCore* core, uint32_t address, int segmen
 */
 import "C"
 
-func (c *Core) RawRead8(address uint32, segment int) uint8 {
-	return uint8(C.bbn6_mgba_mCore_rawRead8(c.ptr, C.uint32_t(address), C.int(segment)))
+func (c *Core) RawRead8(address uint32, segment int) uint32 {
+	return uint32(C.bbn6_mgba_mCore_rawRead8(c.ptr, C.uint32_t(address), C.int(segment)))
 }
 
-func (c *Core) RawRead16(address uint32, segment int) uint16 {
-	return uint16(C.bbn6_mgba_mCore_rawRead16(c.ptr, C.uint32_t(address), C.int(segment)))
+func (c *Core) RawRead16(address uint32, segment int) uint32 {
+	return uint32(C.bbn6_mgba_mCore_rawRead16(c.ptr, C.uint32_t(address), C.int(segment)))
 }
 
 func (c *Core) RawRead32(address uint32, segment int) uint32 {

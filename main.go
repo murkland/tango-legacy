@@ -1,26 +1,32 @@
 package main
 
 import (
-	"C"
 	"flag"
+	"image"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/oto/v2"
+	"github.com/murkland/bbn6/bn6"
+	"github.com/murkland/bbn6/iobuf"
 	"github.com/murkland/bbn6/mgba"
 )
-import "github.com/murkland/bbn6/bn6"
 
 var (
 	romPath = flag.String("rom_path", "bn6f.gba", "path to rom")
 )
 
 type Game struct {
-	core *mgba.Core
-	vb   *VideoBuffer
+	core   *mgba.Core
+	vb     *iobuf.VideoBuffer
+	fbuf   *image.RGBA
+	player oto.Player
 }
 
 func (g *Game) Update() error {
+	g.player.Play()
+
 	var keys mgba.Keys
 	for _, key := range inpututil.AppendPressedKeys(nil) {
 		switch key {
@@ -47,7 +53,12 @@ func (g *Game) Update() error {
 		}
 	}
 	g.core.SetKeys(keys)
-	g.core.RunFrame()
+
+	if g.core.GBA().Sync().WaitFrameStart() {
+		g.fbuf = g.vb.CopyImage()
+	}
+	g.core.GBA().Sync().WaitFrameEnd()
+
 	return nil
 }
 
@@ -56,11 +67,12 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.fbuf == nil {
+		return
+	}
+
 	opts := &ebiten.DrawImageOptions{}
-	// Perform alpha correction: sometimes mGBA gives us white pixels when it shouldn't.
-	opts.ColorM.Scale(1.0, 1.0, 1.0, 0.0)
-	opts.ColorM.Translate(0.0, 0.0, 0.0, 1.0)
-	screen.DrawImage(ebiten.NewImageFromImage(g.vb.RGBAImage()), opts)
+	screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
 }
 
 func main() {
@@ -78,17 +90,31 @@ func main() {
 		log.Fatalf("failed to start mgba: %s", err)
 	}
 
-	core.InstallGBASWI16IRQHTrap(func(imm int) bool {
-		if imm == 0xff {
-			log.Fatalf("serviced custom IRQ trap: %d at %08x", imm, core.Register(15))
-		}
-		return true
+	core.SetOptions(mgba.CoreOptions{
+		SampleRate:   48000,
+		AudioBuffers: 1024,
+		AudioSync:    true,
+		VideoSync:    true,
+		Volume:       0x100,
 	})
+
+	audioCtx, ready, err := oto.NewContext(core.Options().SampleRate, 2, 2)
+	if err != nil {
+		log.Fatalf("failed to acquire audio context: %s", err)
+	}
+	<-ready
+	audioCtx.SetReadBufferSize(core.Options().AudioBuffers * 4)
+
+	var irqTraps mgba.IRQTraps
+	irqTraps[0xff] = func() {
+		log.Printf("irq trap hit!")
+	}
+	core.InstallGBASWI16IRQHTraps(irqTraps)
 
 	width, height := core.DesiredVideoDimensions()
 	log.Printf("width = %d, height = %d", width, height)
 
-	vb := NewVideoBuffer(width, height)
+	vb := iobuf.NewVideoBuffer(width, height)
 	core.SetVideoBuffer(vb.Pointer(), width)
 
 	if err := core.LoadFile(*romPath); err != nil {
@@ -100,9 +126,7 @@ func main() {
 	if !ok {
 		log.Fatalf("unsupported game")
 	}
-
-	core.RawWrite8(offsets.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput, -1, 0xff)
-	core.RawWrite8(offsets.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput+1, -1, 0xdf)
+	_ = offsets
 
 	core.ConfigInit("bbn6")
 	core.ConfigLoad()
@@ -113,12 +137,22 @@ func main() {
 		log.Printf("failed to autoload save: is there a save file present?")
 	}
 
-	core.Reset()
+	t := mgba.NewThread(core)
+	if !t.Start() {
+		log.Fatalf("failed to start mgba thread")
+	}
 
+	player := audioCtx.NewPlayer(iobuf.NewAudioReader(core, core.Options().SampleRate))
+
+	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")
 	ebiten.SetMaxTPS(ebiten.UncappedTPS)
 	ebiten.SetWindowResizable(true)
-	if err := ebiten.RunGame(&Game{core, vb}); err != nil {
+	ebiten.SetCursorMode(ebiten.CursorModeHidden)
+	if err := ebiten.RunGame(&Game{core, vb, nil, player}); err != nil {
 		log.Fatalf("failed to start mgba: %s", err)
 	}
+
+	t.End()
+	t.Join()
 }

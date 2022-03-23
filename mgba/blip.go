@@ -4,7 +4,9 @@ package mgba
 #include <mgba/core/blip_buf.h>
 */
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+)
 
 type Blip struct {
 	ptr *C.struct_blip_t
@@ -18,6 +20,10 @@ func (b *Blip) SamplesAvail() int {
 	return int(C.blip_samples_avail(b.ptr))
 }
 
-func (b *Blip) ReadSamples(out unsafe.Pointer, count int, stereo int) int {
-	return int(C.blip_read_samples(b.ptr, (*C.short)(out), C.int(count), C.int(stereo)))
+func (b *Blip) ReadSamples(out unsafe.Pointer, count int, stereo bool) int {
+	stereoI := 0
+	if stereo {
+		stereoI = 1
+	}
+	return int(C.blip_read_samples(b.ptr, (*C.short)(out), C.int(count), C.int(stereoI)))
 }

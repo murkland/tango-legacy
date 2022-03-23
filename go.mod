@@ -2,7 +2,10 @@ module github.com/murkland/bbn6
 
 go 1.18
 
-require github.com/hajimehoshi/ebiten/v2 v2.2.5
+require (
+	github.com/hajimehoshi/ebiten/v2 v2.2.5
+	github.com/hajimehoshi/oto/v2 v2.1.0-alpha.2
+)
 
 require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210727001814-0db043d8d5be // indirect
@@ -13,3 +16,5 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20210917161153-d61c044b1678 // indirect
 )
+
+replace github.com/hajimehoshi/oto/v2 => github.com/murkland/oto/v2 v2.1.0-alpha.8.0.20220323083210-1d4c717820a2

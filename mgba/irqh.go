@@ -41,14 +41,16 @@ func (m *armToMGBACoreMap) Get(armCore unsafe.Pointer) *Core {
 
 var armCoreToMGBACoreMapping = newArmCoreToMGBACoreMapping()
 
-type IRQTrap func(imm int) bool
+type IRQTraps [0x100]IRQTrap
 
-func (c *Core) InstallGBASWI16IRQHTrap(irqTrap IRQTrap) {
-	gba := ((*C.struct_GBA)(c.ptr.board))
+type IRQTrap func()
+
+func (c *Core) InstallGBASWI16IRQHTraps(irqTraps IRQTraps) {
+	gba := c.GBA().ptr
 	if c.realSwi16irq == nil {
 		armCoreToMGBACoreMapping.Set(unsafe.Pointer(gba.cpu), c)
 		c.realSwi16irq = (*C.bbn6_mgba_swi16_handler_cb)(unsafe.Pointer(gba.cpu.irqh.swi16))
 		C.bbn6_mgba_ARMInterruptHandler_setSwi16(&gba.cpu.irqh, (*C.bbn6_mgba_swi16_handler_cb)(C.bbn6_cgo_hijackedGBASWI16IRQH_trampoline))
 	}
-	c.swi16irqTrap = irqTrap
+	c.swi16irqTraps = irqTraps
 }

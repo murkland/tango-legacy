@@ -14,11 +14,13 @@ void bbn6_cgo_log_trampoline(struct mLogger* logger, int category, enum mLogLeve
 	bbn6_cgo_log(category, (int)level, buf);
 }
 
-static struct mLogger logger = {NULL, NULL};
 
 void bbn6_mgba_mLogSetDefaultLogger_log(bbn6_mgba_mLogger_log_cb* log) {
-	mLogSetDefaultLogger(&logger);
+	static struct mLogFilter logFilter;
+	mLogFilterInit(&logFilter);
+	static struct mLogger logger = {NULL, &logFilter};
 	logger.log = log;
+	mLogSetDefaultLogger(&logger);
 }
 */
 import "C"
