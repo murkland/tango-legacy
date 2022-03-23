@@ -3,7 +3,6 @@ package bn6
 type Offsets struct {
 	A_battle_init__call__battle_copyInputData                     uint32
 	A_battle_update__call__battle_copyInputData                   uint32
-	A_battle_getSettingsForLink__ret                              uint32
 	A_battle_settings_list1                                       uint32
 	A_battle_init_marshal__ret                                    uint32
 	A_battle_turn_marshal__ret                                    uint32
@@ -21,7 +20,6 @@ var offsetsMap = map[string]Offsets{
 	"MEGAMAN6_FXX": {
 		A_battle_init__call__battle_copyInputData:                     0x08007902,
 		A_battle_update__call__battle_copyInputData:                   0x08007a6e,
-		A_battle_getSettingsForLink__ret:                              0x0802d27e,
 		A_battle_settings_list1:                                       0x080b0d88,
 		A_battle_init_marshal__ret:                                    0x0800b2b8,
 		A_battle_turn_marshal__ret:                                    0x0800b3d6,
@@ -37,7 +35,6 @@ var offsetsMap = map[string]Offsets{
 	"MEGAMAN6_GXX": {
 		A_battle_init__call__battle_copyInputData:                     0x08007902,
 		A_battle_update__call__battle_copyInputData:                   0x08007a6e,
-		A_battle_getSettingsForLink__ret:                              0x0802d27e,
 		A_battle_settings_list1:                                       0x080b0d88,
 		A_battle_init_marshal__ret:                                    0x0800b2b8,
 		A_battle_turn_marshal__ret:                                    0x0800b3d6,

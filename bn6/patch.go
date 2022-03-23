@@ -18,11 +18,6 @@ func PatchWithSVCFFs(core *mgba.Core, offsets Offsets) {
 		asm.NOP(),
 	))
 
-	// mov pc, lr
-	core.RawWriteRange(offsets.A_battle_getSettingsForLink__ret, -1, asm.Flatten(
-		asm.SVC(0xff),
-	))
-
 	// pop {r4, r6, pc}
 	core.RawWriteRange(offsets.A_battle_init_marshal__ret, -1, asm.Flatten(
 		asm.SVC(0xff),
