@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/oto/v2"
+	"github.com/murkland/bbn6/asm"
 	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/iobuf"
 	"github.com/murkland/bbn6/mgba"
@@ -105,12 +106,6 @@ func main() {
 	<-ready
 	audioCtx.SetReadBufferSize(core.Options().AudioBuffers * 4)
 
-	var irqTraps mgba.IRQTraps
-	irqTraps[0xff] = func() {
-		log.Printf("irq trap hit!")
-	}
-	core.InstallGBASWI16IRQHTraps(irqTraps)
-
 	width, height := core.DesiredVideoDimensions()
 	log.Printf("width = %d, height = %d", width, height)
 
@@ -126,16 +121,28 @@ func main() {
 	if !ok {
 		log.Fatalf("unsupported game")
 	}
-	_ = offsets
 
-	core.ConfigInit("bbn6")
-	core.ConfigLoad()
+	core.Config().Init("bbn6")
+	core.Config().Load()
 	core.LoadConfig()
 	if core.AutoloadSave() {
 		log.Printf("save autoload successful!")
 	} else {
 		log.Printf("failed to autoload save: is there a save file present?")
 	}
+
+	var irqTraps mgba.IRQTraps
+	irqTraps[0xff] = bn6.MakeIRQFFTrap(core, offsets)
+	core.InstallGBASWI16IRQHTraps(irqTraps)
+
+	core.RawWriteRange(offsets.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput, -1, asm.Flatten(
+		asm.SVC(0xff),
+		asm.NOP(),
+	))
+
+	core.RawWriteRange(offsets.A_commMenu_handleLinkCableInput__entry, -1, asm.Flatten(
+		asm.SVC(0xff),
+	))
 
 	t := mgba.NewThread(core)
 	if !t.Start() {

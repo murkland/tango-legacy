@@ -37,7 +37,7 @@ func (c *Core) RawRead32(address uint32, segment int) uint32 {
 	return uint32(C.bbn6_mgba_mCore_rawRead32(c.ptr, C.uint32_t(address), C.int(segment)))
 }
 
-func (c *Core) RawReadRange(address uint32, segment int, buf []uint8) {
+func (c *Core) RawReadRange(address uint32, segment int, buf []byte) {
 	for i := range buf {
 		buf[i] = c.RawRead8(address+uint32(i), segment)
 	}
@@ -55,7 +55,7 @@ func (c *Core) RawWrite32(address uint32, segment int, v uint32) {
 	C.bbn6_mgba_mCore_rawWrite32(c.ptr, C.uint32_t(address), C.int(segment), C.uint32_t(v))
 }
 
-func (c *Core) RawWriteRange(address uint32, segment int, buf []uint8) {
+func (c *Core) RawWriteRange(address uint32, segment int, buf []byte) {
 	for i, v := range buf {
 		c.RawWrite8(address+uint32(i), segment, v)
 	}

@@ -137,13 +137,6 @@ func (c *Core) LoadFile(path string) error {
 	return nil
 }
 
-func (c *Core) ConfigInit(name string) {
-	nameCstr := C.CString(name)
-	defer C.free(unsafe.Pointer(nameCstr))
-	C.mCoreConfigInit(&c.ptr.config, nameCstr)
-	c.ptr.opts.logLevel = 0
-}
-
 func (c *Core) GameTitle() string {
 	var title [16]byte
 	C.bbn6_mgba_mCore_getGameTitle(c.ptr, (*C.char)(unsafe.Pointer(&title)))
@@ -160,8 +153,8 @@ func (c *Core) AutoloadSave() bool {
 	return bool(C.mCoreAutoloadSave(c.ptr))
 }
 
-func (c *Core) ConfigLoad() {
-	C.mCoreConfigLoad(&c.ptr.config)
+func (c *Core) Config() *Config {
+	return &Config{&c.ptr.config}
 }
 
 func (c *Core) LoadConfig() {
@@ -203,7 +196,7 @@ func (c *Core) Close() {
 	if c.ptr == nil {
 		return
 	}
-	C.mCoreConfigDeinit(&c.ptr.config)
 	C.bbn6_mgba_mCore_deinit(c.ptr)
+	c.Config().Deinit()
 	c.ptr = nil
 }
