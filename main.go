@@ -1,89 +1,57 @@
 package main
 
 import (
-	"errors"
+	"context"
+	"encoding/json"
 	"flag"
-	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/oto/v2"
-	"github.com/murkland/bbn6/av"
-	"github.com/murkland/bbn6/bn6"
+	"github.com/murkland/bbn6/game"
 	"github.com/murkland/bbn6/mgba"
-	"github.com/murkland/bbn6/trapper"
+	"github.com/murkland/clone"
+	"github.com/murkland/ctxwebrtc"
+	signorclient "github.com/murkland/signor/client"
+	"github.com/pion/webrtc/v3"
 )
+
+var defaultWebRTCConfig = (func() string {
+	s, err := json.Marshal(webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{
+			{
+				URLs: []string{"stun:stun.l.google.com:19302"},
+			},
+			{
+				URLs: []string{"stun:stun1.l.google.com:19302"},
+			},
+			{
+				URLs: []string{"stun:stun2.l.google.com:19302"},
+			},
+			{
+				URLs: []string{"stun:stun3.l.google.com:19302"},
+			},
+			{
+				URLs: []string{"stun:stun4.l.google.com:19302"},
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	return string(s)
+})()
 
 var (
-	romPath = flag.String("rom_path", "bn6f.gba", "path to rom")
+	connectAddr  = flag.String("connect_addr", "http://localhost:12345", "address to connect to")
+	answer       = flag.Bool("answer", false, "if true, answers a session instead of offers")
+	sessionID    = flag.String("session_id", "test-session", "session to join to")
+	webrtcConfig = flag.String("webrtc_config", defaultWebRTCConfig, "webrtc configuration")
+	romPath      = flag.String("rom_path", "bn6f.gba", "path to rom")
 )
-
-type Game struct {
-	core   *mgba.Core
-	vb     *av.VideoBuffer
-	t      *mgba.Thread
-	player oto.Player
-}
-
-func (g *Game) Update() error {
-	if g.t.HasCrashed() {
-		return errors.New("mgba thread crashed")
-	}
-
-	g.player.Play()
-
-	var keys mgba.Keys
-	for _, key := range inpututil.AppendPressedKeys(nil) {
-		switch key {
-		case ebiten.KeyZ:
-			keys |= mgba.KeysA
-		case ebiten.KeyX:
-			keys |= mgba.KeysB
-		case ebiten.KeyA:
-			keys |= mgba.KeysL
-		case ebiten.KeyS:
-			keys |= mgba.KeysR
-		case ebiten.KeyLeft:
-			keys |= mgba.KeysLeft
-		case ebiten.KeyRight:
-			keys |= mgba.KeysRight
-		case ebiten.KeyUp:
-			keys |= mgba.KeysUp
-		case ebiten.KeyDown:
-			keys |= mgba.KeysDown
-		case ebiten.KeyEnter:
-			keys |= mgba.KeysStart
-		case ebiten.KeyBackspace:
-			keys |= mgba.KeysSelect
-		}
-	}
-	g.core.SetKeys(keys)
-
-	return nil
-}
-
-func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return g.core.DesiredVideoDimensions()
-}
-
-func (g *Game) Draw(screen *ebiten.Image) {
-	if g.core.GBA().Sync().WaitFrameStart() {
-		screen.Fill(color.White)
-		opts := &ebiten.DrawImageOptions{}
-		img := g.vb.Image()
-		for i := range img.Pix {
-			if i%4 == 3 {
-				img.Pix[i] = 0xff
-			}
-		}
-		screen.DrawImage(ebiten.NewImageFromImage(img), opts)
-	}
-	g.core.GBA().Sync().WaitFrameEnd()
-}
 
 func main() {
 	flag.Parse()
+	ctx := context.Background()
 
 	mgba.SetDefaultLogger(func(category string, level int, message string) {
 		if level&0x3 == 0 {
@@ -92,153 +60,59 @@ func main() {
 		log.Printf("level=%d category=%s %s", level, category, message)
 	})
 
-	core, err := mgba.FindCore(*romPath)
-	if err != nil {
-		log.Fatalf("failed to start mgba: %s", err)
+	var peerConnConfig webrtc.Configuration
+	if err := json.Unmarshal([]byte(*webrtcConfig), &peerConnConfig); err != nil {
+		log.Fatalf("failed to parse webrtc config: %s", err)
 	}
 
-	core.SetOptions(mgba.CoreOptions{
-		SampleRate:   48000,
-		AudioBuffers: 1024,
-		AudioSync:    true,
-		VideoSync:    true,
-		Volume:       0x100,
+	log.Printf("connecting to %s, answer = %t, session_id = %s (using peer config: %+v)", *connectAddr, *answer, *sessionID, peerConnConfig)
+
+	signorClient := signorclient.New(*connectAddr)
+
+	peerConn, err := webrtc.NewPeerConnection(peerConnConfig)
+	if err != nil {
+		log.Fatalf("failed to create RTC peer connection: %s", err)
+	}
+
+	rtcDc, err := peerConn.CreateDataChannel("game", &webrtc.DataChannelInit{
+		ID:         clone.P(uint16(1)),
+		Negotiated: clone.P(true),
+		Ordered:    clone.P(true),
 	})
-
-	audioCtx, ready, err := oto.NewContext(core.Options().SampleRate, 2, 2)
 	if err != nil {
-		log.Fatalf("failed to acquire audio context: %s", err)
-	}
-	<-ready
-	audioCtx.SetReadBufferSize(core.Options().AudioBuffers * 4)
-
-	width, height := core.DesiredVideoDimensions()
-	log.Printf("width = %d, height = %d", width, height)
-
-	vb := av.NewVideoBuffer(width, height)
-	core.SetVideoBuffer(vb.Pointer(), width)
-
-	if err := core.LoadFile(*romPath); err != nil {
-		log.Fatalf("failed to start mgba: %s", err)
+		log.Fatalf("failed to create RTC peer connection: %s", err)
 	}
 
-	log.Printf("game code: %s, game title: %s", core.GameCode(), core.GameTitle())
-	offsets, ok := bn6.OffsetsForGame(core.GameTitle())
-	if !ok {
-		log.Fatalf("unsupported game")
-	}
+	dc := ctxwebrtc.WrapDataChannel(rtcDc)
 
-	core.Config().Init("bbn6")
-	core.Config().Load()
-	core.LoadConfig()
-	if core.AutoloadSave() {
-		log.Printf("save autoload successful!")
+	if !*answer {
+		if err := signorClient.Offer(ctx, []byte(*sessionID), peerConn); err != nil {
+			log.Fatalf("failed to offer: %s", err)
+		}
 	} else {
-		log.Printf("failed to autoload save: is there a save file present?")
+		if err := signorClient.Answer(ctx, []byte(*sessionID), peerConn); err != nil {
+			log.Fatalf("failed to answer: %s", err)
+		}
 	}
 
-	tp := trapper.New(core)
-
-	tp.Add(offsets.A_battle_init__call__battle_copyInputData, func() {
-		// TODO: Set this correctly.
-		inLinkBattle := false
-
-		if !inLinkBattle {
-			return
-		}
-
-		// TODO: Get inputs.
-		core.GBA().SetRegister(0, 0)
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
-		core.GBA().ThumbWritePC()
-	})
-
-	tp.Add(offsets.A_battle_update__call__battle_copyInputData, func() {
-		// TODO: Set this correctly.
-		inLinkBattle := false
-
-		if !inLinkBattle {
-			return
-		}
-
-		// TODO: Get inputs.
-		core.GBA().SetRegister(0, 0)
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
-		core.GBA().ThumbWritePC()
-	})
-
-	tp.Add(offsets.A_battle_init_marshal__ret, func() {
-		// TODO
-		init := bn6.LocalMarshaledBattleState(core)
-		log.Printf("battle init: %v", init)
-	})
-
-	tp.Add(offsets.A_battle_turn_marshal__ret, func() {
-		// TODO
-		turn := bn6.LocalMarshaledBattleState(core)
-		log.Printf("battle turn: %v", turn)
-	})
-
-	tp.Add(offsets.A_battle_updating__ret__go_to_custom_screen, func() {
-		// TODO
-	})
-
-	tp.Add(offsets.A_battle_start__ret, func() {
-		// TODO
-	})
-
-	tp.Add(offsets.A_battle_end__entry, func() {
-		// TODO
-	})
-
-	tp.Add(offsets.A_battle_isRemote__tst, func() {
-		// TODO: Set isRemote
-		isRemote := true
-		_ = isRemote
-	})
-
-	tp.Add(offsets.A_link_isRemote__ret, func() {
-		// TODO: Set isRemote
-		isRemote := true
-		if isRemote {
-			core.GBA().SetRegister(0, 1)
-		} else {
-			core.GBA().SetRegister(0, 0)
-		}
-	})
-
-	tp.Add(offsets.A_commMenu_handleLinkCableInput__entry, func() {
-		log.Printf("unhandled call to commMenu_handleLinkCableInput at 0x%08x: uh oh!", core.GBA().Register(15)-4)
-	})
-
-	tp.Add(offsets.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput, func() {
-		bn6.StartBattleFromCommMenu(core)
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
-		core.GBA().ThumbWritePC()
-	})
-
-	tp.Add(offsets.A_commMenu_inBattle__call__commMenu_handleLinkCableInput, func() {
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
-		core.GBA().ThumbWritePC()
-	})
-	core.InstallBeefTrap(tp.BeefHandler)
-
-	t := mgba.NewThread(core)
-	if !t.Start() {
-		log.Fatalf("failed to start mgba thread")
-	}
-
-	player := audioCtx.NewPlayer(av.NewAudioReader(core, core.Options().SampleRate))
+	log.Printf("signaling complete!")
+	log.Printf("local SDP: %s", peerConn.LocalDescription().SDP)
+	log.Printf("remote SDP: %s", peerConn.RemoteDescription().SDP)
 
 	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")
 	ebiten.SetMaxTPS(ebiten.UncappedTPS)
 	ebiten.SetWindowResizable(true)
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
-	if err := ebiten.RunGame(&Game{core, vb, t, player}); err != nil {
-		log.Fatalf("failed to start mgba: %s", err)
+
+	g, err := game.New(*romPath, dc, *answer)
+	if err != nil {
+		log.Fatalf("failed to start game: %s", err)
 	}
 
-	t.End()
-	t.Join()
+	if err := ebiten.RunGame(g); err != nil {
+		log.Fatalf("failed to run mgba: %s", err)
+	}
+
+	g.Finish()
 }

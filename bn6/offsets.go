@@ -10,8 +10,8 @@ type Offsets struct {
 	A_battle_updating__ret__go_to_custom_screen                   uint32
 	A_battle_start__ret                                           uint32
 	A_battle_end__entry                                           uint32
-	A_battle_isRemote__tst                                        uint32
-	A_link_isRemote__ret                                          uint32
+	A_battle_isP2__tst                                            uint32
+	A_link_isP2__ret                                              uint32
 	A_commMenu_handleLinkCableInput__entry                        uint32
 	A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput uint32
 	A_commMenu_inBattle__call__commMenu_handleLinkCableInput      uint32
@@ -28,8 +28,8 @@ var offsetsMap = map[string]Offsets{
 		A_battle_updating__ret__go_to_custom_screen:                   0x0800945a,
 		A_battle_start__ret:                                           0x08007304,
 		A_battle_end__entry:                                           0x08007ca0,
-		A_battle_isRemote__tst:                                        0x0803dd52,
-		A_link_isRemote__ret:                                          0x0803dd86,
+		A_battle_isP2__tst:                                            0x0803dd52,
+		A_link_isP2__ret:                                              0x0803dd86,
 		A_commMenu_handleLinkCableInput__entry:                        0x0803eae4,
 		A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x08129f8a,
 		A_commMenu_inBattle__call__commMenu_handleLinkCableInput:      0x0812b5ca,
@@ -44,8 +44,8 @@ var offsetsMap = map[string]Offsets{
 		A_battle_updating__ret__go_to_custom_screen:                   0x0800945a,
 		A_battle_start__ret:                                           0x08007304,
 		A_battle_end__entry:                                           0x08007ca0,
-		A_battle_isRemote__tst:                                        0x0803dd26,
-		A_link_isRemote__ret:                                          0x0803dd5a,
+		A_battle_isP2__tst:                                            0x0803dd26,
+		A_link_isP2__ret:                                              0x0803dd5a,
 		A_commMenu_handleLinkCableInput__entry:                        0x0803eab8,
 		A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x0812bd66,
 		A_commMenu_inBattle__call__commMenu_handleLinkCableInput:      0x0812d3a6,
