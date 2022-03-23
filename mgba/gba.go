@@ -52,8 +52,28 @@ func (g *GBA) Sync() *Sync {
 	return &Sync{g.ptr.sync}
 }
 
+func (g *GBA) ROMSize() int {
+	return int(g.ptr.memory.romSize)
+}
+
+func (g *GBA) CPUCycles() int {
+	return int(g.ptr.cpu.cycles)
+}
+
+func (g *GBA) SetCPUCycles(cycles int) {
+	g.ptr.cpu.cycles = C.int(cycles)
+}
+
+func (g *GBA) ThumbPrefetchCycles() int {
+	return int(1 + g.ptr.cpu.memory.activeSeqCycles16)
+}
+
+func (g *GBA) ARMRunFake(opcode uint16) {
+	C.ARMRunFake(g.ptr.cpu, C.uint32_t(opcode))
+}
+
 func (g *GBA) ThumbWritePC() {
-	g.ptr.cpu.cycles += C.int(1 + g.ptr.cpu.memory.activeSeqCycles16 + C.uint(C.ThumbWritePC(g.ptr.cpu)))
+	g.SetCPUCycles(g.ThumbPrefetchCycles() + int(C.ThumbWritePC(g.ptr.cpu)))
 }
 
 func GBAAudioCalculateRatio(inputSampleRate float32, desiredFPS float32, desiredSampleRate float32) float32 {

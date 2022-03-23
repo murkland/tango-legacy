@@ -12,6 +12,7 @@ import (
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/bbn6/trapper"
 )
 
 var (
@@ -135,9 +136,92 @@ func main() {
 	} else {
 		log.Printf("failed to autoload save: is there a save file present?")
 	}
+	_ = offsets
 
-	core.InstallGBASWI16IRQHTraps(mgba.IRQTraps{0xff: bn6.MakeIRQFFTrap(core, offsets)})
-	bn6.PatchWithSVCFFs(core, offsets)
+	tp := trapper.New(core)
+
+	tp.Add(offsets.A_battle_init__call__battle_copyInputData, func() {
+		// TODO: Set this correctly.
+		inLinkBattle := false
+
+		if !inLinkBattle {
+			return
+		}
+
+		// TODO: Get inputs.
+		core.GBA().SetRegister(0, 0)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().ThumbWritePC()
+	})
+
+	tp.Add(offsets.A_battle_update__call__battle_copyInputData, func() {
+		// TODO: Set this correctly.
+		inLinkBattle := false
+
+		if !inLinkBattle {
+			return
+		}
+
+		// TODO: Get inputs.
+		core.GBA().SetRegister(0, 0)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().ThumbWritePC()
+	})
+
+	tp.Add(offsets.A_battle_init_marshal__ret, func() {
+		// TODO
+		init := bn6.LocalMarshaledBattleState(core)
+		log.Printf("battle init: %v", init)
+	})
+
+	tp.Add(offsets.A_battle_turn_marshal__ret, func() {
+		// TODO
+		turn := bn6.LocalMarshaledBattleState(core)
+		log.Printf("battle turn: %v", turn)
+	})
+
+	tp.Add(offsets.A_battle_updating__ret__go_to_custom_screen, func() {
+		// TODO
+	})
+
+	tp.Add(offsets.A_battle_start__ret, func() {
+		// TODO
+	})
+
+	tp.Add(offsets.A_battle_end__entry, func() {
+		// TODO
+	})
+
+	tp.Add(offsets.A_battle_isRemote__tst, func() {
+		// TODO: Set isRemote
+		isRemote := true
+		_ = isRemote
+	})
+
+	tp.Add(offsets.A_link_isRemote__ret, func() {
+		// TODO: Set isRemote
+		isRemote := true
+		if isRemote {
+			core.GBA().SetRegister(0, 1)
+		} else {
+			core.GBA().SetRegister(0, 0)
+		}
+	})
+
+	tp.Add(offsets.A_commMenu_handleLinkCableInput__entry, func() {
+		log.Printf("unhandled call to commMenu_handleLinkCableInput at 0x%08x: uh oh!", core.GBA().Register(15)-4)
+	})
+
+	tp.Add(offsets.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput, func() {
+		bn6.StartBattleFromCommMenu(core)
+		// Skip the call entirely.
+	})
+
+	tp.Add(offsets.A_commMenu_inBattle__call__commMenu_handleLinkCableInput, func() {
+		// Skip the call entirely.
+	})
+
+	core.InstallGBASWI16IRQHTraps(mgba.IRQTraps{0xff: tp.SWI16FFHandler})
 
 	t := mgba.NewThread(core)
 	if !t.Start() {
