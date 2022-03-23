@@ -34,7 +34,7 @@ func (g *GBA) SetCPSR(cpsr [4]byte) {
 	g.armRegisterFile().anon0.cpsr = cpsr
 }
 
-func (g *GBA) SetSPSR(spsr [4]byte) [4]byte {
+func (g *GBA) SetSPSR(spsr [4]byte) {
 	g.armRegisterFile().anon0.spsr = spsr
 }
 
