@@ -9,8 +9,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/oto/v2"
+	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/bn6"
-	"github.com/murkland/bbn6/iobuf"
 	"github.com/murkland/bbn6/mgba"
 )
 
@@ -20,7 +20,7 @@ var (
 
 type Game struct {
 	core   *mgba.Core
-	vb     *iobuf.VideoBuffer
+	vb     *av.VideoBuffer
 	t      *mgba.Thread
 	player oto.Player
 }
@@ -114,7 +114,7 @@ func main() {
 	width, height := core.DesiredVideoDimensions()
 	log.Printf("width = %d, height = %d", width, height)
 
-	vb := iobuf.NewVideoBuffer(width, height)
+	vb := av.NewVideoBuffer(width, height)
 	core.SetVideoBuffer(vb.Pointer(), width)
 
 	if err := core.LoadFile(*romPath); err != nil {
@@ -144,7 +144,7 @@ func main() {
 		log.Fatalf("failed to start mgba thread")
 	}
 
-	player := audioCtx.NewPlayer(iobuf.NewAudioReader(core, core.Options().SampleRate))
+	player := audioCtx.NewPlayer(av.NewAudioReader(core, core.Options().SampleRate))
 
 	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")

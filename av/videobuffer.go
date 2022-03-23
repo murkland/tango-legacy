@@ -1,4 +1,4 @@
-package iobuf
+package av
 
 import (
 	"image"
