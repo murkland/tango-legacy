@@ -25,16 +25,22 @@ void bbn6_mgba_mCore_rawWrite32(struct mCore* core, uint32_t address, int segmen
 */
 import "C"
 
-func (c *Core) RawRead8(address uint32, segment int) uint32 {
-	return uint32(C.bbn6_mgba_mCore_rawRead8(c.ptr, C.uint32_t(address), C.int(segment)))
+func (c *Core) RawRead8(address uint32, segment int) uint8 {
+	return uint8(C.bbn6_mgba_mCore_rawRead8(c.ptr, C.uint32_t(address), C.int(segment)))
 }
 
-func (c *Core) RawRead16(address uint32, segment int) uint32 {
-	return uint32(C.bbn6_mgba_mCore_rawRead16(c.ptr, C.uint32_t(address), C.int(segment)))
+func (c *Core) RawRead16(address uint32, segment int) uint16 {
+	return uint16(C.bbn6_mgba_mCore_rawRead16(c.ptr, C.uint32_t(address), C.int(segment)))
 }
 
 func (c *Core) RawRead32(address uint32, segment int) uint32 {
 	return uint32(C.bbn6_mgba_mCore_rawRead32(c.ptr, C.uint32_t(address), C.int(segment)))
+}
+
+func (c *Core) RawReadRange(address uint32, segment int, buf []uint8) {
+	for i := range buf {
+		buf[i] = c.RawRead8(address+uint32(i), segment)
+	}
 }
 
 func (c *Core) RawWrite8(address uint32, segment int, v uint8) {
@@ -47,4 +53,10 @@ func (c *Core) RawWrite16(address uint32, segment int, v uint16) {
 
 func (c *Core) RawWrite32(address uint32, segment int, v uint32) {
 	C.bbn6_mgba_mCore_rawWrite32(c.ptr, C.uint32_t(address), C.int(segment), C.uint32_t(v))
+}
+
+func (c *Core) RawWriteRange(address uint32, segment int, buf []uint8) {
+	for i, v := range buf {
+		c.RawWrite8(address+uint32(i), segment, v)
+	}
 }
