@@ -4,7 +4,7 @@ package mgba
 #include <mgba/core/core.h>
 #include <mgba/internal/gba/gba.h>
 
-typedef void bbn6_mgba_swi16_handler_cb(struct ARMCore* cpu, int immediate);
+typedef void bbn6_mgba_bkpt16_irqh(struct ARMCore* cpu, int immediate);
 
 bool bbn6_mgba_mCore_init(struct mCore* core) {
 	return core->init(core);
@@ -72,9 +72,9 @@ type CoreOptions struct {
 }
 
 type Core struct {
-	ptr           *C.struct_mCore
-	realSwi16irq  *C.bbn6_mgba_swi16_handler_cb
-	swi16irqTraps IRQTraps
+	ptr            *C.struct_mCore
+	realBkpt16Irqh *C.bbn6_mgba_bkpt16_irqh
+	beefTrap       func()
 }
 
 func FindCore(fn string) (*Core, error) {
@@ -86,7 +86,7 @@ func FindCore(fn string) (*Core, error) {
 		return nil, fmt.Errorf("could not find core for %s", fn)
 	}
 
-	core := &Core{ptr, nil, IRQTraps{}}
+	core := &Core{ptr, nil, nil}
 
 	if !C.bbn6_mgba_mCore_init(core.ptr) {
 		return nil, errors.New("could not initialize core")

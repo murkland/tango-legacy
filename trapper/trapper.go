@@ -11,7 +11,7 @@ type Trapper struct {
 	traps map[uint32]trap
 }
 
-const trapOpcode = 0xdfff // svc 0xff
+const trapOpcode = 0xbeef // bkpt 0xef
 
 type trap struct {
 	original uint16
@@ -31,7 +31,7 @@ func (s *Trapper) Add(addr uint32, handler func()) {
 	s.traps[addr] = t
 }
 
-func (s *Trapper) SWI16FFHandler() {
+func (s *Trapper) BeefHandler() {
 	const wordSizeThumb = 2
 	caller := s.core.GBA().Register(15) - wordSizeThumb*2
 

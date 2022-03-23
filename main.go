@@ -136,7 +136,6 @@ func main() {
 	} else {
 		log.Printf("failed to autoload save: is there a save file present?")
 	}
-	_ = offsets
 
 	tp := trapper.New(core)
 
@@ -214,14 +213,15 @@ func main() {
 
 	tp.Add(offsets.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput, func() {
 		bn6.StartBattleFromCommMenu(core)
-		// Skip the call entirely.
+		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().ThumbWritePC()
 	})
 
 	tp.Add(offsets.A_commMenu_inBattle__call__commMenu_handleLinkCableInput, func() {
-		// Skip the call entirely.
+		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().ThumbWritePC()
 	})
-
-	core.InstallGBASWI16IRQHTraps(mgba.IRQTraps{0xff: tp.SWI16FFHandler})
+	core.InstallBeefTrap(tp.BeefHandler)
 
 	t := mgba.NewThread(core)
 	if !t.Start() {
