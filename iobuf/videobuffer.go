@@ -2,6 +2,7 @@ package iobuf
 
 import (
 	"image"
+	"reflect"
 	"runtime"
 	"unsafe"
 )
@@ -18,11 +19,8 @@ type VideoBuffer struct {
 }
 
 func NewVideoBuffer(width int, height int) *VideoBuffer {
-	vb := &VideoBuffer{
-		width:  width,
-		height: height,
-		buf:    unsafe.Pointer(C.calloc(1, C.ulong(width*height*4))),
-	}
+	buf := C.malloc(C.ulong(width * height * 4))
+	vb := &VideoBuffer{buf, width, height}
 	runtime.SetFinalizer(vb, func(vb *VideoBuffer) {
 		C.free(vb.buf)
 	})
@@ -33,14 +31,11 @@ func (vb *VideoBuffer) Pointer() unsafe.Pointer {
 	return vb.buf
 }
 
-func (vb *VideoBuffer) CopyImage() *image.RGBA {
-	img := image.NewRGBA(image.Rect(0, 0, vb.width, vb.height))
-	for i := 0; i < vb.width*vb.height*4; i++ {
-		pix := uint8(*(*C.uint8_t)(unsafe.Pointer(uintptr(vb.buf) + uintptr(i))))
-		if i%4 == 3 {
-			pix = 0xff
-		}
-		img.Pix[i] = pix
-	}
-	return img
+func (vb *VideoBuffer) Image() *image.RGBA {
+	var pix []uint8
+	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&pix)))
+	sliceHeader.Len = vb.width * vb.height * 4
+	sliceHeader.Cap = sliceHeader.Len
+	sliceHeader.Data = uintptr(vb.buf)
+	return &image.RGBA{Rect: image.Rect(0, 0, vb.width, vb.height), Pix: pix, Stride: vb.width * 4}
 }

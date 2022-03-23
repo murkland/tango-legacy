@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -67,8 +68,15 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	if g.core.GBA().Sync().WaitFrameStart() {
+		screen.Fill(color.White)
 		opts := &ebiten.DrawImageOptions{}
-		screen.DrawImage(ebiten.NewImageFromImage(g.vb.CopyImage()), opts)
+		img := g.vb.Image()
+		for i := range img.Pix {
+			if i%4 == 3 {
+				img.Pix[i] = 0xff
+			}
+		}
+		screen.DrawImage(ebiten.NewImageFromImage(img), opts)
 	}
 	g.core.GBA().Sync().WaitFrameEnd()
 }
