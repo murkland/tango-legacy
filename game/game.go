@@ -15,6 +15,7 @@ import (
 	"github.com/keegancsmith/nth"
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/bn6"
+	"github.com/murkland/bbn6/config"
 	"github.com/murkland/bbn6/mgba"
 	"github.com/murkland/bbn6/packets"
 	"github.com/murkland/bbn6/trapper"
@@ -25,6 +26,8 @@ import (
 )
 
 type Game struct {
+	conf config.Config
+
 	dc *ctxwebrtc.DataChannel
 
 	mainCore      *mgba.Core
@@ -48,7 +51,7 @@ type Game struct {
 	delayRingbufMu sync.RWMutex
 }
 
-func New(romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, error) {
+func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, error) {
 	mainCore, err := newCore(romPath)
 	if err != nil {
 		return nil, err
@@ -85,7 +88,8 @@ func New(romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, err
 	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(mainCore, mainCore.Options().SampleRate))
 
 	g := &Game{
-		dc: dc,
+		conf: conf,
+		dc:   dc,
 
 		mainCore:      mainCore,
 		fastforwarder: fastforwarder,
@@ -408,26 +412,34 @@ func (g *Game) Update() error {
 
 	var keys mgba.Keys
 	for _, key := range inpututil.AppendPressedKeys(nil) {
-		switch key {
-		case ebiten.KeyZ:
+		if key == g.conf.Keymapping.A {
 			keys |= mgba.KeysA
-		case ebiten.KeyX:
+		}
+		if key == g.conf.Keymapping.B {
 			keys |= mgba.KeysB
-		case ebiten.KeyA:
+		}
+		if key == g.conf.Keymapping.L {
 			keys |= mgba.KeysL
-		case ebiten.KeyS:
+		}
+		if key == g.conf.Keymapping.R {
 			keys |= mgba.KeysR
-		case ebiten.KeyLeft:
+		}
+		if key == g.conf.Keymapping.Left {
 			keys |= mgba.KeysLeft
-		case ebiten.KeyRight:
+		}
+		if key == g.conf.Keymapping.Right {
 			keys |= mgba.KeysRight
-		case ebiten.KeyUp:
+		}
+		if key == g.conf.Keymapping.Up {
 			keys |= mgba.KeysUp
-		case ebiten.KeyDown:
+		}
+		if key == g.conf.Keymapping.Down {
 			keys |= mgba.KeysDown
-		case ebiten.KeyEnter:
+		}
+		if key == g.conf.Keymapping.Start {
 			keys |= mgba.KeysStart
-		case ebiten.KeyBackspace:
+		}
+		if key == g.conf.Keymapping.Select {
 			keys |= mgba.KeysSelect
 		}
 	}
