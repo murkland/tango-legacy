@@ -9,8 +9,8 @@ import (
 type Battle struct {
 	mu sync.Mutex
 
-	tick int32
-	isP2 bool
+	startFrame uint32
+	isP2       bool
 
 	iq *InputQueue
 
@@ -32,8 +32,8 @@ func (s *Battle) RemotePlayerIndex() int {
 
 func NewBattle(isP2 bool) *Battle {
 	return &Battle{
-		tick: -1,
-		isP2: isP2,
+		startFrame: 0,
+		isP2:       isP2,
 
 		iq: NewInputQueue(60),
 	}
