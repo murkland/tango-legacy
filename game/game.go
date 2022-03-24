@@ -410,8 +410,7 @@ func (g *Game) Update() error {
 		g.battle.mu.Lock()
 		defer g.battle.mu.Unlock()
 
-		// TODO: Should this be different?
-		highWaterMark := int(g.medianDelay()*time.Duration(g.mainCore.GBA().Sync().FPSTarget())/time.Second + 1)
+		highWaterMark := int(g.medianDelay()*time.Duration(g.mainCore.GBA().Sync().FPSTarget())/2/time.Second + 1)
 		if highWaterMark < 1 {
 			highWaterMark = 1
 		}
