@@ -101,10 +101,12 @@ func (ff *fastforwarder) fastforward(state *mgba.State, localPlayerIndex int, in
 	for i, inp := range localPlayerInputsLeft {
 		predictedInputPairs[i][localPlayerIndex] = inp
 
-		inp2 := lastRemoteInput
-		inp2.Tick = inp.Tick
-		// TODO: Do something better with inp2 prediction.
-		predictedInputPairs[i][1-localPlayerIndex] = inp2
+		predicted := &predictedInputPairs[i][1-localPlayerIndex]
+		predicted.Tick = inp.Tick
+		predicted.CustomScreenState = lastRemoteInput.CustomScreenState
+		if lastRemoteInput.Joyflags&uint16(mgba.KeysB) != 0 {
+			predicted.Joyflags |= uint16(mgba.KeysB)
+		}
 	}
 
 	ff.inputPairs = ringbuf.New[[2]Input](len(localPlayerInputsLeft))
