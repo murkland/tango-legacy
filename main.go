@@ -54,10 +54,10 @@ func main() {
 	ctx := context.Background()
 
 	mgba.SetDefaultLogger(func(category string, level int, message string) {
-		if level&0x3 == 0 {
+		if level&0x7 == 0 {
 			return
 		}
-		log.Printf("level=%d category=%s %s", level, category, message)
+		log.Printf("mgba: level=%d category=%s %s", level, category, message)
 	})
 
 	var peerConnConfig webrtc.Configuration
