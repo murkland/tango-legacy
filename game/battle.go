@@ -41,14 +41,14 @@ func (s *Battle) RemotePlayerIndex() int {
 }
 
 func NewBattle(isP2 bool) *Battle {
-	const inputBufSize = 6
+	const inputDelay = 6
 
-	localInputQueue := ringbuf.New[Input](inputBufSize)
-	remoteInputQueue := ringbuf.New[Input](inputBufSize)
+	localInputQueue := ringbuf.New[Input](inputDelay + 1)
+	remoteInputQueue := ringbuf.New[Input](inputDelay + 1)
 
-	dummyInput := make([]Input, inputBufSize)
+	dummyInput := make([]Input, inputDelay)
 	for i := 0; i < len(dummyInput); i++ {
-		dummyInput[i] = Input{Tick: i - inputBufSize, Joyflags: 0xfc00, CustomScreenState: 0}
+		dummyInput[i] = Input{Tick: i - inputDelay, Joyflags: 0xfc00, CustomScreenState: 0}
 	}
 
 	localInputQueue.Push(dummyInput)
@@ -98,7 +98,9 @@ func (s *Battle) QueueLocalTurn(ctx context.Context, dc *ctxwebrtc.DataChannel, 
 }
 
 func (s *Battle) QueueLocalInput(ctx context.Context, dc *ctxwebrtc.DataChannel, tick int, joyflags uint16, customScreenState uint8) error {
-	s.localInputQueue.Push([]Input{{tick, joyflags, customScreenState}})
+	if err := s.localInputQueue.Push([]Input{{tick, joyflags, customScreenState}}); err != nil {
+		return err
+	}
 
 	var pkt packets.Input
 	pkt.ForTick = uint32(tick)
@@ -141,8 +143,15 @@ func (s *Battle) DequeueInputs(ctx context.Context, dc *ctxwebrtc.DataChannel) (
 	if err := s.localInputQueue.Peek(localInputBuf[:], 0); err != nil {
 		return InputAndTurn{}, InputAndTurn{}, err
 	}
+	if err := s.localInputQueue.Advance(1); err != nil {
+		return InputAndTurn{}, InputAndTurn{}, err
+	}
+
 	var remoteInputBuf [1]Input
 	if err := s.remoteInputQueue.Peek(remoteInputBuf[:], 0); err != nil {
+		return InputAndTurn{}, InputAndTurn{}, err
+	}
+	if err := s.remoteInputQueue.Advance(1); err != nil {
 		return InputAndTurn{}, InputAndTurn{}, err
 	}
 
@@ -151,12 +160,12 @@ func (s *Battle) DequeueInputs(ctx context.Context, dc *ctxwebrtc.DataChannel) (
 
 	if s.localTurn != nil && s.localTurn.tick+1 == local.Tick {
 		local.Turn = s.localTurn.marshaled
-		local.Turn = nil
+		s.localTurn = nil
 	}
 
 	if s.remoteTurn != nil && s.remoteTurn.tick+1 == remote.Tick {
 		remote.Turn = s.remoteTurn.marshaled
-		remote.Turn = nil
+		s.remoteTurn = nil
 	}
 
 	return local, remote, nil
