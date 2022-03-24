@@ -23,7 +23,9 @@ type Game struct {
 	mainCore     *mgba.Core
 	steppingCore *mgba.Core
 
-	vb          *av.VideoBuffer
+	vb   *av.VideoBuffer
+	fbuf *ebiten.Image
+
 	t           *mgba.Thread
 	audioPlayer oto.Player
 
@@ -68,6 +70,7 @@ func New(romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, err
 	if err != nil {
 		return nil, err
 	}
+	steppingCore.Reset()
 
 	mainCore.AutoloadSave()
 
@@ -89,7 +92,15 @@ func New(romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, err
 
 	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(mainCore, mainCore.Options().SampleRate))
 
-	g := &Game{dc, mainCore, steppingCore, vb, t, audioPlayer, isAnswerer, nil}
+	g := &Game{
+		dc,
+		mainCore, steppingCore,
+		vb, ebiten.NewImage(width, height),
+		t,
+		audioPlayer,
+		isAnswerer,
+		nil,
+	}
 	g.InstallTraps(mainCore)
 
 	return g, nil
@@ -296,6 +307,19 @@ func (g *Game) Update() error {
 	}
 	g.mainCore.SetKeys(keys)
 
+	if g.mainCore.GBA().Sync().WaitFrameStart() {
+		g.fbuf.Fill(color.White)
+		img := g.vb.Image()
+		for i := range img.Pix {
+			if i%4 == 3 {
+				img.Pix[i] = 0xff
+			}
+		}
+		opts := &ebiten.DrawImageOptions{}
+		g.fbuf.DrawImage(ebiten.NewImageFromImage(img), opts)
+	}
+	g.mainCore.GBA().Sync().WaitFrameEnd()
+
 	return nil
 }
 
@@ -304,16 +328,6 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.mainCore.GBA().Sync().WaitFrameStart() {
-		screen.Fill(color.White)
-		opts := &ebiten.DrawImageOptions{}
-		img := g.vb.Image()
-		for i := range img.Pix {
-			if i%4 == 3 {
-				img.Pix[i] = 0xff
-			}
-		}
-		screen.DrawImage(ebiten.NewImageFromImage(img), opts)
-	}
-	g.mainCore.GBA().Sync().WaitFrameEnd()
+	opts := &ebiten.DrawImageOptions{}
+	screen.DrawImage(g.fbuf, opts)
 }
