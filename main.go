@@ -25,9 +25,13 @@ var (
 	romPath     = flag.String("rom_path", "bn6f.gba", "path to rom")
 )
 
+var commitHash string
+
 func main() {
 	flag.Parse()
 	ctx := context.Background()
+
+	log.Printf("welcome to bingus battle network 6. commit hash = %s", commitHash)
 
 	var conf config.Config
 	confF, err := os.Open(*configPath)
