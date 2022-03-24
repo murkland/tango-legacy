@@ -81,16 +81,16 @@ type RawConfig struct {
 func (c Config) ToRaw() RawConfig {
 	return RawConfig{
 		Keymapping: RawKeymapping{
-			A:      keyCodeToKeyName(c.Keymapping.A),
-			B:      keyCodeToKeyName(c.Keymapping.B),
-			L:      keyCodeToKeyName(c.Keymapping.L),
-			R:      keyCodeToKeyName(c.Keymapping.R),
-			Left:   keyCodeToKeyName(c.Keymapping.Left),
-			Right:  keyCodeToKeyName(c.Keymapping.Right),
-			Up:     keyCodeToKeyName(c.Keymapping.Up),
-			Down:   keyCodeToKeyName(c.Keymapping.Down),
-			Start:  keyCodeToKeyName(c.Keymapping.Start),
-			Select: keyCodeToKeyName(c.Keymapping.Select),
+			A:      keyCodeToKeyName[c.Keymapping.A],
+			B:      keyCodeToKeyName[c.Keymapping.B],
+			L:      keyCodeToKeyName[c.Keymapping.L],
+			R:      keyCodeToKeyName[c.Keymapping.R],
+			Left:   keyCodeToKeyName[c.Keymapping.Left],
+			Right:  keyCodeToKeyName[c.Keymapping.Right],
+			Up:     keyCodeToKeyName[c.Keymapping.Up],
+			Down:   keyCodeToKeyName[c.Keymapping.Down],
+			Start:  keyCodeToKeyName[c.Keymapping.Start],
+			Select: keyCodeToKeyName[c.Keymapping.Select],
 		},
 		WebRTC: c.WebRTC,
 	}
@@ -99,16 +99,16 @@ func (c Config) ToRaw() RawConfig {
 func (rc RawConfig) ToParsed() Config {
 	return Config{
 		Keymapping: Keymapping{
-			A:      keyNameToKeyCode(rc.Keymapping.A),
-			B:      keyNameToKeyCode(rc.Keymapping.B),
-			L:      keyNameToKeyCode(rc.Keymapping.L),
-			R:      keyNameToKeyCode(rc.Keymapping.R),
-			Left:   keyNameToKeyCode(rc.Keymapping.Left),
-			Right:  keyNameToKeyCode(rc.Keymapping.Right),
-			Up:     keyNameToKeyCode(rc.Keymapping.Up),
-			Down:   keyNameToKeyCode(rc.Keymapping.Down),
-			Start:  keyNameToKeyCode(rc.Keymapping.Start),
-			Select: keyNameToKeyCode(rc.Keymapping.Select),
+			A:      keyNameToKeyCode[rc.Keymapping.A],
+			B:      keyNameToKeyCode[rc.Keymapping.B],
+			L:      keyNameToKeyCode[rc.Keymapping.L],
+			R:      keyNameToKeyCode[rc.Keymapping.R],
+			Left:   keyNameToKeyCode[rc.Keymapping.Left],
+			Right:  keyNameToKeyCode[rc.Keymapping.Right],
+			Up:     keyNameToKeyCode[rc.Keymapping.Up],
+			Down:   keyNameToKeyCode[rc.Keymapping.Down],
+			Start:  keyNameToKeyCode[rc.Keymapping.Start],
+			Select: keyNameToKeyCode[rc.Keymapping.Select],
 		},
 		WebRTC: rc.WebRTC,
 	}
