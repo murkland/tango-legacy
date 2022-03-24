@@ -239,6 +239,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		bn6.SetPlayerMarshaledBattleState(core, g.battle.RemotePlayerIndex(), g.pendingRemoteInit)
+		if err := g.battle.inputlog.WriteInit(g.battle.RemotePlayerIndex(), g.pendingRemoteInit); err != nil {
+			panic(err)
+		}
 	})
 
 	tp.Add(offsets.A_battle_init_marshal__ret, func() {
@@ -258,7 +261,11 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if err := packets.Send(ctx, g.dc, pkt, nil); err != nil {
 			panic(err)
 		}
+
 		bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), marshaled)
+		if err := g.battle.inputlog.WriteInit(g.battle.LocalPlayerIndex(), g.pendingRemoteInit); err != nil {
+			panic(err)
+		}
 	})
 
 	tp.Add(offsets.A_battle_turn_marshal__ret, func() {
@@ -310,11 +317,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.battle.iq.AddInput(g.battle.LocalPlayerIndex(), Input{int(tick), joyflags, customScreenState, turn})
 		inputPairs := g.battle.iq.Consume()
 		if len(inputPairs) > 0 {
-			// Write this to the input log.
-
 			left := g.battle.iq.Peek(g.battle.LocalPlayerIndex())
 
-			committedState, dirtyState, err := g.fastforwarder.fastforward(g.battle.committedState, g.battle.LocalPlayerIndex(), inputPairs, left)
+			committedState, dirtyState, err := g.fastforwarder.fastforward(g.battle.committedState, g.battle.inputlog, g.battle.LocalPlayerIndex(), inputPairs, left)
 			if err != nil {
 				panic(err)
 			}
@@ -342,7 +347,11 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 	tp.Add(offsets.A_battle_start__ret, func() {
 		log.Printf("battle started")
-		g.battle = NewBattle(g.isAnswerer)
+		battle, err := NewBattle(g.isAnswerer)
+		if err != nil {
+			panic(err)
+		}
+		g.battle = battle
 	})
 
 	tp.Add(offsets.A_battle_end__entry, func() {

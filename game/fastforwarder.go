@@ -73,7 +73,7 @@ func newFastforwarder(romPath string, offsets bn6.Offsets) (*fastforwarder, erro
 // fastforward fastfowards the state to the new state.
 //
 // BEWARE: only one thread may call fastforward at a time.
-func (ff *fastforwarder) fastforward(state *mgba.State, localPlayerIndex int, inputPairs [][2]Input, localPlayerInputsLeft []Input) (*mgba.State, *mgba.State, error) {
+func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlayerIndex int, inputPairs [][2]Input, localPlayerInputsLeft []Input) (*mgba.State, *mgba.State, error) {
 	if !ff.core.LoadState(state) {
 		return nil, nil, errors.New("failed to load state")
 	}
@@ -90,6 +90,9 @@ func (ff *fastforwarder) fastforward(state *mgba.State, localPlayerIndex int, in
 		ip := inputPairBuf[0]
 		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags))
 		ff.core.RunFrame()
+		if err := il.Write(bn6.RNG2State(ff.core), ip); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	committedState := ff.core.SaveState()

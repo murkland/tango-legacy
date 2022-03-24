@@ -12,7 +12,8 @@ type Battle struct {
 	startFrame uint32
 	isP2       bool
 
-	iq *InputQueue
+	inputlog *InputLog
+	iq       *InputQueue
 
 	localPendingTurn []byte
 
@@ -30,11 +31,17 @@ func (s *Battle) RemotePlayerIndex() int {
 	return 1 - s.LocalPlayerIndex()
 }
 
-func NewBattle(isP2 bool) *Battle {
+func NewBattle(isP2 bool) (*Battle, error) {
+	il, err := newInputLog()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Battle{
 		startFrame: 0,
 		isP2:       isP2,
 
-		iq: NewInputQueue(60),
-	}
+		inputlog: il,
+		iq:       NewInputQueue(60),
+	}, nil
 }
