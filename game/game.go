@@ -72,8 +72,10 @@ func New(romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, err
 	}
 
 	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(core, core.Options().SampleRate))
+	g := &Game{dc, core, vb, t, audioPlayer, isAnswerer, nil}
+	g.InstallTraps()
 
-	return &Game{dc, core, vb, t, audioPlayer, isAnswerer, nil}, nil
+	return g, nil
 }
 
 func (g *Game) InstallTraps() error {
@@ -104,8 +106,7 @@ func (g *Game) InstallTraps() error {
 			return
 		}
 
-		bn6.SetPlayerMarshaledBattleState(g.core, 0, init)
-		g.battle.InitReceived = true
+		bn6.SetPlayerMarshaledBattleState(g.core, g.battle.RemotePlayerIndex(), init)
 	})
 
 	tp.Add(offsets.A_battle_update__call__battle_copyInputData, func() {
@@ -142,16 +143,16 @@ func (g *Game) InstallTraps() error {
 			panic(fmt.Sprintf("local tick != remote tick: %d != %d", local.Tick, remote.Tick))
 		}
 
-		bn6.SetPlayerInputState(g.core, 0, local.Joyflags, local.CustomScreenState)
-		bn6.SetPlayerInputState(g.core, 1, remote.Joyflags, remote.CustomScreenState)
+		bn6.SetPlayerInputState(g.core, g.battle.LocalPlayerIndex(), local.Joyflags, local.CustomScreenState)
+		bn6.SetPlayerInputState(g.core, g.battle.RemotePlayerIndex(), remote.Joyflags, remote.CustomScreenState)
 
 		if local.Turn != nil {
-			bn6.SetPlayerMarshaledBattleState(g.core, 0, local.Turn)
+			bn6.SetPlayerMarshaledBattleState(g.core, g.battle.LocalPlayerIndex(), local.Turn)
 			log.Printf("local turn committed on %df", tick)
 		}
 
 		if remote.Turn != nil {
-			bn6.SetPlayerMarshaledBattleState(g.core, 1, remote.Turn)
+			bn6.SetPlayerMarshaledBattleState(g.core, g.battle.RemotePlayerIndex(), remote.Turn)
 			log.Printf("remote turn committed on %df", tick)
 		}
 	})
@@ -167,7 +168,7 @@ func (g *Game) InstallTraps() error {
 		if err := g.battle.SendInit(ctx, g.dc, init); err != nil {
 			panic(err)
 		}
-		bn6.SetPlayerMarshaledBattleState(g.core, 0, init)
+		bn6.SetPlayerMarshaledBattleState(g.core, g.battle.LocalPlayerIndex(), init)
 	})
 
 	tp.Add(offsets.A_battle_turn_marshal__ret, func() {
@@ -179,6 +180,7 @@ func (g *Game) InstallTraps() error {
 
 		tick := int(g.core.FrameCounter() - g.battle.StartFrameNumber)
 		turn := bn6.LocalMarshaledBattleState(g.core)
+		log.Printf("sending turn data on %df", tick)
 		if err := g.battle.QueueLocalTurn(ctx, g.dc, tick, turn); err != nil {
 			panic(err)
 		}
@@ -208,7 +210,7 @@ func (g *Game) InstallTraps() error {
 			return
 		}
 
-		g.core.GBA().SetRegister(0, uint32(g.battle.PlayerIndex()))
+		g.core.GBA().SetRegister(0, uint32(g.battle.LocalPlayerIndex()))
 	})
 
 	tp.Add(offsets.A_link_isP2__ret, func() {
@@ -216,7 +218,7 @@ func (g *Game) InstallTraps() error {
 			return
 		}
 
-		g.core.GBA().SetRegister(0, uint32(g.battle.PlayerIndex()))
+		g.core.GBA().SetRegister(0, uint32(g.battle.LocalPlayerIndex()))
 	})
 
 	tp.Add(offsets.A_commMenu_handleLinkCableInput__entry, func() {

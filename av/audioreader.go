@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/murkland/bbn6/mgba"
 )
 
@@ -44,11 +43,9 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 		available = len(p)
 	}
 
-	if ebiten.IsFocused() {
-		sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p))
-		left.ReadSamples(unsafe.Pointer(sliceHeader.Data), available, true)
-		right.ReadSamples(unsafe.Pointer(sliceHeader.Data+2), available, true)
-	}
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p))
+	left.ReadSamples(unsafe.Pointer(sliceHeader.Data), available, true)
+	right.ReadSamples(unsafe.Pointer(sliceHeader.Data+2), available, true)
 
 	if sync != nil {
 		sync.ConsumeAudio()

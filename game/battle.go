@@ -17,8 +17,10 @@ type turn struct {
 type Battle struct {
 	StartFrameNumber uint32
 	LastTick         int
-	InitReceived     bool
 	IsP2             bool
+
+	initSent     bool
+	initReceived bool
 
 	localTurn  *turn
 	remoteTurn *turn
@@ -27,25 +29,41 @@ type Battle struct {
 	remoteInputQueue *ringbuf.RingBuf[Input]
 }
 
-func (s *Battle) PlayerIndex() int {
+func (s *Battle) LocalPlayerIndex() int {
 	if s.IsP2 {
 		return 1
 	}
 	return 0
 }
 
+func (s *Battle) RemotePlayerIndex() int {
+	return 1 - s.LocalPlayerIndex()
+}
+
 func NewBattle(isP2 bool) *Battle {
 	const inputBufSize = 6
 
+	localInputQueue := ringbuf.New[Input](inputBufSize)
+	remoteInputQueue := ringbuf.New[Input](inputBufSize)
+
+	dummyInput := make([]Input, inputBufSize)
+	for i := 0; i < len(dummyInput); i++ {
+		dummyInput[i] = Input{Tick: i - inputBufSize, Joyflags: 0xfc00, CustomScreenState: 0}
+	}
+
+	localInputQueue.Push(dummyInput)
+	remoteInputQueue.Push(dummyInput)
+
 	return &Battle{
-		0, -1, false, isP2,
+		0, -1, isP2,
+		false, false,
 		nil, nil,
-		ringbuf.New[Input](inputBufSize), ringbuf.New[Input](inputBufSize),
+		localInputQueue, remoteInputQueue,
 	}
 }
 
 func (s *Battle) ReceiveInit(ctx context.Context, dc *ctxwebrtc.DataChannel) ([]byte, error) {
-	if s.InitReceived {
+	if s.initReceived || !s.initSent {
 		return nil, nil
 	}
 
@@ -59,12 +77,22 @@ func (s *Battle) ReceiveInit(ctx context.Context, dc *ctxwebrtc.DataChannel) ([]
 		return nil, fmt.Errorf("unexpected packet: %v", initPkt)
 	}
 
-	s.InitReceived = true
+	s.initReceived = true
 	return initPkt.Marshaled[:], nil
 }
 
 func (s *Battle) SendInit(ctx context.Context, dc *ctxwebrtc.DataChannel, marshaled []byte) error {
+	s.initSent = true
 	var pkt packets.Init
+	copy(pkt.Marshaled[:], marshaled)
+	return packets.Send(ctx, dc, pkt)
+}
+
+func (s *Battle) QueueLocalTurn(ctx context.Context, dc *ctxwebrtc.DataChannel, tick int, marshaled []byte) error {
+	s.localTurn = &turn{tick, marshaled}
+
+	var pkt packets.Turn
+	pkt.ForTick = uint32(tick)
 	copy(pkt.Marshaled[:], marshaled)
 	return packets.Send(ctx, dc, pkt)
 }
@@ -132,13 +160,4 @@ func (s *Battle) DequeueInputs(ctx context.Context, dc *ctxwebrtc.DataChannel) (
 	}
 
 	return local, remote, nil
-}
-
-func (s *Battle) QueueLocalTurn(ctx context.Context, dc *ctxwebrtc.DataChannel, tick int, marshaled []byte) error {
-	s.localTurn = &turn{tick, marshaled}
-
-	var pkt packets.Turn
-	pkt.ForTick = uint32(tick)
-	copy(pkt.Marshaled[:], marshaled)
-	return packets.Send(ctx, dc, pkt)
 }
