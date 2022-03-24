@@ -2,7 +2,6 @@ package av
 
 import (
 	"image"
-	"reflect"
 	"runtime"
 	"unsafe"
 )
@@ -33,11 +32,6 @@ func (vb *VideoBuffer) Pointer() unsafe.Pointer {
 
 func (vb *VideoBuffer) CopyImage() *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, vb.width, vb.height))
-	var pix []uint8
-	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&pix)))
-	sliceHeader.Len = vb.width * vb.height * 4
-	sliceHeader.Cap = sliceHeader.Len
-	sliceHeader.Data = uintptr(vb.buf)
-	copy(img.Pix, pix)
+	img.Pix = C.GoBytes(vb.buf, C.int(vb.width*vb.height*4))
 	return img
 }

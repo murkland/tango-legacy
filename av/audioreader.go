@@ -1,7 +1,7 @@
 package av
 
 import (
-	"reflect"
+	"runtime"
 	"unsafe"
 
 	"github.com/murkland/bbn6/mgba"
@@ -15,6 +15,7 @@ import "C"
 type AudioReader struct {
 	core       *mgba.Core
 	sampleRate int
+	buf        unsafe.Pointer
 }
 
 func (a *AudioReader) Read(p []byte) (int, error) {
@@ -43,11 +44,9 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 		available = len(p)
 	}
 
-	buf := make([]byte, len(p))
-	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&buf))
-	left.ReadSamples(unsafe.Pointer(sliceHeader.Data), available, true)
-	right.ReadSamples(unsafe.Pointer(sliceHeader.Data+2), available, true)
-	copy(p, buf)
+	left.ReadSamples(a.buf, available, true)
+	right.ReadSamples(unsafe.Pointer(uintptr(a.buf)+2), available, true)
+	copy(p, C.GoBytes(a.buf, C.int(len(p))))
 
 	if sync != nil {
 		sync.ConsumeAudio()
@@ -57,5 +56,10 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 }
 
 func NewAudioReader(core *mgba.Core, sampleRate int) *AudioReader {
-	return &AudioReader{core, sampleRate}
+	buf := C.malloc(C.size_t(core.Options().AudioBuffers * 2 * 2))
+	ar := &AudioReader{core, sampleRate, buf}
+	runtime.SetFinalizer(ar, func(ar *AudioReader) {
+		C.free(ar.buf)
+	})
+	return ar
 }

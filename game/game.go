@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"image/color"
+	"image"
 	"log"
 	"sync"
 	"time"
@@ -34,7 +34,7 @@ type Game struct {
 	fastforwarder *fastforwarder
 
 	vb   *av.VideoBuffer
-	fbuf *ebiten.Image
+	fbuf *image.RGBA
 
 	audioPlayer oto.Player
 
@@ -95,7 +95,7 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isAnswer
 		fastforwarder: fastforwarder,
 
 		vb:   vb,
-		fbuf: ebiten.NewImage(width, height),
+		fbuf: nil,
 
 		audioPlayer: audioPlayer,
 
@@ -457,15 +457,14 @@ func (g *Game) Update() error {
 	g.mainCore.SetKeys(keys)
 
 	if g.mainCore.GBA().Sync().WaitFrameStart() {
-		g.fbuf.Fill(color.White)
-		img := g.vb.CopyImage()
-		for i := range img.Pix {
+		g.fbuf = g.vb.CopyImage()
+
+		// Clear alpha channel on the image (this is incorrect for some reason).
+		for i := range g.fbuf.Pix {
 			if i%4 == 3 {
-				img.Pix[i] = 0xff
+				g.fbuf.Pix[i] = 0xff
 			}
 		}
-		opts := &ebiten.DrawImageOptions{}
-		g.fbuf.DrawImage(ebiten.NewImageFromImage(img), opts)
 
 		if g.mustCommitNewState {
 			g.battle.committedState = g.mainCore.SaveState()
@@ -487,6 +486,10 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.fbuf == nil {
+		return
+	}
+
 	opts := &ebiten.DrawImageOptions{}
-	screen.DrawImage(g.fbuf, opts)
+	screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
 }
