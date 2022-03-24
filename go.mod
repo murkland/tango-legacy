@@ -36,11 +36,12 @@ require (
 require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210727001814-0db043d8d5be // indirect
 	github.com/jezek/xgb v0.0.0-20210312150743-0e0f116e1240 // indirect
+	github.com/keegancsmith/nth v0.0.0-20160926112203-ee21de2f07b8
 	github.com/murkland/clone v0.0.0-20220305211650-2e9ef76f1dca
 	github.com/murkland/ctxwebrtc v0.0.0-20220306073518-b5815ce4a060
 	github.com/murkland/ringbuf v0.0.0-20220324004630-6e5417e46b54
 	github.com/murkland/signor v0.0.0-20220305211703-822852f5d0a4
-	golang.org/x/exp v0.0.0-20190731235908-ec7cb31e5a56 // indirect
+	golang.org/x/exp v0.0.0-20220323204016-c86f0da35e87 // indirect
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
 	golang.org/x/mobile v0.0.0-20210902104108-5d9a33257ab5 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect

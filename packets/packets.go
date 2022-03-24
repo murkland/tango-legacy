@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"io"
+	"io/ioutil"
 	"log"
 
 	"github.com/murkland/ctxwebrtc"
@@ -24,8 +25,7 @@ const (
 	packetTypePing  packetType = 0
 	packetTypePong  packetType = 1
 	packetTypeInit  packetType = 2
-	packetTypeTurn  packetType = 3
-	packetTypeInput packetType = 4
+	packetTypeInput packetType = 3
 )
 
 type Packet interface {
@@ -50,13 +50,7 @@ type Init struct {
 
 func (Init) packetType() packetType { return packetTypeInit }
 
-type Turn struct {
-	ForTick   uint32
-	Marshaled [0x100]uint8
-}
-
-func (Turn) packetType() packetType { return packetTypeTurn }
-
+// Input has an occasional 256 byte trailer.
 type Input struct {
 	ForTick           uint32
 	Joyflags          uint16
@@ -65,15 +59,13 @@ type Input struct {
 
 func (Input) packetType() packetType { return packetTypeInput }
 
-func Marshal(packet Packet) []byte {
-	var buf bytes.Buffer
-	if err := binary.Write(&buf, binary.LittleEndian, packet.packetType()); err != nil {
+func Marshal(packet Packet, w io.Writer) {
+	if err := binary.Write(w, binary.LittleEndian, packet.packetType()); err != nil {
 		panic(err)
 	}
-	if err := binary.Write(&buf, binary.LittleEndian, packet); err != nil {
+	if err := binary.Write(w, binary.LittleEndian, packet); err != nil {
 		panic(err)
 	}
-	return buf.Bytes()
 }
 
 func unmarshal[T Packet](r io.Reader) (T, error) {
@@ -84,8 +76,7 @@ func unmarshal[T Packet](r io.Reader) (T, error) {
 	return packet, nil
 }
 
-func Unmarshal(raw []byte) (Packet, error) {
-	r := bytes.NewReader(raw)
+func Unmarshal(r io.Reader) (Packet, error) {
 	var typ packetType
 	if err := binary.Read(r, binary.LittleEndian, &typ); err != nil {
 		return nil, err
@@ -98,8 +89,6 @@ func Unmarshal(raw []byte) (Packet, error) {
 		return unmarshal[Pong](r)
 	case packetTypeInit:
 		return unmarshal[Init](r)
-	case packetTypeTurn:
-		return unmarshal[Turn](r)
 	case packetTypeInput:
 		return unmarshal[Input](r)
 	default:
@@ -107,24 +96,35 @@ func Unmarshal(raw []byte) (Packet, error) {
 	}
 }
 
-func Send(ctx context.Context, dc *ctxwebrtc.DataChannel, packet Packet) error {
+func Send(ctx context.Context, dc *ctxwebrtc.DataChannel, packet Packet, trailer []byte) error {
 	if *debugLogPackets {
-		log.Printf("--> %#v", packet)
+		log.Printf("--> %#v trailer=%v", packet, trailer)
 	}
-	return dc.Send(ctx, Marshal(packet))
+	var buf bytes.Buffer
+	Marshal(packet, &buf)
+	buf.Write(trailer)
+	return dc.Send(ctx, buf.Bytes())
 }
 
-func Recv(ctx context.Context, dc *ctxwebrtc.DataChannel) (Packet, error) {
+func Recv(ctx context.Context, dc *ctxwebrtc.DataChannel) (Packet, []byte, error) {
 	raw, err := dc.Recv(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	packet, err := Unmarshal(raw)
+	r := bytes.NewReader(raw)
+	packet, err := Unmarshal(r)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+	trailer, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(trailer) == 0 {
+		trailer = nil
 	}
 	if *debugLogPackets {
-		log.Printf("<-- %#v", packet)
+		log.Printf("<-- %#v trailer=%v", packet, trailer)
 	}
-	return packet, nil
+	return packet, trailer, nil
 }

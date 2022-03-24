@@ -6,58 +6,46 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"sync"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/oto/v2"
+	"github.com/keegancsmith/nth"
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/bbn6/packets"
 	"github.com/murkland/bbn6/trapper"
 	"github.com/murkland/ctxwebrtc"
+	"github.com/murkland/ringbuf"
+	"golang.org/x/exp/constraints"
+	"golang.org/x/sync/errgroup"
 )
 
 type Game struct {
 	dc *ctxwebrtc.DataChannel
 
-	mainCore     *mgba.Core
-	steppingCore *mgba.Core
+	mainCore      *mgba.Core
+	fastforwarder *fastforwarder
 
 	vb   *av.VideoBuffer
 	fbuf *ebiten.Image
 
-	t           *mgba.Thread
 	audioPlayer oto.Player
+
+	t *mgba.Thread
 
 	isAnswerer bool // TODO: negotiate this
 
-	battle *Battle
-}
+	mustCommitNewState bool
+	pendingState       *mgba.State
+	pendingRemoteInit  []byte
+	battle             *Battle
 
-var coreOptions = mgba.CoreOptions{
-	SampleRate:   48000,
-	AudioBuffers: 1024,
-	AudioSync:    true,
-	VideoSync:    true,
-	Volume:       0x100,
-}
-
-func newCore(romPath string) (*mgba.Core, error) {
-	core, err := mgba.FindCore(romPath)
-	if err != nil {
-		return nil, err
-	}
-	core.SetOptions(coreOptions)
-
-	if err := core.LoadFile(romPath); err != nil {
-		return nil, err
-	}
-
-	core.Config().Init("bbn6")
-	core.Config().Load()
-	core.LoadConfig()
-
-	return core, nil
+	delayRingbuf   *ringbuf.RingBuf[time.Duration]
+	delayRingbufMu sync.RWMutex
 }
 
 func New(romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, error) {
@@ -66,13 +54,17 @@ func New(romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, err
 		return nil, err
 	}
 
-	steppingCore, err := newCore(romPath)
+	mainCore.AutoloadSave()
+
+	offsets, ok := bn6.OffsetsForGame(mainCore.GameTitle())
+	if !ok {
+		return nil, fmt.Errorf("unsupported game: %s", mainCore.GameTitle())
+	}
+
+	fastforwarder, err := newFastforwarder(romPath, offsets)
 	if err != nil {
 		return nil, err
 	}
-	steppingCore.Reset()
-
-	mainCore.AutoloadSave()
 
 	audioCtx, ready, err := oto.NewContext(mainCore.Options().SampleRate, 2, 2)
 	if err != nil {
@@ -93,17 +85,129 @@ func New(romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, err
 	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(mainCore, mainCore.Options().SampleRate))
 
 	g := &Game{
-		dc,
-		mainCore, steppingCore,
-		vb, ebiten.NewImage(width, height),
-		t,
-		audioPlayer,
-		isAnswerer,
-		nil,
+		dc: dc,
+
+		mainCore:      mainCore,
+		fastforwarder: fastforwarder,
+
+		vb:   vb,
+		fbuf: ebiten.NewImage(width, height),
+
+		audioPlayer: audioPlayer,
+
+		t: t,
+
+		isAnswerer: isAnswerer,
+
+		delayRingbuf: ringbuf.New[time.Duration](10),
 	}
 	g.InstallTraps(mainCore)
 
 	return g, nil
+}
+
+func (g *Game) RunBackgroundTasks(ctx context.Context) error {
+	errg, ctx := errgroup.WithContext(ctx)
+
+	errg.Go(func() error {
+		return g.handleConn(ctx)
+	})
+
+	errg.Go(func() error {
+		return g.sendPings(ctx)
+	})
+
+	return errg.Wait()
+}
+
+func (g *Game) sendPings(ctx context.Context) error {
+	for {
+		now := time.Now()
+		if err := packets.Send(ctx, g.dc, packets.Ping{
+			ID: uint64(now.UnixMicro()),
+		}, nil); err != nil {
+			return err
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(1 * time.Second):
+		}
+	}
+}
+
+type orderableSlice[T constraints.Ordered] []T
+
+func (s orderableSlice[T]) Len() int {
+	return len(s)
+}
+
+func (s orderableSlice[T]) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s orderableSlice[T]) Less(i, j int) bool {
+	return s[i] < s[j]
+}
+
+func (g *Game) medianDelay() time.Duration {
+	g.delayRingbufMu.RLock()
+	defer g.delayRingbufMu.RUnlock()
+
+	if g.delayRingbuf.Used() == 0 {
+		return 0
+	}
+
+	delays := make([]time.Duration, g.delayRingbuf.Used())
+	g.delayRingbuf.Peek(delays, 0)
+
+	i := len(delays) / 2
+	nth.Element(orderableSlice[time.Duration](delays), i)
+	return delays[i]
+}
+
+func (g *Game) handleConn(ctx context.Context) error {
+	for {
+		packet, trailer, err := packets.Recv(ctx, g.dc)
+		if err != nil {
+			return err
+		}
+
+		switch p := packet.(type) {
+		case packets.Ping:
+			if err := packets.Send(ctx, g.dc, packets.Pong{ID: p.ID}, nil); err != nil {
+				return err
+			}
+		case packets.Pong:
+			if err := (func() error {
+				g.delayRingbufMu.Lock()
+				defer g.delayRingbufMu.Unlock()
+
+				if g.delayRingbuf.Free() == 0 {
+					g.delayRingbuf.Advance(1)
+				}
+
+				delay := time.Now().Sub(time.UnixMicro(int64(p.ID)))
+				g.delayRingbuf.Push([]time.Duration{delay})
+				return nil
+			})(); err != nil {
+				return err
+			}
+		case packets.Init:
+			g.pendingRemoteInit = p.Marshaled[:]
+		case packets.Input:
+			if err := (func() error {
+				g.battle.mu.Lock()
+				defer g.battle.mu.Unlock()
+
+				g.battle.iq.AddInput(g.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
+				return nil
+			})(); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func (g *Game) InstallTraps(core *mgba.Core) error {
@@ -119,70 +223,18 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		ctx := context.Background()
+		g.battle.mu.Lock()
+		defer g.battle.mu.Unlock()
 
 		core.GBA().SetRegister(0, 0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
 
-		init, err := g.battle.ReceiveInit(ctx, g.dc)
-		if err != nil {
-			panic(err)
-		}
-
-		if init == nil {
+		if g.pendingRemoteInit == nil {
 			return
 		}
 
-		bn6.SetPlayerMarshaledBattleState(core, g.battle.RemotePlayerIndex(), init)
-	})
-
-	tp.Add(offsets.A_battle_update__call__battle_copyInputData, func() {
-		if g.battle == nil {
-			return
-		}
-
-		ctx := context.Background()
-
-		core.GBA().SetRegister(0, 0)
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
-		core.GBA().ThumbWritePC()
-
-		if g.battle.StartFrameNumber == 0 {
-			g.battle.StartFrameNumber = core.FrameCounter()
-		}
-
-		tick := int(core.FrameCounter() - g.battle.StartFrameNumber)
-		g.battle.LastTick = tick
-
-		joyflags := bn6.LocalJoyflags(core)
-		customScreenState := bn6.LocalCustomScreenState(core)
-
-		if err := g.battle.QueueLocalInput(ctx, g.dc, tick, joyflags, customScreenState); err != nil {
-			panic(err)
-		}
-
-		local, remote, err := g.battle.DequeueInputs(ctx, g.dc)
-		if err != nil {
-			panic(err)
-		}
-
-		if local.Tick != remote.Tick {
-			panic(fmt.Sprintf("local tick != remote tick: %d != %d", local.Tick, remote.Tick))
-		}
-
-		bn6.SetPlayerInputState(core, g.battle.LocalPlayerIndex(), local.Joyflags, local.CustomScreenState)
-		bn6.SetPlayerInputState(core, g.battle.RemotePlayerIndex(), remote.Joyflags, remote.CustomScreenState)
-
-		if local.Turn != nil {
-			bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), local.Turn)
-			log.Printf("local turn committed on %df", tick)
-		}
-
-		if remote.Turn != nil {
-			bn6.SetPlayerMarshaledBattleState(core, g.battle.RemotePlayerIndex(), remote.Turn)
-			log.Printf("remote turn committed on %df", tick)
-		}
+		bn6.SetPlayerMarshaledBattleState(core, g.battle.RemotePlayerIndex(), g.pendingRemoteInit)
 	})
 
 	tp.Add(offsets.A_battle_init_marshal__ret, func() {
@@ -190,13 +242,19 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.battle.mu.Lock()
+		defer g.battle.mu.Unlock()
+
 		ctx := context.Background()
 
-		init := bn6.LocalMarshaledBattleState(core)
-		if err := g.battle.SendInit(ctx, g.dc, init); err != nil {
+		marshaled := bn6.LocalMarshaledBattleState(core)
+
+		var pkt packets.Init
+		copy(pkt.Marshaled[:], marshaled)
+		if err := packets.Send(ctx, g.dc, pkt, nil); err != nil {
 			panic(err)
 		}
-		bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), init)
+		bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), marshaled)
 	})
 
 	tp.Add(offsets.A_battle_turn_marshal__ret, func() {
@@ -204,13 +262,63 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.battle.mu.Lock()
+		defer g.battle.mu.Unlock()
+
+		g.battle.localPendingTurn = bn6.LocalMarshaledBattleState(core)
+	})
+
+	tp.Add(offsets.A_battle_update__call__battle_copyInputData, func() {
+		if g.battle == nil {
+			return
+		}
+
+		g.battle.mu.Lock()
+		defer g.battle.mu.Unlock()
+
 		ctx := context.Background()
 
-		tick := int(core.FrameCounter() - g.battle.StartFrameNumber)
-		turn := bn6.LocalMarshaledBattleState(core)
-		log.Printf("sending turn data on %df", tick)
-		if err := g.battle.QueueLocalTurn(ctx, g.dc, tick, turn); err != nil {
+		core.GBA().SetRegister(0, 0)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().ThumbWritePC()
+
+		if g.battle.tick == -1 {
+			g.battle.tick = 0
+			g.mustCommitNewState = true
+			return
+		}
+
+		g.battle.tick++
+
+		joyflags := bn6.LocalJoyflags(core)
+		customScreenState := bn6.LocalCustomScreenState(core)
+		turn := g.battle.localPendingTurn
+		g.battle.localPendingTurn = nil
+
+		var pkt packets.Input
+		pkt.ForTick = uint32(g.battle.tick)
+		pkt.Joyflags = joyflags
+		pkt.CustomScreenState = customScreenState
+		if err := packets.Send(ctx, g.dc, pkt, turn); err != nil {
 			panic(err)
+		}
+
+		g.battle.iq.AddInput(g.battle.LocalPlayerIndex(), Input{int(g.battle.tick), joyflags, customScreenState, turn})
+		inputPairs := g.battle.iq.Consume()
+		if len(inputPairs) > 0 {
+			left := g.battle.iq.Peek(g.battle.LocalPlayerIndex())
+
+			committedState, dirtyState, err := g.fastforwarder.fastforward(g.battle.committedState, g.battle.LocalPlayerIndex(), inputPairs, left)
+			if err != nil {
+				panic(err)
+			}
+			g.battle.committedState = committedState
+			g.pendingState = dirtyState
+		}
+
+		bn6.SetPlayerInputState(core, g.battle.LocalPlayerIndex(), joyflags, customScreenState)
+		if turn != nil {
+			bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), turn)
 		}
 	})
 
@@ -219,7 +327,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		tick := int(core.FrameCounter() - g.battle.StartFrameNumber)
+		g.battle.mu.Lock()
+		defer g.battle.mu.Unlock()
+
+		tick := int(g.battle.tick)
 		log.Printf("turn ended on %df, rng state = %08x", tick, bn6.RNG2State(core))
 	})
 
@@ -280,6 +391,21 @@ func (g *Game) Update() error {
 
 	g.audioPlayer.Play()
 
+	if g.battle != nil {
+		g.battle.mu.Lock()
+		defer g.battle.mu.Unlock()
+
+		highWaterMark := int(g.medianDelay()*time.Duration(60)/2/time.Second + 1)
+		if highWaterMark < 1 {
+			highWaterMark = 1
+		}
+
+		if g.battle.iq.Lag(g.battle.RemotePlayerIndex()) >= highWaterMark {
+			// Pause until we have enough space.
+			return nil
+		}
+	}
+
 	var keys mgba.Keys
 	for _, key := range inpututil.AppendPressedKeys(nil) {
 		switch key {
@@ -317,6 +443,16 @@ func (g *Game) Update() error {
 		}
 		opts := &ebiten.DrawImageOptions{}
 		g.fbuf.DrawImage(ebiten.NewImageFromImage(img), opts)
+
+		if g.mustCommitNewState {
+			g.battle.committedState = g.mainCore.SaveState()
+		}
+		g.mustCommitNewState = false
+
+		if g.pendingState != nil {
+			g.mainCore.LoadState(g.pendingState)
+		}
+		g.pendingState = nil
 	}
 	g.mainCore.GBA().Sync().WaitFrameEnd()
 

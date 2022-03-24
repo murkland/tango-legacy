@@ -1,6 +1,8 @@
 package bn6
 
-import "github.com/murkland/bbn6/mgba"
+import (
+	"github.com/murkland/bbn6/mgba"
+)
 
 const (
 	ePlayerInputDataArr        = 0x02036820

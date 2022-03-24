@@ -110,6 +110,12 @@ func main() {
 		log.Fatalf("failed to start game: %s", err)
 	}
 
+	go func() {
+		if err := g.RunBackgroundTasks(ctx); err != nil {
+			log.Fatalf("error running background tasks: %s", err)
+		}
+	}()
+
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatalf("failed to run mgba: %s", err)
 	}
