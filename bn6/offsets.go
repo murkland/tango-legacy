@@ -1,6 +1,7 @@
 package bn6
 
 type Offsets struct {
+	A_main_joyflags__                                             uint32
 	A_battle_init__call__battle_copyInputData                     uint32
 	A_battle_update__call__battle_copyInputData                   uint32
 	A_battle_copyInputData__entry                                 uint32
@@ -19,6 +20,7 @@ type Offsets struct {
 
 var offsetsMap = map[string]Offsets{
 	"MEGAMAN6_FXX": {
+		A_main_joyflags__:                                             0x08000402,
 		A_battle_init__call__battle_copyInputData:                     0x08007902,
 		A_battle_update__call__battle_copyInputData:                   0x08007a6e,
 		A_battle_copyInputData__entry:                                 0x0801feee,

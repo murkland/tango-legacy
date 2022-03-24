@@ -25,6 +25,10 @@ func LocalJoyflags(core *mgba.Core) uint16 {
 	return core.RawRead16(eJoypad+0x00, -1)
 }
 
+func SetLocalJoyflags(core *mgba.Core, joyflags uint16) {
+	core.RawWrite16(eJoypad+0x00, -1, joyflags)
+}
+
 func LocalCustomScreenState(core *mgba.Core) uint8 {
 	return core.RawRead8(eBattleState+0x11, -1)
 }

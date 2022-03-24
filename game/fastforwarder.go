@@ -11,8 +11,9 @@ import (
 )
 
 type fastforwarder struct {
-	core       *mgba.Core
-	inputPairs *ringbuf.RingBuf[[2]Input]
+	core             *mgba.Core
+	localPlayerIndex int
+	inputPairs       *ringbuf.RingBuf[[2]Input]
 }
 
 func newFastforwarder(romPath string, offsets bn6.Offsets) (*fastforwarder, error) {
@@ -21,9 +22,10 @@ func newFastforwarder(romPath string, offsets bn6.Offsets) (*fastforwarder, erro
 		return nil, err
 	}
 
-	ff := &fastforwarder{core, nil}
+	ff := &fastforwarder{core, 0, nil}
 
 	tp := trapper.New(core)
+
 	tp.Add(offsets.A_battle_update__call__battle_copyInputData, func() {
 		core.GBA().SetRegister(0, 0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
@@ -38,16 +40,29 @@ func newFastforwarder(romPath string, offsets bn6.Offsets) (*fastforwarder, erro
 		}
 
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
-		bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
-
 		if ip[0].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
 		}
 
+		bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
 		if ip[1].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
 		}
 	})
+
+	tp.Add(offsets.A_battle_isP2__tst, func() {
+		core.GBA().SetRegister(0, uint32(ff.localPlayerIndex))
+	})
+
+	tp.Add(offsets.A_link_isP2__ret, func() {
+		core.GBA().SetRegister(0, uint32(ff.localPlayerIndex))
+	})
+
+	tp.Add(offsets.A_commMenu_inBattle__call__commMenu_handleLinkCableInput, func() {
+		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().ThumbWritePC()
+	})
+
 	core.InstallBeefTrap(tp.BeefHandler)
 
 	core.Reset()
@@ -63,11 +78,17 @@ func (ff *fastforwarder) fastforward(state *mgba.State, localPlayerIndex int, in
 		return nil, nil, errors.New("failed to load state")
 	}
 
+	ff.localPlayerIndex = localPlayerIndex
+
 	// Run the paired inputs we already have and create the new committed state.
 	ff.inputPairs = ringbuf.New[[2]Input](len(inputPairs))
 	ff.inputPairs.Push(inputPairs)
 
 	for ff.inputPairs.Used() > 0 {
+		var inputPairBuf [1][2]Input
+		ff.inputPairs.Peek(inputPairBuf[:], 0)
+		ip := inputPairBuf[0]
+		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags))
 		ff.core.RunFrame()
 	}
 
@@ -79,8 +100,10 @@ func (ff *fastforwarder) fastforward(state *mgba.State, localPlayerIndex int, in
 	predictedInputPairs := make([][2]Input, len(localPlayerInputsLeft))
 	for i, inp := range localPlayerInputsLeft {
 		predictedInputPairs[i][localPlayerIndex] = inp
+
 		inp2 := lastRemoteInput
 		inp2.Tick = inp.Tick
+		// TODO: Do something better with inp2 prediction.
 		predictedInputPairs[i][1-localPlayerIndex] = inp2
 	}
 
@@ -88,6 +111,10 @@ func (ff *fastforwarder) fastforward(state *mgba.State, localPlayerIndex int, in
 	ff.inputPairs.Push(predictedInputPairs)
 
 	for ff.inputPairs.Used() > 0 {
+		var inputPairBuf [1][2]Input
+		ff.inputPairs.Peek(inputPairBuf[:], 0)
+		ip := inputPairBuf[0]
+		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags))
 		ff.core.RunFrame()
 	}
 
