@@ -1,7 +1,6 @@
 @echo off
 cls
 :MENU
-ECHO.
 ECHO.   .  .°O*.  ..°...°°..°*°*O#Oo*°°..°*.°°°°     .#o     
 ECHO.   °  .°O*.  ..*°.°*°.°***oO##o***°.°*.°*°°     .#O     
 ECHO.  .°.   O°.   °**.oo°.°oo*oO##Ooo*°°**.*O.°.   ..#o     
@@ -44,7 +43,7 @@ IF %M%==2 GOTO CLIENT
 IF %M%==3 GOTO EOF
 echo:
 :SERVER
-echo welcome to the bbn6 server!
+echo Welcome to the BBN6 Server Setup!
 set /p "SESSION_ID=matchmaking code (no spaces, pick one you and your friend agree on!): "
 bbn6.exe -connect_addr=http://167.71.122.211:11223 -session_id=%SESSION_ID% 2> bbn6_server.log
 pause
@@ -52,7 +51,7 @@ GOTO EOF
 echo:
 :CLIENT
 @echo off
-echo welcome to the bbn6 client!
+echo Welcome to the BBN6 Client Setup!
 set /p "SESSION_ID=matchmaking code (no spaces, pick one you and your friend agree on!): "
 bbn6.exe -connect_addr=http://167.71.122.211:11223 -answer -session_id=%SESSION_ID% 2> bbn6_client.log
 pause
