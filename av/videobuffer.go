@@ -19,7 +19,7 @@ type VideoBuffer struct {
 }
 
 func NewVideoBuffer(width int, height int) *VideoBuffer {
-	buf := C.malloc(C.ulong(width * height * 4))
+	buf := C.malloc(C.size_t(width * height * 4))
 	vb := &VideoBuffer{buf, width, height}
 	runtime.SetFinalizer(vb, func(vb *VideoBuffer) {
 		C.free(vb.buf)

@@ -25,5 +25,5 @@ const (
 )
 
 func (c *Core) SetKeys(keys Keys) {
-	C.bbn6_mgba_mCore_setKeys(c.ptr, C.uint(keys))
+	C.bbn6_mgba_mCore_setKeys(c.ptr, C.uint32_t(keys))
 }

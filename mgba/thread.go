@@ -16,7 +16,7 @@ type Thread struct {
 
 func NewThread(core *Core) *Thread {
 	t := &Thread{}
-	t.t = (*C.struct_mCoreThread)(C.calloc(1, C.ulong(unsafe.Sizeof(C.struct_mCoreThread{}))))
+	t.t = (*C.struct_mCoreThread)(C.calloc(1, C.size_t(unsafe.Sizeof(C.struct_mCoreThread{}))))
 	t.t.core = core.ptr
 	t.t.logger.d = *C.mLogGetContext()
 

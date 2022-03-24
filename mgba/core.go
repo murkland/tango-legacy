@@ -100,7 +100,7 @@ func FindCore(fn string) (*Core, error) {
 }
 
 func (c *Core) SetOptions(o CoreOptions) {
-	c.ptr.opts.audioBuffers = C.ulong(o.AudioBuffers)
+	c.ptr.opts.audioBuffers = C.size_t(o.AudioBuffers)
 	c.ptr.opts.sampleRate = C.uint(o.SampleRate)
 	c.ptr.opts.audioSync = C.bool(o.AudioSync)
 	c.ptr.opts.videoSync = C.bool(o.VideoSync)
@@ -125,7 +125,7 @@ func (c *Core) DesiredVideoDimensions() (int, int) {
 }
 
 func (c *Core) SetVideoBuffer(buf unsafe.Pointer, width int) {
-	C.bbn6_mgba_mCore_setVideoBuffer(c.ptr, (*C.uint)(buf), C.ulong(width))
+	C.bbn6_mgba_mCore_setVideoBuffer(c.ptr, (*C.uint)(buf), C.size_t(width))
 }
 
 func (c *Core) LoadFile(path string) error {
