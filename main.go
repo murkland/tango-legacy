@@ -42,7 +42,8 @@ func main() {
 			if err != nil {
 				log.Fatalf("failed to open config: %s", err)
 			}
-			if err := config.Save(config.DefaultConfig, confF); err != nil {
+			conf = config.DefaultConfig
+			if err := config.Save(conf, confF); err != nil {
 				log.Fatalf("failed to save config: %s", err)
 			}
 		} else {
