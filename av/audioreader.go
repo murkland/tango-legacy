@@ -8,7 +8,7 @@ import (
 )
 
 /*
-#import <stdlib.h>
+#include <stdlib.h>
 */
 import "C"
 
