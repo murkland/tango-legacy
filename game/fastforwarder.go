@@ -107,6 +107,9 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 		predicted := &predictedInputPairs[i][1-localPlayerIndex]
 		predicted.Tick = inp.Tick
 		predicted.CustomScreenState = lastRemoteInput.CustomScreenState
+		if lastRemoteInput.Joyflags&uint16(mgba.KeysA) != 0 {
+			predicted.Joyflags |= uint16(mgba.KeysA)
+		}
 		if lastRemoteInput.Joyflags&uint16(mgba.KeysB) != 0 {
 			predicted.Joyflags |= uint16(mgba.KeysB)
 		}
