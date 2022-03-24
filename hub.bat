@@ -29,5 +29,3 @@ bbn6.exe -connect_addr=http://167.71.122.211:11223 -answer -session_id=%SESSION_
 pause
 GOTO EOF
 echo:
-:EOF
-echo:
