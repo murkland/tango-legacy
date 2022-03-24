@@ -7,7 +7,7 @@ var coreOptions = mgba.CoreOptions{
 	AudioBuffers: 1024,
 	AudioSync:    true,
 	VideoSync:    true,
-	Volume:       0x100,
+	Volume:       0x80,
 }
 
 func newCore(romPath string) (*mgba.Core, error) {

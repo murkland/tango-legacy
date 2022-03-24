@@ -31,11 +31,13 @@ func (vb *VideoBuffer) Pointer() unsafe.Pointer {
 	return vb.buf
 }
 
-func (vb *VideoBuffer) Image() *image.RGBA {
+func (vb *VideoBuffer) CopyImage() *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, vb.width, vb.height))
 	var pix []uint8
 	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&pix)))
 	sliceHeader.Len = vb.width * vb.height * 4
 	sliceHeader.Cap = sliceHeader.Len
 	sliceHeader.Data = uintptr(vb.buf)
-	return &image.RGBA{Rect: image.Rect(0, 0, vb.width, vb.height), Pix: pix, Stride: vb.width * 4}
+	copy(img.Pix, pix)
+	return img
 }

@@ -395,7 +395,7 @@ func (g *Game) Update() error {
 		g.battle.mu.Lock()
 		defer g.battle.mu.Unlock()
 
-		highWaterMark := int(g.medianDelay()*time.Duration(60)/2/time.Second + 1)
+		highWaterMark := int(g.medianDelay()*time.Duration(60)/time.Second + 1)
 		if highWaterMark < 1 {
 			highWaterMark = 1
 		}
@@ -435,7 +435,7 @@ func (g *Game) Update() error {
 
 	if g.mainCore.GBA().Sync().WaitFrameStart() {
 		g.fbuf.Fill(color.White)
-		img := g.vb.Image()
+		img := g.vb.CopyImage()
 		for i := range img.Pix {
 			if i%4 == 3 {
 				img.Pix[i] = 0xff
