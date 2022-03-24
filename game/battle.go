@@ -98,9 +98,7 @@ func (s *Battle) QueueLocalTurn(ctx context.Context, dc *ctxwebrtc.DataChannel, 
 }
 
 func (s *Battle) QueueLocalInput(ctx context.Context, dc *ctxwebrtc.DataChannel, tick int, joyflags uint16, customScreenState uint8) error {
-	if err := s.localInputQueue.Push([]Input{{tick, joyflags, customScreenState}}); err != nil {
-		return err
-	}
+	s.localInputQueue.Push([]Input{{tick, joyflags, customScreenState}})
 
 	var pkt packets.Input
 	pkt.ForTick = uint32(tick)
@@ -131,29 +129,17 @@ func (s *Battle) DequeueInputs(ctx context.Context, dc *ctxwebrtc.DataChannel) (
 		case packets.Turn:
 			s.remoteTurn = &turn{tick: int(p.ForTick), marshaled: p.Marshaled[:]}
 		case packets.Input:
-			if err := s.remoteInputQueue.Push([]Input{{int(p.ForTick), p.Joyflags, p.CustomScreenState}}); err != nil {
-				return InputAndTurn{}, InputAndTurn{}, err
-			}
+			s.remoteInputQueue.Push([]Input{{int(p.ForTick), p.Joyflags, p.CustomScreenState}})
 		default:
 			return InputAndTurn{}, InputAndTurn{}, fmt.Errorf("unexpected packet: %v", p)
 		}
 	}
 
 	var localInputBuf [1]Input
-	if err := s.localInputQueue.Peek(localInputBuf[:], 0); err != nil {
-		return InputAndTurn{}, InputAndTurn{}, err
-	}
-	if err := s.localInputQueue.Advance(1); err != nil {
-		return InputAndTurn{}, InputAndTurn{}, err
-	}
+	s.localInputQueue.Pop(localInputBuf[:], 0)
 
 	var remoteInputBuf [1]Input
-	if err := s.remoteInputQueue.Peek(remoteInputBuf[:], 0); err != nil {
-		return InputAndTurn{}, InputAndTurn{}, err
-	}
-	if err := s.remoteInputQueue.Advance(1); err != nil {
-		return InputAndTurn{}, InputAndTurn{}, err
-	}
+	s.remoteInputQueue.Pop(remoteInputBuf[:], 0)
 
 	local := InputAndTurn{Input: localInputBuf[0]}
 	remote := InputAndTurn{Input: remoteInputBuf[0]}

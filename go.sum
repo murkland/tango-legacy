@@ -44,6 +44,8 @@ github.com/murkland/oto/v2 v2.1.0-alpha.8.0.20220323083210-1d4c717820a2 h1:Qog0i
 github.com/murkland/oto/v2 v2.1.0-alpha.8.0.20220323083210-1d4c717820a2/go.mod h1:rUKQmwMkqmRxe+IAof9+tuYA2ofm8cAWXFmSfzDN8vQ=
 github.com/murkland/ringbuf v0.0.0-20220305211702-87034c03b198 h1:eUqsZ2oXZZwW9rWPOnmtPo8M6I4kXCRyDn5M02tKtfM=
 github.com/murkland/ringbuf v0.0.0-20220305211702-87034c03b198/go.mod h1:b1kYRSWKnGll9e2oCKAW6quDG1R8xEc7gHzHLo4t/54=
+github.com/murkland/ringbuf v0.0.0-20220324004630-6e5417e46b54 h1:D68VSQwuJrKN26CgMee4jNs9b22uAtZ5b8r82u1ejEA=
+github.com/murkland/ringbuf v0.0.0-20220324004630-6e5417e46b54/go.mod h1:b1kYRSWKnGll9e2oCKAW6quDG1R8xEc7gHzHLo4t/54=
 github.com/murkland/signor v0.0.0-20220305211703-822852f5d0a4 h1:gI0fXXiXaCGr5mn8Ky/X7YRi9ejq5L7PDW7CYfMTkCk=
 github.com/murkland/signor v0.0.0-20220305211703-822852f5d0a4/go.mod h1:GnLc9DklNcAy+j24jjW7lgP4JyGa7EzFMPEFrBvz8Mw=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
