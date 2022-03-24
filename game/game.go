@@ -74,7 +74,6 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isAnswer
 		return nil, err
 	}
 	<-ready
-	audioCtx.SetReadBufferSize(mainCore.Options().AudioBuffers * 4)
 
 	width, height := mainCore.DesiredVideoDimensions()
 	vb := av.NewVideoBuffer(width, height)
@@ -86,6 +85,7 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isAnswer
 	}
 
 	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(mainCore, mainCore.Options().SampleRate))
+	audioPlayer.(oto.BufferSizeSetter).SetBufferSize(mainCore.Options().AudioBuffers * 4)
 
 	g := &Game{
 		conf: conf,
@@ -310,6 +310,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.battle.iq.AddInput(g.battle.LocalPlayerIndex(), Input{int(tick), joyflags, customScreenState, turn})
 		inputPairs := g.battle.iq.Consume()
 		if len(inputPairs) > 0 {
+			// Write this to the input log.
+
 			left := g.battle.iq.Peek(g.battle.LocalPlayerIndex())
 
 			committedState, dirtyState, err := g.fastforwarder.fastforward(g.battle.committedState, g.battle.LocalPlayerIndex(), inputPairs, left)
@@ -399,7 +401,7 @@ func (g *Game) Update() error {
 		g.battle.mu.Lock()
 		defer g.battle.mu.Unlock()
 
-		highWaterMark := int(g.medianDelay()*time.Duration(60)/2/time.Second + 1)
+		highWaterMark := int(g.medianDelay()*time.Duration(60)/time.Second + 1)
 		if highWaterMark < 1 {
 			highWaterMark = 1
 		}
