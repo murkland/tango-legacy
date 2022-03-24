@@ -30,8 +30,8 @@ var DefaultConfig = Config{
 	Keymapping: Keymapping{
 		A:      ebiten.KeyZ,
 		B:      ebiten.KeyX,
-		L:      ebiten.KeyL,
-		R:      ebiten.KeyR,
+		L:      ebiten.KeyA,
+		R:      ebiten.KeyS,
 		Left:   ebiten.KeyArrowLeft,
 		Right:  ebiten.KeyArrowRight,
 		Up:     ebiten.KeyArrowUp,
