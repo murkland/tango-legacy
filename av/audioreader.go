@@ -43,9 +43,11 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 		available = len(p)
 	}
 
-	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p))
+	buf := make([]byte, len(p))
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&buf))
 	left.ReadSamples(unsafe.Pointer(sliceHeader.Data), available, true)
 	right.ReadSamples(unsafe.Pointer(sliceHeader.Data+2), available, true)
+	copy(p, buf)
 
 	if sync != nil {
 		sync.ConsumeAudio()
