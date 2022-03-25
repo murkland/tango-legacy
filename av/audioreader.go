@@ -44,6 +44,7 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 		available = len(p)
 	}
 
+	// TODO: Resample the buffer from float64(a.sampleRate)*float64(fauxClock) back down to float64(a.sampleRate).
 	left.ReadSamples(a.buf, available, true)
 	right.ReadSamples(unsafe.Pointer(uintptr(a.buf)+2), available, true)
 	copy(p, C.GoBytes(a.buf, C.int(len(p))))
