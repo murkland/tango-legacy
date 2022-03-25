@@ -78,6 +78,7 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isAnswer
 
 	width, height := mainCore.DesiredVideoDimensions()
 	vb := av.NewVideoBuffer(width, height)
+	ebiten.SetWindowSize(width*3, height*3)
 
 	mainCore.SetVideoBuffer(vb.Pointer(), width)
 	t := mgba.NewThread(mainCore)
