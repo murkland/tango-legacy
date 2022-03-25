@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"math/rand"
 	"runtime"
 	"sync"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/murkland/bbn6/trapper"
 	"github.com/murkland/ctxwebrtc"
 	"github.com/murkland/ringbuf"
+	signorclient "github.com/murkland/signor/client"
 	"golang.org/x/exp/constraints"
 	"golang.org/x/sync/errgroup"
 )
@@ -29,7 +31,9 @@ import (
 type Game struct {
 	conf config.Config
 
-	dc *ctxwebrtc.DataChannel
+	dc             *ctxwebrtc.DataChannel
+	randSource     rand.Source
+	connectionSide signorclient.ConnectionSide
 
 	mainCore      *mgba.Core
 	fastforwarder *fastforwarder
@@ -45,8 +49,6 @@ type Game struct {
 
 	t *mgba.Thread
 
-	isP2 bool
-
 	localReady  bool
 	remoteReady bool
 	readyMu     sync.Mutex
@@ -60,7 +62,7 @@ type Game struct {
 	delayRingbufMu sync.RWMutex
 }
 
-func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isP2 bool) (*Game, error) {
+func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, randSource rand.Source, connectionSide signorclient.ConnectionSide) (*Game, error) {
 	mainCore, err := newCore(romPath)
 	if err != nil {
 		return nil, err
@@ -100,7 +102,10 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isP2 boo
 
 	g := &Game{
 		conf: conf,
-		dc:   dc,
+
+		dc:             dc,
+		randSource:     randSource,
+		connectionSide: connectionSide,
 
 		mainCore:      mainCore,
 		fastforwarder: fastforwarder,
@@ -112,8 +117,6 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isP2 boo
 		audioPlayer: audioPlayer,
 
 		t: t,
-
-		isP2: isP2,
 
 		delayRingbuf: ringbuf.New[time.Duration](10),
 	}
@@ -375,8 +378,15 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_start__ret, func() {
-		log.Printf("battle started")
-		battle, err := NewBattle(g.isP2)
+		if g.battle != nil {
+			panic("battle already started?")
+		}
+
+		rng := rand.New(g.randSource)
+		isP2 := (rng.Int31n(2) == 1) == (g.connectionSide == signorclient.ConnectionSideOfferer)
+
+		log.Printf("battle started, is p2 = %t", isP2)
+		battle, err := NewBattle(isP2)
 		if err != nil {
 			panic(err)
 		}

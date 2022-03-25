@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	mathrand "math/rand"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -31,7 +30,7 @@ var (
 
 var commitHash string
 
-const expectedProtoVersion = 0x01
+const protocolVersion = 0x02
 
 func Negotiate(ctx context.Context, dc *ctxwebrtc.DataChannel) (*syncrand.Source, error) {
 	var nonce [16]byte
@@ -41,7 +40,7 @@ func Negotiate(ctx context.Context, dc *ctxwebrtc.DataChannel) (*syncrand.Source
 
 	commitment := syncrand.Commit(nonce[:])
 	var helloPacket packets.Hello
-	helloPacket.ProtocolVersion = expectedProtoVersion
+	helloPacket.ProtocolVersion = protocolVersion
 	copy(helloPacket.RNGCommitment[:], commitment)
 	if err := packets.Send(ctx, dc, helloPacket, nil); err != nil {
 		return nil, fmt.Errorf("failed to send hello: %w", err)
@@ -51,9 +50,8 @@ func Negotiate(ctx context.Context, dc *ctxwebrtc.DataChannel) (*syncrand.Source
 	if err != nil {
 		return nil, fmt.Errorf("failed to receive hello: %w", err)
 	}
-	protocolVersion := theirHello.(packets.Hello).ProtocolVersion
-	if protocolVersion != expectedProtoVersion {
-		return nil, fmt.Errorf("expected protocol version 0x%02x, got 0x%02x: are you out of date?", expectedProtoVersion, protocolVersion)
+	if theirHello.(packets.Hello).ProtocolVersion != protocolVersion {
+		return nil, fmt.Errorf("expected protocol version 0x%02x, got 0x%02x: are you out of date?", protocolVersion, protocolVersion)
 	}
 
 	theirCommitment := theirHello.(packets.Hello).RNGCommitment
@@ -157,21 +155,13 @@ func main() {
 	}
 	log.Printf("connection negotiation ok!")
 
-	rng := mathrand.New(randSource)
-	isP2 := (rng.Int31n(2) == 1) == (connectionSide == signorclient.ConnectionSideOfferer)
-	if isP2 {
-		log.Printf("you are PLAYER 2.")
-	} else {
-		log.Printf("you are PLAYER 1.")
-	}
-
 	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")
 	ebiten.SetMaxTPS(ebiten.UncappedTPS)
 	ebiten.SetWindowResizable(true)
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-	g, err := game.New(conf, *romPath, dc, isP2)
+	g, err := game.New(conf, *romPath, dc, randSource, connectionSide)
 	if err != nil {
 		log.Fatalf("failed to start game: %s", err)
 	}

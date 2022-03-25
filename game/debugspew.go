@@ -35,10 +35,13 @@ func init() {
 }
 
 func (g *Game) spewDebug(screen *ebiten.Image) {
-	text.Draw(screen, strings.Join([]string{
+	lines := []string{
 		fmt.Sprintf("emu fps: %.0f", g.mainCore.GBA().Sync().FPSTarget()),
 		fmt.Sprintf("fps:     %.0f", ebiten.CurrentFPS()),
 		fmt.Sprintf("ping:    %s", g.medianDelay()),
-		fmt.Sprintf("is p2:   %t", g.isP2),
-	}, "\n"), mplusNormalFont, 2, 14, color.RGBA{0x00, 0xff, 0x00, 0xff})
+	}
+	if g.battle != nil {
+		lines = append(lines, fmt.Sprintf("is p2:   %t", g.battle.isP2))
+	}
+	text.Draw(screen, strings.Join(lines, "\n"), mplusNormalFont, 2, 14, color.RGBA{0x00, 0xff, 0x00, 0xff})
 }
