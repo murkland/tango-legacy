@@ -39,5 +39,6 @@ func (g *Game) spewDebug(screen *ebiten.Image) {
 		fmt.Sprintf("emu fps: %.0f", g.mainCore.GBA().Sync().FPSTarget()),
 		fmt.Sprintf("fps:     %.0f", ebiten.CurrentFPS()),
 		fmt.Sprintf("ping:    %s", g.medianDelay()),
+		fmt.Sprintf("is p2:   %t", g.isP2),
 	}, "\n"), mplusNormalFont, 2, 14, color.RGBA{0x00, 0xff, 0x00, 0xff})
 }
