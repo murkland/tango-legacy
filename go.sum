@@ -83,6 +83,8 @@ github.com/murkland/ringbuf v0.0.0-20220324004630-6e5417e46b54 h1:D68VSQwuJrKN26
 github.com/murkland/ringbuf v0.0.0-20220324004630-6e5417e46b54/go.mod h1:b1kYRSWKnGll9e2oCKAW6quDG1R8xEc7gHzHLo4t/54=
 github.com/murkland/signor v0.0.0-20220325071859-35dce49c8b2b h1:TQR+kuE3b7QBb5jenZ8auFnbGXCdemU9AugdDM4kApw=
 github.com/murkland/signor v0.0.0-20220325071859-35dce49c8b2b/go.mod h1:ODYf/B4aitNuB8dqE0EyTn9sHYjvF5rtMEpJh0TWAj8=
+github.com/murkland/signor v0.0.0-20220325090807-d38148f9652a h1:UwINDo+neXv+Bk+IX6Ubcb8sTCM+7gwE/BO76QXqwC4=
+github.com/murkland/signor v0.0.0-20220325090807-d38148f9652a/go.mod h1:ODYf/B4aitNuB8dqE0EyTn9sHYjvF5rtMEpJh0TWAj8=
 github.com/murkland/syncrand v0.0.0-20220305211705-ca5629605735 h1:gQfdm416Q3v0VQvekToTCSJRM3GFQGxhT/tLQqvBxgA=
 github.com/murkland/syncrand v0.0.0-20220305211705-ca5629605735/go.mod h1:A5ESkPu6fXKG6ULIAjYGq5fptuUpJWlxMGPd5AodRdE=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
