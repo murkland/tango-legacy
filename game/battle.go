@@ -9,8 +9,8 @@ import (
 type Battle struct {
 	mu sync.Mutex
 
-	startFrame uint32
-	isP2       bool
+	tick uint32
+	isP2 bool
 
 	inputlog *InputLog
 	iq       *InputQueue
@@ -38,8 +38,8 @@ func NewBattle(isP2 bool) (*Battle, error) {
 	}
 
 	return &Battle{
-		startFrame: 0,
-		isP2:       isP2,
+		tick: 0,
+		isP2: isP2,
 
 		inputlog: il,
 		iq:       NewInputQueue(60),

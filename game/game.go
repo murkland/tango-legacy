@@ -315,13 +315,13 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
 
-		if g.battle.startFrame == 0 {
-			g.battle.startFrame = core.FrameCounter()
+		if g.battle.tick == 0 {
+			g.battle.tick = 1
 			g.battle.committedState = core.SaveState()
 			return
 		}
 
-		tick := core.FrameCounter() - g.battle.startFrame
+		g.battle.tick++
 
 		joyflags := bn6.LocalJoyflags(core)
 		customScreenState := bn6.LocalCustomScreenState(core)
@@ -329,14 +329,14 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.battle.localPendingTurn = nil
 
 		var pkt packets.Input
-		pkt.ForTick = tick
+		pkt.ForTick = g.battle.tick
 		pkt.Joyflags = joyflags
 		pkt.CustomScreenState = customScreenState
 		if err := packets.Send(ctx, g.dc, pkt, turn); err != nil {
 			panic(err)
 		}
 
-		g.battle.iq.AddInput(g.battle.LocalPlayerIndex(), Input{int(tick), joyflags, customScreenState, turn})
+		g.battle.iq.AddInput(g.battle.LocalPlayerIndex(), Input{int(g.battle.tick), joyflags, customScreenState, turn})
 		bn6.SetPlayerInputState(core, g.battle.LocalPlayerIndex(), joyflags, customScreenState)
 		if turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), turn)
@@ -363,8 +363,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.battle.mu.Lock()
 		defer g.battle.mu.Unlock()
 
-		tick := core.FrameCounter() - g.battle.startFrame
-		log.Printf("turn ended on %df, rng state = %08x", tick, bn6.RNG2State(core))
+		tick := g.battle.tick
+		log.Printf("turn ended on %d, rng state = %08x", tick, bn6.RNG2State(core))
 	})
 
 	tp.Add(offsets.A_battle_start__ret, func() {
