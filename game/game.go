@@ -379,6 +379,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	tp.Add(offsets.A_battle_end__entry, func() {
 		log.Printf("battle ended")
 		g.battle = nil
+		g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 	})
 
 	tp.Add(offsets.A_battle_isP2__tst, func() {
