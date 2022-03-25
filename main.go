@@ -23,11 +23,10 @@ import (
 )
 
 var (
-	connectAddr = flag.String("connect_addr", "http://localhost:12345", "address to connect to")
-	answer      = flag.Bool("answer", false, "if true, answers a session instead of offers")
+	connectAddr = flag.String("connect_addr", "localhost:12345", "address to connect to")
 	sessionID   = flag.String("session_id", "test-session", "session to join to")
-	configPath  = flag.String("config_path", "bn6f.toml", "path to config")
-	romPath     = flag.String("rom_path", "bn6f.gba", "path to rom")
+	configPath  = flag.String("config_path", "bbn6.toml", "path to config")
+	romPath     = flag.String("rom_path", "bn6.gba", "path to rom")
 )
 
 var commitHash string
@@ -118,35 +117,35 @@ func main() {
 		log.Printf("mgba: level=%d category=%s %s", level, category, message)
 	})
 
-	log.Printf("connecting to %s, answer = %t, session_id = %s", *connectAddr, *answer, *sessionID)
+	log.Printf("connecting to %s, session_id = %s", *connectAddr, *sessionID)
 
-	signorClient := signorclient.New(*connectAddr)
-
-	peerConn, err := webrtc.NewPeerConnection(conf.WebRTC)
+	signorClient, err := signorclient.New(*connectAddr)
 	if err != nil {
-		log.Fatalf("failed to create RTC peer connection: %s", err)
+		log.Fatalf("failed to open matchmaking client: %s", err)
 	}
 
-	rtcDc, err := peerConn.CreateDataChannel("game", &webrtc.DataChannelInit{
-		ID:         clone.P(uint16(1)),
-		Negotiated: clone.P(true),
-		Ordered:    clone.P(true),
+	var rtcDc *webrtc.DataChannel
+	peerConn, connectionSide, err := signorClient.Connect(ctx, *sessionID, func() (*webrtc.PeerConnection, error) {
+		peerConn, err := webrtc.NewPeerConnection(conf.WebRTC)
+		if err != nil {
+			log.Fatalf("failed to create RTC peer connection: %s", err)
+		}
+
+		rtcDc, err = peerConn.CreateDataChannel("game", &webrtc.DataChannelInit{
+			ID:         clone.P(uint16(1)),
+			Negotiated: clone.P(true),
+			Ordered:    clone.P(true),
+		})
+		if err != nil {
+			log.Fatalf("failed to create RTC peer connection: %s", err)
+		}
+
+		return peerConn, nil
 	})
 	if err != nil {
-		log.Fatalf("failed to create RTC peer connection: %s", err)
+		log.Fatalf("failed to connect to peer: %s", err)
 	}
-
 	dc := ctxwebrtc.WrapDataChannel(rtcDc)
-
-	if !*answer {
-		if err := signorClient.Offer(ctx, []byte(*sessionID), peerConn); err != nil {
-			log.Fatalf("failed to offer: %s", err)
-		}
-	} else {
-		if err := signorClient.Answer(ctx, []byte(*sessionID), peerConn); err != nil {
-			log.Fatalf("failed to answer: %s", err)
-		}
-	}
 
 	log.Printf("signaling complete!")
 	log.Printf("local SDP: %s", peerConn.LocalDescription().SDP)
@@ -159,7 +158,7 @@ func main() {
 	log.Printf("connection negotiation ok!")
 
 	rng := mathrand.New(randSource)
-	isP2 := (rng.Int31n(2) == 1) == *answer
+	isP2 := (rng.Int31n(2) == 1) == (connectionSide == signorclient.ConnectionSideOfferer)
 	if isP2 {
 		log.Printf("you are PLAYER 2.")
 	} else {
