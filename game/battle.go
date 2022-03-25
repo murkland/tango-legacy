@@ -1,7 +1,10 @@
 package game
 
 import (
+	"fmt"
+	"log"
 	"sync"
+	"time"
 
 	"github.com/murkland/bbn6/mgba"
 )
@@ -35,18 +38,29 @@ func (s *Battle) RemotePlayerIndex() int {
 }
 
 func NewBattle(isP2 bool) (*Battle, error) {
-	il, err := newInputLog()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Battle{
+	b := &Battle{
 		tick: 0,
 		isP2: isP2,
 
 		lastCommittedRemoteInput: Input{Joyflags: 0xfc00},
 
-		inputlog: il,
-		iq:       NewInputQueue(60),
-	}, nil
+		iq: NewInputQueue(60),
+	}
+
+	fn := fmt.Sprintf("input_p%d_%s.log", b.LocalPlayerIndex()+1, time.Now().Format("20060102030405"))
+	log.Printf("opening input log: %s", fn)
+
+	il, err := newInputLog(fn)
+	if err != nil {
+		return nil, err
+	}
+	b.inputlog = il
+	return b, nil
+}
+
+func (s *Battle) Close() error {
+	if err := s.inputlog.Close(); err != nil {
+		return err
+	}
+	return nil
 }

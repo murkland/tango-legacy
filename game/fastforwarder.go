@@ -99,11 +99,11 @@ func (ff *fastforwarder) advanceOne() {
 //
 // BEWARE: only one thread may call fastforward at a time.
 func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlayerIndex int, inputPairs [][2]Input, lastCommittedRemoteInput Input, localPlayerInputsLeft []Input) (*mgba.State, *mgba.State, error) {
+	ff.state = state
 	if !ff.core.LoadState(state) {
 		return nil, nil, errors.New("failed to load state")
 	}
 
-	ff.state = nil
 	ff.localPlayerIndex = localPlayerIndex
 
 	// Run the paired inputs we already have and create the new committed state.
@@ -123,9 +123,6 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 	}
 
 	committedState := ff.state
-	if committedState == nil {
-		return nil, nil, errors.New("no committed state?")
-	}
 
 	// Run the local inputs and predict what the remote side did and create the new dirty state.
 	predictedInputPairs := make([][2]Input, len(localPlayerInputsLeft))
@@ -156,9 +153,6 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 	}
 
 	dirtyState := ff.state
-	if dirtyState == nil {
-		return nil, nil, errors.New("no committed state?")
-	}
 
 	return committedState, dirtyState, nil
 }
