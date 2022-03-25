@@ -8,9 +8,9 @@ netplay for mega man battle network 6 in the style of https://github.com/ssbmars
 
 ## how to use
 
-**WARNING: THIS REPO IS CURRENTLY IN NO STATE TO BE USED.**
+-   place your rom and battery file in the same directory as bbn6, named `bn6.gba` and `bn6.sav`
 
-please use [v0.0.3](https://github.com/murkland/bbn6/releases/tag/v0.0.3) for the last functional version of bbn6!
+-   if you are on windows, just run `hub.bat`. if you are on not windows, you're on your own! (for now)
 
 ## you will need
 
