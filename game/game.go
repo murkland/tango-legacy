@@ -484,12 +484,13 @@ func (g *Game) Update() error {
 			expected = 1
 		}
 
-		if lag := g.battle.iq.Lag(g.battle.RemotePlayerIndex()); lag >= expected*2 {
+		lag := g.battle.iq.Lag(g.battle.RemotePlayerIndex())
+		if lag >= expected*2 {
 			log.Printf("input is 2x acceptable delay and had to be dropped! %d >= %d", lag, expected*2)
 			return nil
 		}
 
-		tps := expectedFPS + (g.battle.iq.qs[g.battle.RemotePlayerIndex()].Used()-expected)*2
+		tps := expectedFPS - lag + expected
 
 		// TODO: Not thread safe.
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
