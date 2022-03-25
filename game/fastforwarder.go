@@ -13,6 +13,7 @@ import (
 
 type fastforwarder struct {
 	core *mgba.Core
+	bn6  *bn6.BN6
 
 	localPlayerIndex int
 	inputPairs       *ringbuf.RingBuf[[2]Input]
@@ -20,17 +21,17 @@ type fastforwarder struct {
 	tick             int
 }
 
-func newFastforwarder(romPath string, offsets bn6.Offsets) (*fastforwarder, error) {
+func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 	core, err := newCore(romPath)
 	if err != nil {
 		return nil, err
 	}
 
-	ff := &fastforwarder{core, 0, nil, nil, 0}
+	ff := &fastforwarder{core, bn6, 0, nil, nil, 0}
 
 	tp := trapper.New(core)
 
-	tp.Add(offsets.A_battle_update__call__battle_copyInputData, func() {
+	tp.Add(bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
 		core.GBA().SetRegister(0, 0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
@@ -60,15 +61,15 @@ func newFastforwarder(romPath string, offsets bn6.Offsets) (*fastforwarder, erro
 		}
 	})
 
-	tp.Add(offsets.A_battle_isP2__tst, func() {
+	tp.Add(bn6.Offsets.ROM.A_battle_isP2__tst, func() {
 		core.GBA().SetRegister(0, uint32(ff.localPlayerIndex))
 	})
 
-	tp.Add(offsets.A_link_isP2__ret, func() {
+	tp.Add(bn6.Offsets.ROM.A_link_isP2__ret, func() {
 		core.GBA().SetRegister(0, uint32(ff.localPlayerIndex))
 	})
 
-	tp.Add(offsets.A_commMenu_inBattle__call__commMenu_handleLinkCableInput, func() {
+	tp.Add(bn6.Offsets.ROM.A_commMenu_inBattle__call__commMenu_handleLinkCableInput, func() {
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
 	})
@@ -114,7 +115,7 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 		ff.tick = ip[0].Tick
 		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags))
 		ff.advanceOne()
-		if err := il.Write(bn6.RNG2State(ff.core), ip); err != nil {
+		if err := il.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
 			return nil, nil, err
 		}
 	}
