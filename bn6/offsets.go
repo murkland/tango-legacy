@@ -15,6 +15,7 @@ type Offsets struct {
 	A_link_isP2__ret                                              uint32
 	A_commMenu_handleLinkCableInput__entry                        uint32
 	A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput uint32
+	A_commMenu_waitForFriend__ret__cancel                         uint32
 	A_commMenu_inBattle__call__commMenu_handleLinkCableInput      uint32
 }
 
@@ -34,6 +35,7 @@ var offsetsMap = map[string]Offsets{
 		A_link_isP2__ret:                                              0x0803dd86,
 		A_commMenu_handleLinkCableInput__entry:                        0x0803eae4,
 		A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x08129f8a,
+		A_commMenu_waitForFriend__ret__cancel:                         0x08129fa4,
 		A_commMenu_inBattle__call__commMenu_handleLinkCableInput:      0x0812b5ca,
 	},
 	"MEGAMAN6_GXX": {
@@ -50,6 +52,7 @@ var offsetsMap = map[string]Offsets{
 		A_link_isP2__ret:                                              0x0803dd5a,
 		A_commMenu_handleLinkCableInput__entry:                        0x0803eab8,
 		A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x0812bd66,
+		A_commMenu_waitForFriend__ret__cancel:                         0x0812bd80,
 		A_commMenu_inBattle__call__commMenu_handleLinkCableInput:      0x0812d3a6,
 	},
 }

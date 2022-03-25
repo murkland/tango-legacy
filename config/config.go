@@ -9,16 +9,17 @@ import (
 )
 
 type Keymapping struct {
-	A      ebiten.Key
-	B      ebiten.Key
-	L      ebiten.Key
-	R      ebiten.Key
-	Left   ebiten.Key
-	Right  ebiten.Key
-	Up     ebiten.Key
-	Down   ebiten.Key
-	Start  ebiten.Key
-	Select ebiten.Key
+	A         ebiten.Key
+	B         ebiten.Key
+	L         ebiten.Key
+	R         ebiten.Key
+	Left      ebiten.Key
+	Right     ebiten.Key
+	Up        ebiten.Key
+	Down      ebiten.Key
+	Start     ebiten.Key
+	Select    ebiten.Key
+	DebugSpew ebiten.Key
 }
 
 type Config struct {
@@ -28,16 +29,17 @@ type Config struct {
 
 var DefaultConfig = Config{
 	Keymapping: Keymapping{
-		A:      ebiten.KeyZ,
-		B:      ebiten.KeyX,
-		L:      ebiten.KeyA,
-		R:      ebiten.KeyS,
-		Left:   ebiten.KeyArrowLeft,
-		Right:  ebiten.KeyArrowRight,
-		Up:     ebiten.KeyArrowUp,
-		Down:   ebiten.KeyArrowDown,
-		Start:  ebiten.KeyEnter,
-		Select: ebiten.KeyBackspace,
+		A:         ebiten.KeyZ,
+		B:         ebiten.KeyX,
+		L:         ebiten.KeyA,
+		R:         ebiten.KeyS,
+		Left:      ebiten.KeyArrowLeft,
+		Right:     ebiten.KeyArrowRight,
+		Up:        ebiten.KeyArrowUp,
+		Down:      ebiten.KeyArrowDown,
+		Start:     ebiten.KeyEnter,
+		Select:    ebiten.KeyBackspace,
+		DebugSpew: ebiten.KeyBackquote,
 	},
 	WebRTC: webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
@@ -61,16 +63,17 @@ var DefaultConfig = Config{
 }
 
 type RawKeymapping struct {
-	A      string
-	B      string
-	L      string
-	R      string
-	Left   string
-	Right  string
-	Up     string
-	Down   string
-	Start  string
-	Select string
+	A         string
+	B         string
+	L         string
+	R         string
+	Left      string
+	Right     string
+	Up        string
+	Down      string
+	Start     string
+	Select    string
+	DebugSpew string
 }
 
 type RawConfig struct {
@@ -81,16 +84,17 @@ type RawConfig struct {
 func (c Config) ToRaw() RawConfig {
 	return RawConfig{
 		Keymapping: RawKeymapping{
-			A:      keyCodeToKeyName[c.Keymapping.A],
-			B:      keyCodeToKeyName[c.Keymapping.B],
-			L:      keyCodeToKeyName[c.Keymapping.L],
-			R:      keyCodeToKeyName[c.Keymapping.R],
-			Left:   keyCodeToKeyName[c.Keymapping.Left],
-			Right:  keyCodeToKeyName[c.Keymapping.Right],
-			Up:     keyCodeToKeyName[c.Keymapping.Up],
-			Down:   keyCodeToKeyName[c.Keymapping.Down],
-			Start:  keyCodeToKeyName[c.Keymapping.Start],
-			Select: keyCodeToKeyName[c.Keymapping.Select],
+			A:         keyName(c.Keymapping.A),
+			B:         keyName(c.Keymapping.B),
+			L:         keyName(c.Keymapping.L),
+			R:         keyName(c.Keymapping.R),
+			Left:      keyName(c.Keymapping.Left),
+			Right:     keyName(c.Keymapping.Right),
+			Up:        keyName(c.Keymapping.Up),
+			Down:      keyName(c.Keymapping.Down),
+			Start:     keyName(c.Keymapping.Start),
+			Select:    keyName(c.Keymapping.Select),
+			DebugSpew: keyName(c.Keymapping.DebugSpew),
 		},
 		WebRTC: c.WebRTC,
 	}
@@ -99,16 +103,17 @@ func (c Config) ToRaw() RawConfig {
 func (rc RawConfig) ToParsed() Config {
 	return Config{
 		Keymapping: Keymapping{
-			A:      keyNameToKeyCode[rc.Keymapping.A],
-			B:      keyNameToKeyCode[rc.Keymapping.B],
-			L:      keyNameToKeyCode[rc.Keymapping.L],
-			R:      keyNameToKeyCode[rc.Keymapping.R],
-			Left:   keyNameToKeyCode[rc.Keymapping.Left],
-			Right:  keyNameToKeyCode[rc.Keymapping.Right],
-			Up:     keyNameToKeyCode[rc.Keymapping.Up],
-			Down:   keyNameToKeyCode[rc.Keymapping.Down],
-			Start:  keyNameToKeyCode[rc.Keymapping.Start],
-			Select: keyNameToKeyCode[rc.Keymapping.Select],
+			A:         keyCode(rc.Keymapping.A),
+			B:         keyCode(rc.Keymapping.B),
+			L:         keyCode(rc.Keymapping.L),
+			R:         keyCode(rc.Keymapping.R),
+			Left:      keyCode(rc.Keymapping.Left),
+			Right:     keyCode(rc.Keymapping.Right),
+			Up:        keyCode(rc.Keymapping.Up),
+			Down:      keyCode(rc.Keymapping.Down),
+			Start:     keyCode(rc.Keymapping.Start),
+			Select:    keyCode(rc.Keymapping.Select),
+			DebugSpew: keyCode(rc.Keymapping.DebugSpew),
 		},
 		WebRTC: rc.WebRTC,
 	}

@@ -43,7 +43,13 @@ type Game struct {
 
 	t *mgba.Thread
 
-	isAnswerer bool // TODO: negotiate this
+	isP2 bool
+
+	localReady  bool
+	remoteReady bool
+	readyMu     sync.Mutex
+
+	debugSpew bool
 
 	pendingRemoteInit []byte
 	battle            *Battle
@@ -52,7 +58,7 @@ type Game struct {
 	delayRingbufMu sync.RWMutex
 }
 
-func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isAnswerer bool) (*Game, error) {
+func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isP2 bool) (*Game, error) {
 	mainCore, err := newCore(romPath)
 	if err != nil {
 		return nil, err
@@ -103,7 +109,7 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isAnswer
 
 		t: t,
 
-		isAnswerer: isAnswerer,
+		isP2: isP2,
 
 		delayRingbuf: ringbuf.New[time.Duration](10),
 	}
@@ -220,6 +226,8 @@ func (g *Game) handleConn(ctx context.Context) error {
 			})(); err != nil {
 				return err
 			}
+		case packets.Ready:
+			g.remoteReady = p.IsReady
 		case packets.Init:
 			g.pendingRemoteInit = p.Marshaled[:]
 		case packets.Input:
@@ -369,7 +377,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 	tp.Add(offsets.A_battle_start__ret, func() {
 		log.Printf("battle started")
-		battle, err := NewBattle(g.isAnswerer)
+		battle, err := NewBattle(g.isP2)
 		if err != nil {
 			panic(err)
 		}
@@ -403,7 +411,43 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(offsets.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput, func() {
-		bn6.StartBattleFromCommMenu(core)
+		ctx := context.Background()
+
+		g.readyMu.Lock()
+		defer g.readyMu.Unlock()
+
+		if !g.localReady {
+			var pkt packets.Ready
+			pkt.IsReady = true
+			if err := packets.Send(ctx, g.dc, pkt, nil); err != nil {
+				panic(err)
+			}
+			g.localReady = true
+		}
+
+		if g.remoteReady {
+			bn6.StartBattleFromCommMenu(core)
+		}
+
+		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().ThumbWritePC()
+	})
+
+	tp.Add(offsets.A_commMenu_waitForFriend__ret__cancel, func() {
+		ctx := context.Background()
+
+		g.readyMu.Lock()
+		defer g.readyMu.Unlock()
+
+		if g.localReady {
+			var pkt packets.Ready
+			pkt.IsReady = false
+			if err := packets.Send(ctx, g.dc, pkt, nil); err != nil {
+				panic(err)
+			}
+			g.localReady = false
+		}
+
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
 	})
@@ -486,6 +530,10 @@ func (g *Game) Update() error {
 	}
 	g.mainCore.SetKeys(keys)
 
+	if g.conf.Keymapping.DebugSpew != -1 && inpututil.IsKeyJustPressed(g.conf.Keymapping.DebugSpew) {
+		g.debugSpew = !g.debugSpew
+	}
+
 	return nil
 }
 
@@ -503,4 +551,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts := &ebiten.DrawImageOptions{}
 	screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
+
+	if g.debugSpew {
+		g.spewDebug(screen)
+	}
 }

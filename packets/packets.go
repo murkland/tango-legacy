@@ -26,8 +26,9 @@ const (
 	packetTypePong   packetType = 1
 	packetTypeHello  packetType = 2
 	packetTypeHello2 packetType = 3
-	packetTypeInit   packetType = 4
-	packetTypeInput  packetType = 5
+	packetTypeReady  packetType = 4
+	packetTypeInit   packetType = 5
+	packetTypeInput  packetType = 6
 )
 
 type Packet interface {
@@ -59,6 +60,12 @@ type Hello2 struct {
 }
 
 func (Hello2) packetType() packetType { return packetTypeHello2 }
+
+type Ready struct {
+	IsReady bool
+}
+
+func (Ready) packetType() packetType { return packetTypeReady }
 
 type Init struct {
 	Marshaled [0x100]uint8
@@ -107,6 +114,8 @@ func Unmarshal(r io.Reader) (Packet, error) {
 		return unmarshal[Hello](r)
 	case packetTypeHello2:
 		return unmarshal[Hello2](r)
+	case packetTypeReady:
+		return unmarshal[Ready](r)
 	case packetTypeInit:
 		return unmarshal[Init](r)
 	case packetTypeInput:

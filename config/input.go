@@ -125,3 +125,19 @@ func init() {
 		keyNameToKeyCode[v] = k
 	}
 }
+
+func keyCode(name string) ebiten.Key {
+	key, ok := keyNameToKeyCode[name]
+	if !ok {
+		return -1
+	}
+	return key
+}
+
+func keyName(key ebiten.Key) string {
+	name, ok := keyCodeToKeyName[key]
+	if !ok {
+		return ""
+	}
+	return name
+}
