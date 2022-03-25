@@ -358,23 +358,18 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			panic(err)
 		}
 
-		g.battle.iq.AddInput(g.battle.LocalPlayerIndex(), Input{int(g.battle.tick), joyflags, customScreenState, turn})
-		g.bn6.SetPlayerInputState(core, g.battle.LocalPlayerIndex(), joyflags, customScreenState)
-		if turn != nil {
-			g.bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), turn)
-		}
-
 		inputPairs := g.battle.iq.Consume()
 		if len(inputPairs) > 0 {
-			left := g.battle.iq.Peek(g.battle.LocalPlayerIndex())
-
-			committedState, dirtyState, err := g.fastforwarder.fastforward(g.battle.committedState, g.battle.inputlog, g.battle.LocalPlayerIndex(), inputPairs, left)
-			if err != nil {
-				panic(err)
-			}
-			g.battle.committedState = committedState
-			g.mainCore.LoadState(dirtyState)
+			g.battle.lastCommittedRemoteInput = inputPairs[len(inputPairs)-1][1-g.battle.LocalPlayerIndex()]
 		}
+
+		left := g.battle.iq.Peek(g.battle.LocalPlayerIndex())
+		committedState, dirtyState, err := g.fastforwarder.fastforward(g.battle.committedState, g.battle.inputlog, g.battle.LocalPlayerIndex(), inputPairs, g.battle.lastCommittedRemoteInput, left)
+		if err != nil {
+			panic(err)
+		}
+		g.battle.committedState = committedState
+		g.mainCore.LoadState(dirtyState)
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_updating__ret__go_to_custom_screen, func() {

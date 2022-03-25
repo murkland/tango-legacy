@@ -18,6 +18,8 @@ type Battle struct {
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
 
+	lastCommittedRemoteInput Input
+
 	committedState *mgba.State
 }
 
@@ -41,6 +43,8 @@ func NewBattle(isP2 bool) (*Battle, error) {
 	return &Battle{
 		tick: 0,
 		isP2: isP2,
+
+		lastCommittedRemoteInput: Input{Joyflags: 0xfc00},
 
 		inputlog: il,
 		iq:       NewInputQueue(60),

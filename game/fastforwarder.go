@@ -98,7 +98,7 @@ func (ff *fastforwarder) advanceOne() {
 // fastforward fastfowards the state to the new state.
 //
 // BEWARE: only one thread may call fastforward at a time.
-func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlayerIndex int, inputPairs [][2]Input, localPlayerInputsLeft []Input) (*mgba.State, *mgba.State, error) {
+func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlayerIndex int, inputPairs [][2]Input, lastCommittedRemoteInput Input, localPlayerInputsLeft []Input) (*mgba.State, *mgba.State, error) {
 	if !ff.core.LoadState(state) {
 		return nil, nil, errors.New("failed to load state")
 	}
@@ -128,8 +128,6 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 	}
 
 	// Run the local inputs and predict what the remote side did and create the new dirty state.
-	lastRemoteInput := inputPairs[len(inputPairs)-1][1-localPlayerIndex]
-
 	predictedInputPairs := make([][2]Input, len(localPlayerInputsLeft))
 	for i, inp := range localPlayerInputsLeft {
 		predictedInputPairs[i][localPlayerIndex] = inp
@@ -137,11 +135,11 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 		predicted := &predictedInputPairs[i][1-localPlayerIndex]
 		predicted.Tick = inp.Tick
 		ff.tick = predicted.Tick
-		predicted.CustomScreenState = lastRemoteInput.CustomScreenState
-		if lastRemoteInput.Joyflags&uint16(mgba.KeysA) != 0 {
+		predicted.CustomScreenState = lastCommittedRemoteInput.CustomScreenState
+		if lastCommittedRemoteInput.Joyflags&uint16(mgba.KeysA) != 0 {
 			predicted.Joyflags |= uint16(mgba.KeysA)
 		}
-		if lastRemoteInput.Joyflags&uint16(mgba.KeysB) != 0 {
+		if lastCommittedRemoteInput.Joyflags&uint16(mgba.KeysB) != 0 {
 			predicted.Joyflags |= uint16(mgba.KeysB)
 		}
 	}
