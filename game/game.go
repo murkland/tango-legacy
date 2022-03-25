@@ -137,6 +137,9 @@ func (g *Game) serviceFbuf() {
 			g.fbufMu.Lock()
 			g.fbuf = g.vb.CopyImage()
 			g.fbufMu.Unlock()
+		} else {
+			// TODO: Optimize this.
+			time.Sleep(500 * time.Microsecond)
 		}
 		g.mainCore.GBA().Sync().WaitFrameEnd()
 	}
