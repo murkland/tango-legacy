@@ -3,6 +3,7 @@ package game
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/mgba"
@@ -86,6 +87,9 @@ func (ff *fastforwarder) advanceOne() {
 		ff.core.RunFrame()
 		framesAdvanced++
 	}
+	if framesAdvanced > 2 {
+		log.Printf("game took a long time (%d frames) to process one input on tick %d", framesAdvanced, currentTick)
+	}
 }
 
 // fastforward fastfowards the state to the new state.
@@ -97,7 +101,6 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 	}
 
 	ff.state = nil
-	ff.tick = 0
 	ff.localPlayerIndex = localPlayerIndex
 
 	// Run the paired inputs we already have and create the new committed state.
@@ -108,6 +111,7 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 		var inputPairBuf [1][2]Input
 		ff.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
+		ff.tick = ip[0].Tick
 		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags))
 		ff.advanceOne()
 		if err := il.Write(bn6.RNG2State(ff.core), ip); err != nil {
