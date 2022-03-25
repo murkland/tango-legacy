@@ -422,7 +422,6 @@ func (g *Game) Finish() {
 }
 
 const expectedFPS = 60
-const maxLagTicks = 8
 
 func (g *Game) Update() error {
 	if g.t.HasCrashed() {
@@ -440,8 +439,8 @@ func (g *Game) Update() error {
 			expected = 1
 		}
 
-		if lag := g.battle.iq.Lag(g.battle.RemotePlayerIndex()); lag >= maxLagTicks {
-			log.Printf("input had to be dropped! %d >= %d", lag, maxLagTicks)
+		if lag := g.battle.iq.Lag(g.battle.RemotePlayerIndex()); lag >= expected*2 {
+			log.Printf("input is 2x acceptable delay and had to be dropped! %d >= %d", lag, expected*2)
 			return nil
 		}
 
