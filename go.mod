@@ -27,7 +27,7 @@ require (
 	github.com/pion/turn/v2 v2.0.6 // indirect
 	github.com/pion/udp v0.1.1 // indirect
 	github.com/twitchtv/twirp v8.1.1+incompatible // indirect
-	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838 // indirect
+	golang.org/x/crypto v0.0.0-20220213190939-1e6e3497d506 // indirect
 	golang.org/x/exp/shiny v0.0.0-20220324144552-032f0433de08 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
@@ -43,6 +43,7 @@ require (
 	github.com/murkland/ctxwebrtc v0.0.0-20220306073518-b5815ce4a060
 	github.com/murkland/ringbuf v0.0.0-20220324004630-6e5417e46b54
 	github.com/murkland/signor v0.0.0-20220305211703-822852f5d0a4
+	github.com/murkland/syncrand v0.0.0-20220305211705-ca5629605735
 	golang.org/x/exp v0.0.0-20220323204016-c86f0da35e87
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
 	golang.org/x/mobile v0.0.0-20210902104108-5d9a33257ab5 // indirect

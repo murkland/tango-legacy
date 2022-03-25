@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -11,9 +13,11 @@ import (
 	"github.com/murkland/bbn6/config"
 	"github.com/murkland/bbn6/game"
 	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/bbn6/packets"
 	"github.com/murkland/clone"
 	"github.com/murkland/ctxwebrtc"
 	signorclient "github.com/murkland/signor/client"
+	"github.com/murkland/syncrand"
 	"github.com/pion/webrtc/v3"
 )
 
@@ -26,6 +30,53 @@ var (
 )
 
 var commitHash string
+
+const expectedProtoVersion = 0x01
+
+func Negotiate(ctx context.Context, dc *ctxwebrtc.DataChannel) (*syncrand.Source, error) {
+	var nonce [16]byte
+	if _, err := rand.Read(nonce[:]); err != nil {
+		return nil, fmt.Errorf("failed to generate rng seed part: %w", err)
+	}
+
+	commitment := syncrand.Commit(nonce[:])
+	var helloPacket packets.Hello
+	helloPacket.ProtocolVersion = expectedProtoVersion
+	copy(helloPacket.RNGCommitment[:], commitment)
+	if err := packets.Send(ctx, dc, helloPacket, nil); err != nil {
+		return nil, fmt.Errorf("failed to send hello: %w", err)
+	}
+
+	theirHello, _, err := packets.Recv(ctx, dc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to receive hello: %w", err)
+	}
+	protocolVersion := theirHello.(packets.Hello).ProtocolVersion
+	if protocolVersion != expectedProtoVersion {
+		return nil, fmt.Errorf("expected protocol version 0x%02x, got 0x%02x: are you out of date?", expectedProtoVersion, protocolVersion)
+	}
+
+	theirCommitment := theirHello.(packets.Hello).RNGCommitment
+
+	if err := packets.Send(ctx, dc, packets.Hello2{RNGNonce: nonce}, nil); err != nil {
+		return nil, fmt.Errorf("failed to send hello2: %w", err)
+	}
+
+	theirHello2, _, err := packets.Recv(ctx, dc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to receive hello2: %w", err)
+	}
+	theirNonce := theirHello2.(packets.Hello2).RNGNonce
+
+	if !syncrand.Verify(commitment, theirCommitment[:], theirNonce[:]) {
+		return nil, errors.New("failed to verify rng commitment")
+	}
+
+	seed := syncrand.MakeSeed(nonce[:], theirNonce[:])
+	rng := syncrand.NewSource(seed)
+
+	return rng, nil
+}
 
 func main() {
 	flag.Parse()
@@ -99,6 +150,11 @@ func main() {
 	log.Printf("signaling complete!")
 	log.Printf("local SDP: %s", peerConn.LocalDescription().SDP)
 	log.Printf("remote SDP: %s", peerConn.RemoteDescription().SDP)
+
+	if _, err := Negotiate(ctx, dc); err != nil {
+		log.Fatalf("failed to negotiate connection with remote: %s", err)
+	}
+	log.Printf("connection negotiation ok!")
 
 	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")

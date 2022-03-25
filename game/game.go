@@ -495,11 +495,12 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.fbufMu.Lock()
-	g.fbufMu.Unlock()
+	defer g.fbufMu.Unlock()
 
 	if g.fbuf == nil {
 		return
 	}
+
 	opts := &ebiten.DrawImageOptions{}
 	screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
 }

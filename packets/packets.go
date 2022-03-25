@@ -22,10 +22,12 @@ var ErrUnknownPacket = errors.New("unknown packet")
 type packetType uint8
 
 const (
-	packetTypePing  packetType = 0
-	packetTypePong  packetType = 1
-	packetTypeInit  packetType = 2
-	packetTypeInput packetType = 3
+	packetTypePing   packetType = 0
+	packetTypePong   packetType = 1
+	packetTypeHello  packetType = 2
+	packetTypeHello2 packetType = 3
+	packetTypeInit   packetType = 4
+	packetTypeInput  packetType = 5
 )
 
 type Packet interface {
@@ -43,6 +45,20 @@ type Pong struct {
 }
 
 func (Pong) packetType() packetType { return packetTypePong }
+
+type Hello struct {
+	ProtocolVersion uint8
+	RNGCommitment   [32]uint8
+}
+
+func (Hello) packetType() packetType { return packetTypeHello }
+
+type Hello2 struct {
+	ProtocolVersion uint8
+	RNGNonce        [16]uint8
+}
+
+func (Hello2) packetType() packetType { return packetTypeHello2 }
 
 type Init struct {
 	Marshaled [0x100]uint8
@@ -87,6 +103,10 @@ func Unmarshal(r io.Reader) (Packet, error) {
 		return unmarshal[Ping](r)
 	case packetTypePong:
 		return unmarshal[Pong](r)
+	case packetTypeHello:
+		return unmarshal[Hello](r)
+	case packetTypeHello2:
+		return unmarshal[Hello2](r)
 	case packetTypeInit:
 		return unmarshal[Init](r)
 	case packetTypeInput:
