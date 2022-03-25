@@ -15,7 +15,8 @@ type Battle struct {
 	inputlog *InputLog
 	iq       *InputQueue
 
-	localPendingTurn []byte
+	localPendingTurnWaitTicksLeft int
+	localPendingTurn              []byte
 
 	committedState *mgba.State
 }

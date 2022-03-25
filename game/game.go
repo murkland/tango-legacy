@@ -312,6 +312,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		defer g.battle.mu.Unlock()
 
 		g.battle.localPendingTurn = g.bn6.LocalMarshaledBattleState(core)
+		g.battle.localPendingTurnWaitTicksLeft = 64
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
@@ -338,8 +339,15 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		joyflags := g.bn6.LocalJoyflags(core)
 		customScreenState := g.bn6.LocalCustomScreenState(core)
-		turn := g.battle.localPendingTurn
-		g.battle.localPendingTurn = nil
+
+		var turn []byte
+		if g.battle.localPendingTurnWaitTicksLeft > 0 {
+			g.battle.localPendingTurnWaitTicksLeft--
+			if g.battle.localPendingTurnWaitTicksLeft == 0 {
+				turn = g.battle.localPendingTurn
+				g.battle.localPendingTurn = nil
+			}
+		}
 
 		var pkt packets.Input
 		pkt.ForTick = g.battle.tick
