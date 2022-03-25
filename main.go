@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	mathrand "math/rand"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -151,10 +152,19 @@ func main() {
 	log.Printf("local SDP: %s", peerConn.LocalDescription().SDP)
 	log.Printf("remote SDP: %s", peerConn.RemoteDescription().SDP)
 
-	if _, err := Negotiate(ctx, dc); err != nil {
+	randSource, err := Negotiate(ctx, dc)
+	if err != nil {
 		log.Fatalf("failed to negotiate connection with remote: %s", err)
 	}
 	log.Printf("connection negotiation ok!")
+
+	rng := mathrand.New(randSource)
+	isP2 := (rng.Int31n(2) == 1) == *answer
+	if isP2 {
+		log.Printf("you are PLAYER 2.")
+	} else {
+		log.Printf("you are PLAYER 1.")
+	}
 
 	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")
@@ -162,7 +172,7 @@ func main() {
 	ebiten.SetWindowResizable(true)
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-	g, err := game.New(conf, *romPath, dc, *answer)
+	g, err := game.New(conf, *romPath, dc, isP2)
 	if err != nil {
 		log.Fatalf("failed to start game: %s", err)
 	}
