@@ -293,6 +293,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if err := packets.Send(ctx, g.dc, pkt, nil); err != nil {
 			panic(err)
 		}
+		log.Printf("init sent")
 
 		g.bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), marshaled)
 		if err := g.battle.inputlog.WriteInit(g.battle.LocalPlayerIndex(), g.pendingRemoteInit); err != nil {
@@ -391,11 +392,17 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			panic(err)
 		}
 		g.battle = battle
+
+		g.readyMu.Lock()
+		defer g.readyMu.Unlock()
+		g.localReady = false
+		g.remoteReady = false
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_end__entry, func() {
 		log.Printf("battle ended")
 		g.battle = nil
+		g.pendingRemoteInit = nil
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 	})
 
