@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"runtime"
 	"sync"
 	"time"
 
@@ -33,8 +34,10 @@ type Game struct {
 	mainCore      *mgba.Core
 	fastforwarder *fastforwarder
 
-	vb   *av.VideoBuffer
-	fbuf *image.RGBA
+	vb *av.VideoBuffer
+
+	fbuf   *image.RGBA
+	fbufMu sync.Mutex
 
 	audioPlayer oto.Player
 
@@ -119,7 +122,24 @@ func (g *Game) RunBackgroundTasks(ctx context.Context) error {
 		return g.sendPings(ctx)
 	})
 
+	errg.Go(func() error {
+		g.serviceFbuf()
+		return nil
+	})
+
 	return errg.Wait()
+}
+
+func (g *Game) serviceFbuf() {
+	runtime.LockOSThread()
+	for {
+		if g.mainCore.GBA().Sync().WaitFrameStart() {
+			g.fbufMu.Lock()
+			g.fbuf = g.vb.CopyImage()
+			g.fbufMu.Unlock()
+		}
+		g.mainCore.GBA().Sync().WaitFrameEnd()
+	}
 }
 
 func (g *Game) sendPings(ctx context.Context) error {
@@ -460,16 +480,6 @@ func (g *Game) Update() error {
 	}
 	g.mainCore.SetKeys(keys)
 
-	if g.mainCore.GBA().Sync().WaitFrameStart() {
-		g.fbuf = g.vb.CopyImage()
-		for i := range g.fbuf.Pix {
-			if i%4 == 3 {
-				g.fbuf.Pix[i] = 0xff
-			}
-		}
-	}
-	g.mainCore.GBA().Sync().WaitFrameEnd()
-
 	return nil
 }
 
@@ -478,6 +488,9 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	g.fbufMu.Lock()
+	g.fbufMu.Unlock()
+
 	if g.fbuf == nil {
 		return
 	}

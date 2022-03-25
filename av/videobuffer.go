@@ -33,5 +33,10 @@ func (vb *VideoBuffer) Pointer() unsafe.Pointer {
 func (vb *VideoBuffer) CopyImage() *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, vb.width, vb.height))
 	img.Pix = C.GoBytes(vb.buf, C.int(vb.width*vb.height*4))
+	for i := range img.Pix {
+		if i%4 == 3 {
+			img.Pix[i] = 0xff
+		}
+	}
 	return img
 }
