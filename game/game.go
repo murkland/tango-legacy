@@ -234,8 +234,10 @@ func (g *Game) handleConn(ctx context.Context) error {
 				return err
 			}
 		case packets.Ready:
+			// TODO: thread safety...
 			g.remoteReady = p.IsReady
 		case packets.Init:
+			// TODO: thread safety...
 			g.pendingRemoteInit = p.Marshaled[:]
 		case packets.Input:
 			if err := (func() error {
