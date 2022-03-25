@@ -445,7 +445,9 @@ func (g *Game) Update() error {
 			return nil
 		}
 
-		tps := expectedFPS + g.battle.iq.qs[g.battle.RemotePlayerIndex()].Used() - expected
+		tps := expectedFPS + (g.battle.iq.qs[g.battle.RemotePlayerIndex()].Used()-expected)*2
+
+		// TODO: Not thread safe.
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 	}
 
