@@ -276,6 +276,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if err := g.battle.inputlog.WriteInit(g.battle.RemotePlayerIndex(), g.pendingRemoteInit); err != nil {
 			panic(err)
 		}
+		g.pendingRemoteInit = nil
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_init_marshal__ret, func() {
@@ -412,7 +413,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	tp.Add(g.bn6.Offsets.ROM.A_battle_end__entry, func() {
 		log.Printf("battle ended")
 		g.battle = nil
-		g.pendingRemoteInit = nil
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 	})
 
