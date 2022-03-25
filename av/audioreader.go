@@ -27,9 +27,9 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 
 	sync := a.core.GBA().Sync()
 
-	fauxClock := 1
+	fauxClock := float32(1)
 	if sync != nil {
-		mgba.GBAAudioCalculateRatio(1, sync.FPSTarget(), 1)
+		fauxClock = mgba.GBAAudioCalculateRatio(1, sync.FPSTarget(), 1)
 	}
 
 	if sync != nil {
@@ -56,7 +56,7 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 }
 
 func NewAudioReader(core *mgba.Core, sampleRate int) *AudioReader {
-	buf := C.malloc(C.size_t(core.Options().AudioBuffers * 2 * 2))
+	buf := C.calloc(1, C.size_t(core.Options().AudioBuffers*2*2))
 	ar := &AudioReader{core, sampleRate, buf}
 	runtime.SetFinalizer(ar, func(ar *AudioReader) {
 		C.free(ar.buf)

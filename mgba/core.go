@@ -69,6 +69,7 @@ type CoreOptions struct {
 	AudioSync    bool
 	VideoSync    bool
 	Volume       int
+	FPSTarget    float32
 }
 
 type Core struct {
@@ -105,6 +106,7 @@ func (c *Core) SetOptions(o CoreOptions) {
 	c.ptr.opts.audioSync = C.bool(o.AudioSync)
 	c.ptr.opts.videoSync = C.bool(o.VideoSync)
 	c.ptr.opts.volume = C.int(o.Volume)
+	c.ptr.opts.fpsTarget = C.float(o.FPSTarget)
 }
 
 func (c *Core) Options() CoreOptions {
@@ -114,6 +116,7 @@ func (c *Core) Options() CoreOptions {
 		AudioSync:    bool(c.ptr.opts.audioSync),
 		VideoSync:    bool(c.ptr.opts.videoSync),
 		Volume:       int(c.ptr.opts.volume),
+		FPSTarget:    float32(c.ptr.opts.fpsTarget),
 	}
 }
 

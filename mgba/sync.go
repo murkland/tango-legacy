@@ -13,6 +13,10 @@ func (s *Sync) FPSTarget() float32 {
 	return float32(s.ptr.fpsTarget)
 }
 
+func (s *Sync) SetFPSTarget(fpsTarget float32) {
+	s.ptr.fpsTarget = C.float(fpsTarget)
+}
+
 func (s *Sync) LockAudio() {
 	C.mCoreSyncLockAudio(s.ptr)
 }

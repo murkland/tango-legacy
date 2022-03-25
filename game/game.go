@@ -42,10 +42,8 @@ type Game struct {
 
 	isAnswerer bool // TODO: negotiate this
 
-	mustCommitNewState bool
-	pendingState       *mgba.State
-	pendingRemoteInit  []byte
-	battle             *Battle
+	pendingRemoteInit []byte
+	battle            *Battle
 
 	delayRingbuf   *ringbuf.RingBuf[time.Duration]
 	delayRingbufMu sync.RWMutex
@@ -83,6 +81,7 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isAnswer
 	if !t.Start() {
 		log.Fatalf("failed to start mgba thread")
 	}
+	mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
 	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(mainCore, mainCore.Options().SampleRate))
 	audioPlayer.(oto.BufferSizeSetter).SetBufferSize(mainCore.Options().AudioBuffers * 4)
@@ -94,8 +93,7 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, isAnswer
 		mainCore:      mainCore,
 		fastforwarder: fastforwarder,
 
-		vb:   vb,
-		fbuf: nil,
+		vb: vb,
 
 		audioPlayer: audioPlayer,
 
@@ -295,7 +293,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		if g.battle.startFrame == 0 {
 			g.battle.startFrame = core.FrameCounter()
-			g.mustCommitNewState = true
+			g.battle.committedState = core.SaveState()
 			return
 		}
 
@@ -315,6 +313,11 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		g.battle.iq.AddInput(g.battle.LocalPlayerIndex(), Input{int(tick), joyflags, customScreenState, turn})
+		bn6.SetPlayerInputState(core, g.battle.LocalPlayerIndex(), joyflags, customScreenState)
+		if turn != nil {
+			bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), turn)
+		}
+
 		inputPairs := g.battle.iq.Consume()
 		if len(inputPairs) > 0 {
 			left := g.battle.iq.Peek(g.battle.LocalPlayerIndex())
@@ -324,12 +327,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				panic(err)
 			}
 			g.battle.committedState = committedState
-			g.pendingState = dirtyState
-		}
-
-		bn6.SetPlayerInputState(core, g.battle.LocalPlayerIndex(), joyflags, customScreenState)
-		if turn != nil {
-			bn6.SetPlayerMarshaledBattleState(core, g.battle.LocalPlayerIndex(), turn)
+			g.mainCore.LoadState(dirtyState)
 		}
 	})
 
@@ -399,6 +397,9 @@ func (g *Game) Finish() {
 	g.t.Join()
 }
 
+const expectedFPS = 60
+const maxLagTicks = 8
+
 func (g *Game) Update() error {
 	if g.t.HasCrashed() {
 		return errors.New("mgba thread crashed")
@@ -410,15 +411,18 @@ func (g *Game) Update() error {
 		g.battle.mu.Lock()
 		defer g.battle.mu.Unlock()
 
-		highWaterMark := int(g.medianDelay()*time.Duration(g.mainCore.GBA().Sync().FPSTarget())/2/time.Second + 1)
-		if highWaterMark < 1 {
-			highWaterMark = 1
+		expected := int(g.medianDelay()*time.Duration(expectedFPS)/2/time.Second + 1)
+		if expected < 1 {
+			expected = 1
 		}
 
-		if g.battle.iq.Lag(g.battle.RemotePlayerIndex()) >= highWaterMark {
-			// Pause until we have enough space.
+		if lag := g.battle.iq.Lag(g.battle.RemotePlayerIndex()); lag >= maxLagTicks {
+			log.Printf("input had to be dropped! %d >= %d", lag, maxLagTicks)
 			return nil
 		}
+
+		tps := expectedFPS + g.battle.iq.qs[g.battle.RemotePlayerIndex()].Used() - expected
+		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 	}
 
 	var keys mgba.Keys
@@ -458,23 +462,11 @@ func (g *Game) Update() error {
 
 	if g.mainCore.GBA().Sync().WaitFrameStart() {
 		g.fbuf = g.vb.CopyImage()
-
-		// Clear alpha channel on the image (this is incorrect for some reason).
 		for i := range g.fbuf.Pix {
 			if i%4 == 3 {
 				g.fbuf.Pix[i] = 0xff
 			}
 		}
-
-		if g.mustCommitNewState {
-			g.battle.committedState = g.mainCore.SaveState()
-		}
-		g.mustCommitNewState = false
-
-		if g.pendingState != nil {
-			g.mainCore.LoadState(g.pendingState)
-		}
-		g.pendingState = nil
 	}
 	g.mainCore.GBA().Sync().WaitFrameEnd()
 
@@ -489,7 +481,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if g.fbuf == nil {
 		return
 	}
-
 	opts := &ebiten.DrawImageOptions{}
 	screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
 }

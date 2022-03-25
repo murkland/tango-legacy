@@ -14,6 +14,7 @@ type fastforwarder struct {
 	core             *mgba.Core
 	localPlayerIndex int
 	inputPairs       *ringbuf.RingBuf[[2]Input]
+	state            *mgba.State
 }
 
 func newFastforwarder(romPath string, offsets bn6.Offsets) (*fastforwarder, error) {
@@ -22,7 +23,7 @@ func newFastforwarder(romPath string, offsets bn6.Offsets) (*fastforwarder, erro
 		return nil, err
 	}
 
-	ff := &fastforwarder{core, 0, nil}
+	ff := &fastforwarder{core, 0, nil, nil}
 
 	tp := trapper.New(core)
 
@@ -47,6 +48,10 @@ func newFastforwarder(romPath string, offsets bn6.Offsets) (*fastforwarder, erro
 		bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
 		if ip[1].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
+		}
+
+		if ff.inputPairs.Used() == 0 {
+			ff.state = core.SaveState()
 		}
 	})
 
@@ -95,7 +100,10 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 		}
 	}
 
-	committedState := ff.core.SaveState()
+	committedState := ff.state
+	if committedState == nil {
+		return nil, nil, errors.New("no committed state?")
+	}
 
 	// Run the local inputs and predict what the remote side did and create the new dirty state.
 	lastRemoteInput := inputPairs[len(inputPairs)-1][1-localPlayerIndex]
@@ -126,7 +134,10 @@ func (ff *fastforwarder) fastforward(state *mgba.State, il *InputLog, localPlaye
 		ff.core.RunFrame()
 	}
 
-	dirtyState := ff.core.SaveState()
+	dirtyState := ff.state
+	if dirtyState == nil {
+		return nil, nil, errors.New("no committed state?")
+	}
 
 	return committedState, dirtyState, nil
 }
