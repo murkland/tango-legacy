@@ -7,7 +7,7 @@ var coreOptions = mgba.CoreOptions{
 	AudioBuffers: 1024,
 	AudioSync:    true,
 	VideoSync:    true,
-	Volume:       0x80,
+	Volume:       0x100,
 	FPSTarget:    60,
 }
 
