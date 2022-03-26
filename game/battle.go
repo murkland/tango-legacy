@@ -65,7 +65,7 @@ func NewBattle(isP2 bool, localInputBufferSize int) (*Battle, error) {
 	}
 
 	os.MkdirAll("replays", 0o700)
-	fn := filepath.Join("replays", fmt.Sprintf("p%d_%s.bbn6replay", b.LocalPlayerIndex()+1, time.Now().Format("20060102030405")))
+	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.bbn6replay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
 	log.Printf("writing replay: %s", fn)
 
 	il, err := newReplayWriter(fn)
