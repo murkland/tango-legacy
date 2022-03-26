@@ -3,20 +3,26 @@ package game
 import (
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/murkland/bbn6/mgba"
 )
 
-type Battle struct {
-	mu sync.Mutex
+type Match struct {
+	localReady  bool
+	remoteReady bool
 
+	battle *Battle
+}
+
+type Battle struct {
 	tick uint32
 	isP2 bool
 
 	inputlog *InputLog
 	iq       *InputQueue
+
+	pendingRemoteInit []byte
 
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte

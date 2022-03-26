@@ -26,6 +26,7 @@ type ROMOffsets struct {
 	A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput uint32
 	A_commMenu_waitForFriend__ret__cancel                         uint32
 	A_commMenu_inBattle__call__commMenu_handleLinkCableInput      uint32
+	A_commMenu_endBattle__entry                                   uint32
 }
 
 type Offsets struct {
@@ -62,6 +63,7 @@ var offsetsMap = map[string]Offsets{
 			A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x08129f8a,
 			A_commMenu_waitForFriend__ret__cancel:                         0x08129fa4,
 			A_commMenu_inBattle__call__commMenu_handleLinkCableInput:      0x0812b5ca,
+			A_commMenu_endBattle__entry:                                   0x0812b708,
 		},
 	},
 	"MEGAMAN6_GXX": {
@@ -82,6 +84,7 @@ var offsetsMap = map[string]Offsets{
 			A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x0812bd66,
 			A_commMenu_waitForFriend__ret__cancel:                         0x0812bd80,
 			A_commMenu_inBattle__call__commMenu_handleLinkCableInput:      0x0812d3a6,
+			A_commMenu_endBattle__entry:                                   0x0812d4e4,
 		},
 	},
 }
