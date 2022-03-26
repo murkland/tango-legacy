@@ -560,6 +560,14 @@ func (g *Game) Finish() {
 
 const expectedFPS = 60
 
+func (g *Game) runaheadTicksAllowed() int {
+	expected := int(g.medianDelay()*time.Duration(expectedFPS)/2/time.Second + 1)
+	if expected < 1 {
+		expected = 1
+	}
+	return expected
+}
+
 func (g *Game) Update() error {
 	if g.t.HasCrashed() {
 		return errors.New("mgba thread crashed")
@@ -572,14 +580,12 @@ func (g *Game) Update() error {
 		defer g.matchMu.Unlock()
 
 		if g.match != nil && g.match.battle != nil {
-			expected := int(g.medianDelay()*time.Duration(expectedFPS)/2/time.Second + 1)
-			if expected < 1 {
-				expected = 1
-			}
+			expected := g.runaheadTicksAllowed()
 
 			lag := g.match.battle.iq.Lag(g.match.battle.RemotePlayerIndex())
 			if lag >= expected*2 {
 				log.Printf("input is 2x acceptable delay and had to be dropped! %d >= %d", lag, expected*2)
+				g.mainCore.GBA().Sync().SetFPSTarget(float32(0))
 				return nil
 			}
 

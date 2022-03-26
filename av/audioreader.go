@@ -29,6 +29,10 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 
 	fauxClock := float32(1)
 	if sync != nil {
+		if sync.FPSTarget() == 0 {
+			return len(p), nil
+		}
+
 		fauxClock = mgba.GBAAudioCalculateRatio(1, sync.FPSTarget(), 1)
 	}
 
