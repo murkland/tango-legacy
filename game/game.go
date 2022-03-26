@@ -420,6 +420,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			panic(err)
 		}
 		g.match.battle = nil
+
+		// TODO: set g.match.wasLoser, somehow.
+
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 	})
 
@@ -458,6 +461,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			g.match = &Match{
 				wasLoser: (rng.Int31n(2) == 1) == (g.connectionSide == signorclient.ConnectionSideOfferer),
 			}
+			log.Printf("match started, wasLoser = %t", g.match.wasLoser)
 		}
 
 		ctx := context.Background()
@@ -494,23 +498,18 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			g.match.localReady = false
 		}
 
+		log.Printf("match canceled")
 		g.match = nil
 
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
 	})
 
-	tp.Add(g.bn6.Offsets.ROM.A_commMenu_waitForFriend__ret__cancel, func() {
-		g.matchMu.Lock()
-		defer g.matchMu.Unlock()
-
-		g.match = nil
-	})
-
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_endBattle__entry, func() {
 		g.matchMu.Lock()
 		defer g.matchMu.Unlock()
 
+		log.Printf("match ended")
 		g.match = nil
 	})
 
