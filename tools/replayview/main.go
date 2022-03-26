@@ -91,6 +91,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open replay: %s", err)
 	}
+	defer f.Close()
 
 	replay, err := game.DeserializeReplay(f)
 	if err != nil {

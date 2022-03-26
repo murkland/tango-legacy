@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/mgba"
 	"github.com/murkland/bbn6/trapper"
@@ -59,9 +60,14 @@ func (rp *Replayer) Reset() {
 // u8: turn flags (0b00 = nobody, 0b01 = p1, 0b10 = p2, 0b11 = p1 and p2)
 // turn size: turn data
 func DeserializeReplay(r io.Reader) (*Replay, error) {
+	zr, err := zstd.NewReader(r)
+	if err != nil {
+		return nil, err
+	}
+
 	// read header
 	var header [4]byte
-	if _, err := r.Read(header[:]); err != nil {
+	if _, err := zr.Read(header[:]); err != nil {
 		return nil, err
 	}
 
@@ -70,7 +76,7 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 	}
 
 	var version uint8
-	if err := binary.Read(r, binary.LittleEndian, &version); err != nil {
+	if err := binary.Read(zr, binary.LittleEndian, &version); err != nil {
 		return nil, err
 	}
 	if version != replayVersion {
@@ -78,17 +84,17 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 	}
 
 	var localPlayerIndex uint8
-	if err := binary.Read(r, binary.LittleEndian, &localPlayerIndex); err != nil {
+	if err := binary.Read(zr, binary.LittleEndian, &localPlayerIndex); err != nil {
 		return nil, err
 	}
 
 	var stateSize uint32
-	if err := binary.Read(r, binary.LittleEndian, &stateSize); err != nil {
+	if err := binary.Read(zr, binary.LittleEndian, &stateSize); err != nil {
 		return nil, err
 	}
 
 	stateBytes := make([]byte, int(stateSize))
-	if _, err := r.Read(stateBytes); err != nil {
+	if _, err := zr.Read(stateBytes); err != nil {
 		return nil, err
 	}
 	state := mgba.StateFromBytes(stateBytes)
@@ -97,12 +103,12 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 	var init [2][]byte
 	for i := 0; i < 2; i++ {
 		var playerIndex uint8
-		if err := binary.Read(r, binary.LittleEndian, &playerIndex); err != nil {
+		if err := binary.Read(zr, binary.LittleEndian, &playerIndex); err != nil {
 			return nil, err
 		}
 
 		var marshaled [0x100]byte
-		if _, err := r.Read(marshaled[:]); err != nil {
+		if _, err := zr.Read(marshaled[:]); err != nil {
 			return nil, err
 		}
 
@@ -113,7 +119,7 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 	var inputPairs [][2]Input
 	for {
 		var tick uint32
-		if err := binary.Read(r, binary.LittleEndian, &tick); err != nil {
+		if err := binary.Read(zr, binary.LittleEndian, &tick); err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
@@ -122,7 +128,7 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 
 		// we don't do anything with this, actually...
 		var rngState uint32
-		if err := binary.Read(r, binary.LittleEndian, &rngState); err != nil {
+		if err := binary.Read(zr, binary.LittleEndian, &rngState); err != nil {
 			return nil, err
 		}
 
@@ -131,37 +137,37 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 		inputPair[1].Tick = int(tick)
 
 		var p1Joyflags uint16
-		if err := binary.Read(r, binary.LittleEndian, &p1Joyflags); err != nil {
+		if err := binary.Read(zr, binary.LittleEndian, &p1Joyflags); err != nil {
 			return nil, err
 		}
 		inputPair[0].Joyflags = p1Joyflags
 
 		var p1CustomScreenState uint8
-		if err := binary.Read(r, binary.LittleEndian, &p1CustomScreenState); err != nil {
+		if err := binary.Read(zr, binary.LittleEndian, &p1CustomScreenState); err != nil {
 			return nil, err
 		}
 		inputPair[0].CustomScreenState = p1CustomScreenState
 
 		var p2Joyflags uint16
-		if err := binary.Read(r, binary.LittleEndian, &p2Joyflags); err != nil {
+		if err := binary.Read(zr, binary.LittleEndian, &p2Joyflags); err != nil {
 			return nil, err
 		}
 		inputPair[1].Joyflags = p2Joyflags
 
 		var p2CustomScreenState uint8
-		if err := binary.Read(r, binary.LittleEndian, &p2CustomScreenState); err != nil {
+		if err := binary.Read(zr, binary.LittleEndian, &p2CustomScreenState); err != nil {
 			return nil, err
 		}
 		inputPair[1].CustomScreenState = p2CustomScreenState
 
 		var turnFlags uint8
-		if err := binary.Read(r, binary.LittleEndian, &turnFlags); err != nil {
+		if err := binary.Read(zr, binary.LittleEndian, &turnFlags); err != nil {
 			return nil, err
 		}
 
 		if turnFlags&0b01 != 0 {
 			var turn [0x100]byte
-			if _, err := r.Read(turn[:]); err != nil {
+			if _, err := zr.Read(turn[:]); err != nil {
 				return nil, err
 			}
 			inputPair[0].Turn = turn[:]
@@ -169,7 +175,7 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 
 		if turnFlags&0b10 != 0 {
 			var turn [0x100]byte
-			if _, err := r.Read(turn[:]); err != nil {
+			if _, err := zr.Read(turn[:]); err != nil {
 				return nil, err
 			}
 			inputPair[1].Turn = turn[:]
