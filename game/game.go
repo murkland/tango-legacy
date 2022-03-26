@@ -421,7 +421,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		g.match.battleNumber++
-		log.Printf("battle %d started, won last battle (is p2) = %t", g.match.battleNumber, g.match.wonLastBattle)
+		log.Printf("battle %d started, won last battle (is p1) = %t", g.match.battleNumber, g.match.wonLastBattle)
 
 		battle, err := NewBattle(!g.match.wonLastBattle)
 		if err != nil {
