@@ -12,6 +12,8 @@ type Match struct {
 	localReady  bool
 	remoteReady bool
 
+	wasLoser bool
+
 	battle *Battle
 }
 

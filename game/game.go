@@ -399,11 +399,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			panic("battle already started?")
 		}
 
-		rng := rand.New(g.randSource)
-		isP2 := (rng.Int31n(2) == 1) == (g.connectionSide == signorclient.ConnectionSideOfferer)
-
-		log.Printf("battle started, is p2 = %t", isP2)
-		battle, err := NewBattle(isP2)
+		log.Printf("battle started, is p2 = %t", g.match.wasLoser)
+		battle, err := NewBattle(g.match.wasLoser)
 		if err != nil {
 			panic(err)
 		}
@@ -457,7 +454,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		defer g.matchMu.Unlock()
 
 		if g.match == nil {
-			g.match = &Match{}
+			rng := rand.New(g.randSource)
+			g.match = &Match{
+				wasLoser: (rng.Int31n(2) == 1) == (g.connectionSide == signorclient.ConnectionSideOfferer),
+			}
 		}
 
 		ctx := context.Background()
