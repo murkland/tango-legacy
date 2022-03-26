@@ -22,18 +22,20 @@ import (
 )
 
 type State struct {
-	ptr unsafe.Pointer
+	ptr  unsafe.Pointer
+	size int
 }
 
 func (c *Core) SaveState() *State {
-	buf := unsafe.Pointer(C.malloc(C.bbn6_mgba_mCore_stateSize(c.ptr)))
+	size := int(C.bbn6_mgba_mCore_stateSize(c.ptr))
+	buf := unsafe.Pointer(C.malloc(C.size_t(size)))
 	ok := C.bbn6_mgba_mCore_saveState(c.ptr, buf)
 	if !ok {
 		C.free(buf)
 		return nil
 	}
 
-	s := &State{buf}
+	s := &State{buf, size}
 	runtime.SetFinalizer(s, func(s *State) {
 		C.free(s.ptr)
 	})
@@ -42,4 +44,16 @@ func (c *Core) SaveState() *State {
 
 func (c *Core) LoadState(state *State) bool {
 	return bool(C.bbn6_mgba_mCore_loadState(c.ptr, state.ptr))
+}
+
+func (s *State) Bytes() []byte {
+	return C.GoBytes(s.ptr, C.int(s.size))
+}
+
+func StateFromBytes(b []byte) *State {
+	s := &State{C.CBytes(b), len(b)}
+	runtime.SetFinalizer(s, func(s *State) {
+		C.free(s.ptr)
+	})
+	return s
 }
