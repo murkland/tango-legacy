@@ -14,7 +14,8 @@ type Match struct {
 
 	wasLoser bool
 
-	battle *Battle
+	battleNumber int
+	battle       *Battle
 }
 
 type Battle struct {

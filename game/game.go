@@ -233,6 +233,11 @@ func (g *Game) handleConn(ctx context.Context) error {
 			(func() {
 				g.matchMu.Lock()
 				defer g.matchMu.Unlock()
+
+				if g.match == nil {
+					g.match = &Match{}
+				}
+
 				g.match.remoteReady = p.IsReady
 			})()
 		case packets.Init:
@@ -399,7 +404,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			panic("battle already started?")
 		}
 
-		log.Printf("battle started, is p2 = %t", g.match.wasLoser)
+		g.match.battleNumber++
+		log.Printf("battle %d started, is p2 = %t", g.match.battleNumber, g.match.wasLoser)
+
 		battle, err := NewBattle(g.match.wasLoser)
 		if err != nil {
 			panic(err)
@@ -457,11 +464,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		defer g.matchMu.Unlock()
 
 		if g.match == nil {
-			rng := rand.New(g.randSource)
-			g.match = &Match{
-				wasLoser: (rng.Int31n(2) == 1) == (g.connectionSide == signorclient.ConnectionSideOfferer),
-			}
-			log.Printf("match started, wasLoser = %t", g.match.wasLoser)
+			g.match = &Match{}
 		}
 
 		ctx := context.Background()
@@ -476,6 +479,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		if g.match.remoteReady {
+			rng := rand.New(g.randSource)
+			g.match.wasLoser = (rng.Int31n(2) == 1) == (g.connectionSide == signorclient.ConnectionSideOfferer)
+			log.Printf("match started, wasLoser = %t", g.match.wasLoser)
 			g.bn6.StartBattleFromCommMenu(core)
 		}
 
