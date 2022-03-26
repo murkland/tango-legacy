@@ -15,6 +15,8 @@ type Match struct {
 
 	wonLastBattle bool
 
+	stalledFrames int
+
 	battleNumber int
 	battle       *Battle
 }

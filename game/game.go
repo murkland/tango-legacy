@@ -336,6 +336,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
 
+		// TODO: Check if stalled frames is too high, then end the connection if it is.
+
 		ctx := context.Background()
 		if g.match.battle.tick == -1 {
 			g.match.battle.tick = 0
@@ -586,8 +588,10 @@ func (g *Game) Update() error {
 			if lag >= expected*2 {
 				log.Printf("input is 2x acceptable delay and had to be dropped! %d >= %d", lag, expected*2)
 				g.mainCore.GBA().Sync().SetFPSTarget(float32(0))
+				g.match.stalledFrames++
 				return nil
 			}
+			g.match.stalledFrames = 0
 
 			tps := expectedFPS - (lag - expected + 1)
 
