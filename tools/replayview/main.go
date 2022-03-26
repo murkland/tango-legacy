@@ -38,6 +38,7 @@ func (g *Game) serviceFbuf() {
 	runtime.LockOSThread()
 	for {
 		if g.replayer.Core.GBA().Sync().WaitFrameStart() {
+			// TODO: Need to send keys here?
 			g.fbufMu.Lock()
 			g.fbuf = g.vb.CopyImage()
 			g.fbufMu.Unlock()
