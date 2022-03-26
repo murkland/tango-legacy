@@ -380,6 +380,22 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.mainCore.LoadState(dirtyState)
 	})
 
+	tp.Add(g.bn6.Offsets.ROM.A_battle_runUnpausedStep__cmp__retval, func() {
+		g.matchMu.Lock()
+		defer g.matchMu.Unlock()
+
+		if g.match == nil {
+			return
+		}
+
+		r := core.GBA().Register(0)
+		if r == 1 {
+			g.match.wonLastBattle = true
+		} else if r == 2 {
+			g.match.wonLastBattle = false
+		}
+	})
+
 	tp.Add(g.bn6.Offsets.ROM.A_battle_updating__ret__go_to_custom_screen, func() {
 		g.matchMu.Lock()
 		defer g.matchMu.Unlock()
@@ -405,9 +421,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		g.match.battleNumber++
-		log.Printf("battle %d started, is p2 = %t", g.match.battleNumber, g.match.wasLoser)
+		log.Printf("battle %d started, won last battle (is p2) = %t", g.match.battleNumber, g.match.wonLastBattle)
 
-		battle, err := NewBattle(g.match.wasLoser)
+		battle, err := NewBattle(!g.match.wonLastBattle)
 		if err != nil {
 			panic(err)
 		}
@@ -422,13 +438,11 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		log.Printf("battle ended")
+		log.Printf("battle ended, won = %t", g.match.wonLastBattle)
 		if err := g.match.battle.Close(); err != nil {
 			panic(err)
 		}
 		g.match.battle = nil
-
-		// TODO: set g.match.wasLoser, somehow.
 
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 	})
@@ -480,8 +494,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		if g.match.remoteReady {
 			rng := rand.New(g.randSource)
-			g.match.wasLoser = (rng.Int31n(2) == 1) == (g.connectionSide == signorclient.ConnectionSideOfferer)
-			log.Printf("match started, wasLoser = %t", g.match.wasLoser)
+			g.match.wonLastBattle = (rng.Int31n(2) == 1) == (g.connectionSide == signorclient.ConnectionSideOfferer)
+			log.Printf("match started")
 			g.bn6.StartBattleFromCommMenu(core)
 		}
 

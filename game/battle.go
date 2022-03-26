@@ -12,7 +12,7 @@ type Match struct {
 	localReady  bool
 	remoteReady bool
 
-	wasLoser bool
+	wonLastBattle bool
 
 	battleNumber int
 	battle       *Battle

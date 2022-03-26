@@ -13,6 +13,7 @@ type EWRAMOffsets struct {
 type ROMOffsets struct {
 	A_battle_init__call__battle_copyInputData                     uint32
 	A_battle_update__call__battle_copyInputData                   uint32
+	A_battle_runUnpausedStep__cmp__retval                         uint32
 	A_battle_copyInputData__entry                                 uint32
 	A_battle_settings_list1                                       uint32
 	A_battle_init_marshal__ret                                    uint32
@@ -50,6 +51,7 @@ var offsetsMap = map[string]Offsets{
 		ROM: ROMOffsets{
 			A_battle_init__call__battle_copyInputData:                     0x08007902,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6e,
+			A_battle_runUnpausedStep__cmp__retval:                         0x08008102,
 			A_battle_copyInputData__entry:                                 0x0801feee,
 			A_battle_settings_list1:                                       0x080b0d88,
 			A_battle_init_marshal__ret:                                    0x0800b2b8,
@@ -71,6 +73,7 @@ var offsetsMap = map[string]Offsets{
 		ROM: ROMOffsets{
 			A_battle_init__call__battle_copyInputData:                     0x08007902,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6e,
+			A_battle_runUnpausedStep__cmp__retval:                         0x08008102,
 			A_battle_copyInputData__entry:                                 0x0801feee,
 			A_battle_settings_list1:                                       0x080b0d88,
 			A_battle_init_marshal__ret:                                    0x0800b2b8,

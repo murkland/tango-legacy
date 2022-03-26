@@ -54,6 +54,14 @@ func (b *BN6) SetPlayerMarshaledBattleState(core *mgba.Core, index int, marshale
 	core.RawWriteRange(b.Offsets.EWRAM.A_PlayerMarshaledStateArr+uint32(index)*0x100, -1, marshaledState)
 }
 
+func (b *BN6) LocalWins(core *mgba.Core) uint8 {
+	return core.RawRead8(b.Offsets.EWRAM.A_BattleState+0x18, -1)
+}
+
+func (b *BN6) RemoteWins(core *mgba.Core) uint8 {
+	return core.RawRead8(b.Offsets.EWRAM.A_BattleState+0x19, -1)
+}
+
 func (b *BN6) RNG2State(core *mgba.Core) uint32 {
 	return core.RawRead32(b.Offsets.EWRAM.A_Rng2, -1)
 }
