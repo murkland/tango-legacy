@@ -19,7 +19,7 @@ type Match struct {
 }
 
 type Battle struct {
-	tick uint32
+	tick int32
 	isP2 bool
 
 	inputlog *InputLog
@@ -48,7 +48,7 @@ func (s *Battle) RemotePlayerIndex() int {
 
 func NewBattle(isP2 bool) (*Battle, error) {
 	b := &Battle{
-		tick: 0,
+		tick: -1,
 		isP2: isP2,
 
 		lastCommittedRemoteInput: Input{Joyflags: 0xfc00},

@@ -337,8 +337,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().ThumbWritePC()
 
 		ctx := context.Background()
-		if g.match.battle.tick == 0 {
-			g.match.battle.tick = 1
+		if g.match.battle.tick == -1 {
+			g.match.battle.tick = 0
 			g.match.battle.committedState = core.SaveState()
 			return
 		}
@@ -358,7 +358,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		var pkt packets.Input
-		pkt.ForTick = g.match.battle.tick
+		pkt.ForTick = uint32(g.match.battle.tick)
 		pkt.Joyflags = joyflags
 		pkt.CustomScreenState = customScreenState
 		if err := packets.Send(ctx, g.dc, pkt, turn); err != nil {
