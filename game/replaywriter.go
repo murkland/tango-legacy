@@ -29,11 +29,11 @@ func newReplayWriter(filename string) (*ReplayWriter, error) {
 		return nil, err
 	}
 
-	if _, err := f.Write([]byte(replayHeader)); err != nil {
+	if _, err := w.Write([]byte(replayHeader)); err != nil {
 		return nil, err
 	}
 
-	if err := binary.Write(f, binary.LittleEndian, uint8(replayVersion)); err != nil {
+	if err := binary.Write(w, binary.LittleEndian, uint8(replayVersion)); err != nil {
 		return nil, err
 	}
 
