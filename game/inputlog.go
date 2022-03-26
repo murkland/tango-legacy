@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -19,7 +20,7 @@ func newInputLog(filename string) (*InputLog, error) {
 }
 
 func (il *InputLog) WriteInit(playerIndex int, marshaled []byte) error {
-	if _, err := fmt.Fprintf(il.f, "init p%d: %v\n", playerIndex+1, marshaled); err != nil {
+	if _, err := fmt.Fprintf(il.f, "init p%d: %s\n", playerIndex+1, hex.EncodeToString(marshaled)); err != nil {
 		return err
 	}
 	return nil
@@ -34,13 +35,13 @@ func (il *InputLog) Write(rngState uint32, inputPair [2]Input) error {
 	}
 
 	if p1.Turn != nil {
-		if _, err := fmt.Fprintf(il.f, " +p1 turn: %v\n", p1.Turn); err != nil {
+		if _, err := fmt.Fprintf(il.f, " +p1 turn: %s\n", hex.EncodeToString(p1.Turn)); err != nil {
 			return err
 		}
 	}
 
 	if p2.Turn != nil {
-		if _, err := fmt.Fprintf(il.f, " +p2 turn: %v\n", p2.Turn); err != nil {
+		if _, err := fmt.Fprintf(il.f, " +p2 turn: %s\n", hex.EncodeToString(p2.Turn)); err != nil {
 			return err
 		}
 	}
