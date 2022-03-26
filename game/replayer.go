@@ -13,7 +13,7 @@ import (
 )
 
 type Replayer struct {
-	core *mgba.Core
+	Core *mgba.Core
 	bn6  *bn6.BN6
 
 	replay *Replay
@@ -31,9 +31,9 @@ type Replay struct {
 func (rp *Replayer) Reset() {
 	rp.currentInputPairs = ringbuf.New[[2]Input](len(rp.replay.InputPairs))
 	rp.currentInputPairs.Push(rp.replay.InputPairs)
-	rp.core.LoadState(rp.replay.State)
-	rp.bn6.SetPlayerMarshaledBattleState(rp.core, 0, rp.replay.Init[0])
-	rp.bn6.SetPlayerMarshaledBattleState(rp.core, 1, rp.replay.Init[1])
+	rp.Core.LoadState(rp.replay.State)
+	rp.bn6.SetPlayerMarshaledBattleState(rp.Core, 0, rp.replay.Init[0])
+	rp.bn6.SetPlayerMarshaledBattleState(rp.Core, 1, rp.replay.Init[1])
 }
 
 // Serialized replay format is:
@@ -58,7 +58,7 @@ func (rp *Replayer) Reset() {
 // u8: p2customstate
 // u8: turn flags (0b00 = nobody, 0b01 = p1, 0b10 = p2, 0b11 = p1 and p2)
 // turn size: turn data
-func deserializeReplay(r io.Reader) (*Replay, error) {
+func DeserializeReplay(r io.Reader) (*Replay, error) {
 	// read header
 	var header [4]byte
 	if _, err := r.Read(header[:]); err != nil {
@@ -186,25 +186,25 @@ func deserializeReplay(r io.Reader) (*Replay, error) {
 	}, nil
 }
 
-func newReplayer(romPath string, bn6 *bn6.BN6, replayR io.Reader) (*Replayer, error) {
-	core, err := newCore(romPath)
+func NewReplayer(romPath string, replay *Replay) (*Replayer, error) {
+	Core, err := newCore(romPath)
 	if err != nil {
 		return nil, err
 	}
 
-	replay, err := deserializeReplay(replayR)
-	if err != nil {
-		return nil, err
+	bn6 := bn6.Load(Core.GameTitle())
+	if bn6 == nil {
+		return nil, fmt.Errorf("unsupported game: %s", Core.GameTitle())
 	}
 
-	rp := &Replayer{core, bn6, replay, nil}
+	rp := &Replayer{Core, bn6, replay, nil}
 
-	tp := trapper.New(core)
+	tp := trapper.New(Core)
 
 	tp.Add(bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
-		core.GBA().SetRegister(0, 0)
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
-		core.GBA().ThumbWritePC()
+		Core.GBA().SetRegister(0, 0)
+		Core.GBA().SetRegister(15, Core.GBA().Register(15)+4)
+		Core.GBA().ThumbWritePC()
 
 		var inputPairBuf [1][2]Input
 		rp.currentInputPairs.Pop(inputPairBuf[:], 0)
@@ -214,35 +214,35 @@ func newReplayer(romPath string, bn6 *bn6.BN6, replayR io.Reader) (*Replayer, er
 			panic(fmt.Sprintf("p1 tick != p2 tick: %d != %d", ip[0].Tick, ip[1].Tick))
 		}
 
-		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
+		bn6.SetPlayerInputState(Core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
-			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
+			bn6.SetPlayerMarshaledBattleState(Core, 0, ip[0].Turn)
 		}
 
-		bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
+		bn6.SetPlayerInputState(Core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
 		if ip[1].Turn != nil {
-			bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
+			bn6.SetPlayerMarshaledBattleState(Core, 1, ip[1].Turn)
 		}
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_battle_isP2__tst, func() {
-		core.GBA().SetRegister(0, uint32(rp.replay.LocalPlayerIndex))
+		Core.GBA().SetRegister(0, uint32(rp.replay.LocalPlayerIndex))
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_link_isP2__ret, func() {
-		core.GBA().SetRegister(0, uint32(rp.replay.LocalPlayerIndex))
+		Core.GBA().SetRegister(0, uint32(rp.replay.LocalPlayerIndex))
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_commMenu_inBattle__call__commMenu_handleLinkCableInput, func() {
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
-		core.GBA().ThumbWritePC()
+		Core.GBA().SetRegister(15, Core.GBA().Register(15)+4)
+		Core.GBA().ThumbWritePC()
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_commMenu_endBattle__entry, func() {
 		rp.Reset()
 	})
 
-	core.InstallBeefTrap(tp.BeefHandler)
+	Core.InstallBeefTrap(tp.BeefHandler)
 
 	rp.Reset()
 
