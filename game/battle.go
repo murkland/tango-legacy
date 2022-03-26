@@ -3,6 +3,8 @@ package game
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/murkland/bbn6/mgba"
@@ -62,8 +64,9 @@ func NewBattle(isP2 bool, localInputBufferSize int) (*Battle, error) {
 		localInputBuffer: ringbuf.New[uint16](localInputBufferSize),
 	}
 
-	fn := fmt.Sprintf("input_p%d_%s.log", b.LocalPlayerIndex()+1, time.Now().Format("20060102030405"))
-	log.Printf("opening input log: %s", fn)
+	os.MkdirAll("replays", 0o700)
+	fn := filepath.Join("replays", fmt.Sprintf("p%d_%s.bbn6replay", b.LocalPlayerIndex()+1, time.Now().Format("20060102030405")))
+	log.Printf("writing replay: %s", fn)
 
 	il, err := newReplayWriter(fn)
 	if err != nil {
