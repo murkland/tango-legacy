@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/ringbuf"
 )
 
 type Match struct {
@@ -22,8 +23,9 @@ type Battle struct {
 	tick int32
 	isP2 bool
 
-	inputlog *InputLog
-	iq       *InputQueue
+	inputlog         *InputLog
+	localInputBuffer *ringbuf.RingBuf[uint16]
+	iq               *InputQueue
 
 	pendingRemoteInit []byte
 
@@ -46,14 +48,15 @@ func (s *Battle) RemotePlayerIndex() int {
 	return 1 - s.LocalPlayerIndex()
 }
 
-func NewBattle(isP2 bool) (*Battle, error) {
+func NewBattle(isP2 bool, localInputBufferSize int) (*Battle, error) {
 	b := &Battle{
 		tick: -1,
 		isP2: isP2,
 
 		lastCommittedRemoteInput: Input{Joyflags: 0xfc00},
 
-		iq: NewInputQueue(60),
+		iq:               NewInputQueue(60),
+		localInputBuffer: ringbuf.New[uint16](localInputBufferSize),
 	}
 
 	fn := fmt.Sprintf("input_p%d_%s.log", b.LocalPlayerIndex()+1, time.Now().Format("20060102030405"))

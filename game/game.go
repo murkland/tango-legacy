@@ -345,7 +345,16 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		g.match.battle.tick++
 
-		joyflags := g.bn6.LocalJoyflags(core)
+		nextJoyflags := g.bn6.LocalJoyflags(core)
+		g.match.battle.localInputBuffer.Push([]uint16{nextJoyflags})
+
+		joyflags := uint16(0xfc00)
+		if g.match.battle.localInputBuffer.Free() == 0 {
+			var joyflagsBuf [1]uint16
+			g.match.battle.localInputBuffer.Pop(joyflagsBuf[:], 0)
+			joyflags = joyflagsBuf[0]
+		}
+
 		customScreenState := g.bn6.LocalCustomScreenState(core)
 
 		var turn []byte
@@ -423,7 +432,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.match.battleNumber++
 		log.Printf("battle %d started, won last battle (is p1) = %t", g.match.battleNumber, g.match.wonLastBattle)
 
-		battle, err := NewBattle(!g.match.wonLastBattle)
+		const localInputBufferSize = 2
+		battle, err := NewBattle(!g.match.wonLastBattle, localInputBufferSize)
 		if err != nil {
 			panic(err)
 		}
