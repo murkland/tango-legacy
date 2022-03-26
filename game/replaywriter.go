@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 	"os"
 
@@ -21,6 +22,10 @@ func newReplayWriter(filename string) (*ReplayWriter, error) {
 		return nil, err
 	}
 
+	if _, err := f.Write([]byte(replayHeader)); err != nil {
+		return nil, err
+	}
+
 	if err := binary.Write(f, binary.LittleEndian, uint8(replayVersion)); err != nil {
 		return nil, err
 	}
@@ -29,10 +34,6 @@ func newReplayWriter(filename string) (*ReplayWriter, error) {
 }
 
 func (rw *ReplayWriter) WriteState(playerIndex int, state *mgba.State) error {
-	if _, err := rw.f.Write([]byte(replayHeader)); err != nil {
-		return err
-	}
-
 	if err := binary.Write(rw.f, binary.LittleEndian, uint8(playerIndex)); err != nil {
 		return err
 	}
@@ -49,6 +50,14 @@ func (rw *ReplayWriter) WriteState(playerIndex int, state *mgba.State) error {
 }
 
 func (rw *ReplayWriter) WriteInit(playerIndex int, marshaled []byte) error {
+	if err := binary.Write(rw.f, binary.LittleEndian, uint8(playerIndex)); err != nil {
+		return err
+	}
+
+	if len(marshaled) != 0x100 {
+		return errors.New("invalid init size")
+	}
+
 	if _, err := rw.f.Write(marshaled); err != nil {
 		return err
 	}
@@ -91,12 +100,20 @@ func (rw *ReplayWriter) Write(rngState uint32, inputPair [2]Input) error {
 	}
 
 	if p1.Turn != nil {
+		if len(p1.Turn) != 0x100 {
+			return errors.New("invalid turn size")
+		}
+
 		if _, err := rw.f.Write(p1.Turn); err != nil {
 			return err
 		}
 	}
 
 	if p2.Turn != nil {
+		if len(p2.Turn) != 0x100 {
+			return errors.New("invalid turn size")
+		}
+
 		if _, err := rw.f.Write(p2.Turn); err != nil {
 			return err
 		}

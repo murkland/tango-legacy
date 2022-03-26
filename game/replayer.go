@@ -186,6 +186,13 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 	}, nil
 }
 
+func (rp *Replayer) PeekLocalJoyflags() uint16 {
+	var inputPairBuf [1][2]Input
+	rp.currentInputPairs.Peek(inputPairBuf[:], 0)
+	ip := inputPairBuf[0]
+	return ip[rp.replay.LocalPlayerIndex].Joyflags
+}
+
 func NewReplayer(romPath string, replay *Replay) (*Replayer, error) {
 	Core, err := newCore(romPath)
 	if err != nil {
@@ -209,10 +216,6 @@ func NewReplayer(romPath string, replay *Replay) (*Replayer, error) {
 		var inputPairBuf [1][2]Input
 		rp.currentInputPairs.Pop(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
-
-		if ip[0].Tick != ip[1].Tick {
-			panic(fmt.Sprintf("p1 tick != p2 tick: %d != %d", ip[0].Tick, ip[1].Tick))
-		}
 
 		bn6.SetPlayerInputState(Core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
@@ -243,8 +246,6 @@ func NewReplayer(romPath string, replay *Replay) (*Replayer, error) {
 	})
 
 	Core.InstallBeefTrap(tp.BeefHandler)
-
-	rp.Reset()
 
 	return rp, nil
 }

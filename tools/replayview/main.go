@@ -38,7 +38,8 @@ func (g *Game) serviceFbuf() {
 	runtime.LockOSThread()
 	for {
 		if g.replayer.Core.GBA().Sync().WaitFrameStart() {
-			// TODO: Need to send keys here?
+			g.replayer.Core.SetKeys(mgba.Keys(g.replayer.PeekLocalJoyflags()))
+
 			g.fbufMu.Lock()
 			g.fbuf = g.vb.CopyImage()
 			g.fbufMu.Unlock()
@@ -79,6 +80,13 @@ const expectedFPS = 60
 func main() {
 	flag.Parse()
 
+	mgba.SetDefaultLogger(func(category string, level int, message string) {
+		if level&0x7 == 0 {
+			return
+		}
+		log.Printf("mgba: level=%d category=%s %s", level, category, message)
+	})
+
 	replayName := flag.Arg(0)
 	f, err := os.Open(replayName)
 	if err != nil {
@@ -110,6 +118,9 @@ func main() {
 	if !t.Start() {
 		log.Fatalf("failed to start mgba thread")
 	}
+	t.Pause()
+	replayer.Reset()
+	t.Unpause()
 	replayer.Core.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
 	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(replayer.Core, replayer.Core.Options().SampleRate))
