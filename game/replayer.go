@@ -44,6 +44,7 @@ func (rp *Replayer) Reset() {
 // u8[4]: TOOT
 // u8: replay version
 // u8[12]: game title
+// u32: game crc32
 // u8: local player index
 // u32: state size
 // state size: state
@@ -61,7 +62,7 @@ func (rp *Replayer) Reset() {
 // u8: p2customstate
 // u8: turn flags (0b00 = nobody, 0b01 = p1, 0b10 = p2, 0b11 = p1 and p2)
 // turn size: turn data
-func deserializeReplay(r io.Reader, expectedGameTitle string) (*Replay, error) {
+func deserializeReplay(r io.Reader, core *mgba.Core) (*Replay, error) {
 	zr, err := zstd.NewReader(r)
 	if err != nil {
 		return nil, err
@@ -91,8 +92,16 @@ func deserializeReplay(r io.Reader, expectedGameTitle string) (*Replay, error) {
 	}
 
 	gameTitle := string(bytes.TrimRight(titleRaw[:], "\x00"))
-	if gameTitle != expectedGameTitle {
-		return nil, fmt.Errorf("mismatching game name, expected %s but got %s", expectedGameTitle, gameTitle)
+	if gameTitle != core.GameTitle() {
+		return nil, fmt.Errorf("mismatching game name, expected %s but got %s", core.GameTitle(), gameTitle)
+	}
+
+	var crc32 uint32
+	if err := binary.Read(zr, binary.LittleEndian, &crc32); err != nil {
+		return nil, err
+	}
+	if crc32 != core.GBA().ROMCRC32() {
+		return nil, fmt.Errorf("mismatching crc32, expected %08x but got %08x", core.GBA().ROMCRC32(), crc32)
 	}
 
 	var localPlayerIndex uint8
@@ -230,7 +239,7 @@ func NewReplayer(romPath string, r io.Reader) (*Replayer, error) {
 		return nil, fmt.Errorf("unsupported game: %s", core.GameTitle())
 	}
 
-	replay, err := deserializeReplay(r, core.GameTitle())
+	replay, err := deserializeReplay(r, core)
 	if err != nil {
 		return nil, err
 	}

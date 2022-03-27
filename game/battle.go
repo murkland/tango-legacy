@@ -53,7 +53,7 @@ func (s *Battle) RemotePlayerIndex() int {
 	return 1 - s.LocalPlayerIndex()
 }
 
-func NewBattle(gameTitle string, isP2 bool, localInputBufferSize int) (*Battle, error) {
+func NewBattle(core *mgba.Core, isP2 bool, localInputBufferSize int) (*Battle, error) {
 	b := &Battle{
 		tick: -1,
 		isP2: isP2,
@@ -68,7 +68,7 @@ func NewBattle(gameTitle string, isP2 bool, localInputBufferSize int) (*Battle, 
 	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.bbn6replay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
 	log.Printf("writing replay: %s", fn)
 
-	il, err := newReplayWriter(fn, gameTitle)
+	il, err := newReplayWriter(fn, core)
 	if err != nil {
 		return nil, err
 	}

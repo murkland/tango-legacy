@@ -18,7 +18,7 @@ type ReplayWriter struct {
 	w      io.WriteCloser
 }
 
-func newReplayWriter(filename string, gameTitle string) (*ReplayWriter, error) {
+func newReplayWriter(filename string, core *mgba.Core) (*ReplayWriter, error) {
 	f, err := os.Create(filename)
 	if err != nil {
 		return nil, err
@@ -38,8 +38,12 @@ func newReplayWriter(filename string, gameTitle string) (*ReplayWriter, error) {
 	}
 
 	var rawGameTitle [12]byte
-	copy(rawGameTitle[:], []byte(gameTitle))
+	copy(rawGameTitle[:], []byte(core.GameTitle()))
 	if _, err := w.Write(rawGameTitle[:]); err != nil {
+		return nil, err
+	}
+
+	if err := binary.Write(w, binary.LittleEndian, core.GBA().ROMCRC32()); err != nil {
 		return nil, err
 	}
 

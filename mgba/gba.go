@@ -25,6 +25,10 @@ func (g *GBA) Register(r int) uint32 {
 	return uint32(g.armRegisterFile().anon0.gprs[r])
 }
 
+func (g *GBA) ROMCRC32() uint32 {
+	return uint32(g.ptr.romCrc32)
+}
+
 func (g *GBA) CPSR() [4]byte {
 	return g.armRegisterFile().anon0.cpsr
 }
