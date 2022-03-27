@@ -103,12 +103,7 @@ func main() {
 	}
 	defer f.Close()
 
-	replay, err := game.DeserializeReplay(f)
-	if err != nil {
-		log.Fatalf("failed to read replay: %s", err)
-	}
-
-	replayer, err := game.NewReplayer(*romPath, replay)
+	replayer, err := game.NewReplayer(*romPath, f)
 	if err != nil {
 		log.Fatalf("failed to make replayer: %s", err)
 	}

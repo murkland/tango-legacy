@@ -435,7 +435,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		log.Printf("battle %d started, won last battle (is p1) = %t", g.match.battleNumber, g.match.wonLastBattle)
 
 		const localInputBufferSize = 2
-		battle, err := NewBattle(!g.match.wonLastBattle, localInputBufferSize)
+		battle, err := NewBattle(g.mainCore.GameTitle(), !g.match.wonLastBattle, localInputBufferSize)
 		if err != nil {
 			panic(err)
 		}

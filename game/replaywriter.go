@@ -10,7 +10,7 @@ import (
 	"github.com/murkland/bbn6/mgba"
 )
 
-const replayVersion = 0x01
+const replayVersion = 0x02
 const replayHeader = "TOOT"
 
 type ReplayWriter struct {
@@ -18,7 +18,7 @@ type ReplayWriter struct {
 	w      io.WriteCloser
 }
 
-func newReplayWriter(filename string) (*ReplayWriter, error) {
+func newReplayWriter(filename string, gameTitle string) (*ReplayWriter, error) {
 	f, err := os.Create(filename)
 	if err != nil {
 		return nil, err
@@ -30,6 +30,12 @@ func newReplayWriter(filename string) (*ReplayWriter, error) {
 	}
 
 	if _, err := w.Write([]byte(replayHeader)); err != nil {
+		return nil, err
+	}
+
+	var rawGameTitle [12]byte
+	copy(rawGameTitle[:], []byte(gameTitle))
+	if _, err := w.Write(rawGameTitle[:]); err != nil {
 		return nil, err
 	}
 

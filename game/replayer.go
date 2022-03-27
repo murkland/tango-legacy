@@ -1,6 +1,7 @@
 package game
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -42,6 +43,7 @@ func (rp *Replayer) Reset() {
 // header:
 // u8[4]: TOOT
 // u8: replay version
+// u8[12]: game title
 // u8: local player index
 // u32: state size
 // state size: state
@@ -59,7 +61,7 @@ func (rp *Replayer) Reset() {
 // u8: p2customstate
 // u8: turn flags (0b00 = nobody, 0b01 = p1, 0b10 = p2, 0b11 = p1 and p2)
 // turn size: turn data
-func DeserializeReplay(r io.Reader) (*Replay, error) {
+func deserializeReplay(r io.Reader, expectedGameTitle string) (*Replay, error) {
 	zr, err := zstd.NewReader(r)
 	if err != nil {
 		return nil, err
@@ -73,6 +75,16 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 
 	if string(header[:]) != replayHeader {
 		return nil, fmt.Errorf("invalid format")
+	}
+
+	var titleRaw [12]byte
+	if _, err := io.ReadFull(zr, titleRaw[:]); err != nil {
+		return nil, err
+	}
+
+	gameTitle := string(bytes.TrimRight(titleRaw[:], "\x00"))
+	if gameTitle != expectedGameTitle {
+		return nil, fmt.Errorf("mismatching game name, expected %s but got %s", expectedGameTitle, gameTitle)
 	}
 
 	var version uint8
@@ -207,7 +219,7 @@ func (rp *Replayer) PeekLocalJoyflags() uint16 {
 	return ip[rp.replay.LocalPlayerIndex].Joyflags
 }
 
-func NewReplayer(romPath string, replay *Replay) (*Replayer, error) {
+func NewReplayer(romPath string, r io.Reader) (*Replayer, error) {
 	core, err := newCore(romPath)
 	if err != nil {
 		return nil, err
@@ -216,6 +228,11 @@ func NewReplayer(romPath string, replay *Replay) (*Replayer, error) {
 	bn6 := bn6.Load(core.GameTitle())
 	if bn6 == nil {
 		return nil, fmt.Errorf("unsupported game: %s", core.GameTitle())
+	}
+
+	replay, err := deserializeReplay(r, core.GameTitle())
+	if err != nil {
+		return nil, err
 	}
 
 	rp := &Replayer{core, bn6, replay, nil}
