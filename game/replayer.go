@@ -67,7 +67,7 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 
 	// read header
 	var header [4]byte
-	if _, err := zr.Read(header[:]); err != nil {
+	if _, err := io.ReadFull(zr, header[:]); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +94,7 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 	}
 
 	stateBytes := make([]byte, int(stateSize))
-	if _, err := zr.Read(stateBytes); err != nil {
+	if _, err := io.ReadFull(zr, stateBytes); err != nil {
 		return nil, err
 	}
 	state := mgba.StateFromBytes(stateBytes)
@@ -108,7 +108,7 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 		}
 
 		var marshaled [0x100]byte
-		if _, err := zr.Read(marshaled[:]); err != nil {
+		if _, err := io.ReadFull(zr, marshaled[:]); err != nil {
 			return nil, err
 		}
 
@@ -167,7 +167,7 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 
 		if turnFlags&0b01 != 0 {
 			var turn [0x100]byte
-			if _, err := zr.Read(turn[:]); err != nil {
+			if _, err := io.ReadFull(zr, turn[:]); err != nil {
 				return nil, err
 			}
 			inputPair[0].Turn = turn[:]
@@ -175,7 +175,7 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 
 		if turnFlags&0b10 != 0 {
 			var turn [0x100]byte
-			if _, err := zr.Read(turn[:]); err != nil {
+			if _, err := io.ReadFull(zr, turn[:]); err != nil {
 				return nil, err
 			}
 			inputPair[1].Turn = turn[:]
