@@ -197,6 +197,10 @@ func (rp *Replayer) Core() *mgba.Core {
 }
 
 func (rp *Replayer) PeekLocalJoyflags() uint16 {
+	if rp.currentInputPairs.Used() == 0 {
+		return 0xfc00
+	}
+
 	var inputPairBuf [1][2]Input
 	rp.currentInputPairs.Peek(inputPairBuf[:], 0)
 	ip := inputPairBuf[0]
