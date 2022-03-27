@@ -597,7 +597,7 @@ func (g *Game) Update() error {
 			}
 			g.match.stalledFrames = 0
 
-			tps := expectedFPS - (lag - expected + 1)
+			tps := expectedFPS - (lag - expected)
 
 			// TODO: Not thread safe.
 			g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
