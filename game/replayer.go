@@ -14,7 +14,7 @@ import (
 )
 
 type Replayer struct {
-	core *mgba.core
+	core *mgba.Core
 	bn6  *bn6.BN6
 
 	replay *Replay
