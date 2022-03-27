@@ -33,13 +33,13 @@ func newReplayWriter(filename string, gameTitle string) (*ReplayWriter, error) {
 		return nil, err
 	}
 
-	var rawGameTitle [12]byte
-	copy(rawGameTitle[:], []byte(gameTitle))
-	if _, err := w.Write(rawGameTitle[:]); err != nil {
+	if err := binary.Write(w, binary.LittleEndian, uint8(replayVersion)); err != nil {
 		return nil, err
 	}
 
-	if err := binary.Write(w, binary.LittleEndian, uint8(replayVersion)); err != nil {
+	var rawGameTitle [12]byte
+	copy(rawGameTitle[:], []byte(gameTitle))
+	if _, err := w.Write(rawGameTitle[:]); err != nil {
 		return nil, err
 	}
 

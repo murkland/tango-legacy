@@ -77,6 +77,14 @@ func deserializeReplay(r io.Reader, expectedGameTitle string) (*Replay, error) {
 		return nil, fmt.Errorf("invalid format")
 	}
 
+	var version uint8
+	if err := binary.Read(zr, binary.LittleEndian, &version); err != nil {
+		return nil, err
+	}
+	if version != replayVersion {
+		return nil, fmt.Errorf("unsupported replay version: %02x vs %02x", version, replayVersion)
+	}
+
 	var titleRaw [12]byte
 	if _, err := io.ReadFull(zr, titleRaw[:]); err != nil {
 		return nil, err
@@ -85,14 +93,6 @@ func deserializeReplay(r io.Reader, expectedGameTitle string) (*Replay, error) {
 	gameTitle := string(bytes.TrimRight(titleRaw[:], "\x00"))
 	if gameTitle != expectedGameTitle {
 		return nil, fmt.Errorf("mismatching game name, expected %s but got %s", expectedGameTitle, gameTitle)
-	}
-
-	var version uint8
-	if err := binary.Read(zr, binary.LittleEndian, &version); err != nil {
-		return nil, err
-	}
-	if version != replayVersion {
-		return nil, fmt.Errorf("unsupported replay version: %02x vs %02x", version, replayVersion)
 	}
 
 	var localPlayerIndex uint8
