@@ -37,8 +37,8 @@ type Game struct {
 func (g *Game) serviceFbuf() {
 	runtime.LockOSThread()
 	for {
-		g.replayer.Core.SetKeys(mgba.Keys(g.replayer.PeekLocalJoyflags()))
-		if g.replayer.Core.GBA().Sync().WaitFrameStart() {
+		g.replayer.Core().SetKeys(mgba.Keys(g.replayer.PeekLocalJoyflags()))
+		if g.replayer.Core().GBA().Sync().WaitFrameStart() {
 			g.fbufMu.Lock()
 			g.fbuf = g.vb.CopyImage()
 			g.fbufMu.Unlock()
@@ -46,12 +46,12 @@ func (g *Game) serviceFbuf() {
 			// TODO: Optimize this.
 			time.Sleep(500 * time.Microsecond)
 		}
-		g.replayer.Core.GBA().Sync().WaitFrameEnd()
+		g.replayer.Core().GBA().Sync().WaitFrameEnd()
 	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return g.replayer.Core.DesiredVideoDimensions()
+	return g.replayer.Core().DesiredVideoDimensions()
 }
 
 func (g *Game) Update() error {
@@ -103,28 +103,28 @@ func main() {
 		log.Fatalf("failed to make replayer: %s", err)
 	}
 
-	audioCtx, ready, err := oto.NewContext(replayer.Core.Options().SampleRate, 2, 2)
+	audioCtx, ready, err := oto.NewContext(replayer.Core().Options().SampleRate, 2, 2)
 	if err != nil {
 		log.Fatalf("failed to initialize audio: %s", err)
 	}
 	<-ready
 
-	width, height := replayer.Core.DesiredVideoDimensions()
+	width, height := replayer.Core().DesiredVideoDimensions()
 	vb := av.NewVideoBuffer(width, height)
 	ebiten.SetWindowSize(width*3, height*3)
 
-	replayer.Core.SetVideoBuffer(vb.Pointer(), width)
-	t := mgba.NewThread(replayer.Core)
+	replayer.Core().SetVideoBuffer(vb.Pointer(), width)
+	t := mgba.NewThread(replayer.Core())
 	if !t.Start() {
 		log.Fatalf("failed to start mgba thread")
 	}
 	t.Pause()
 	replayer.Reset()
 	t.Unpause()
-	replayer.Core.GBA().Sync().SetFPSTarget(float32(expectedFPS))
+	replayer.Core().GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
-	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(replayer.Core, replayer.Core.Options().SampleRate))
-	audioPlayer.(oto.BufferSizeSetter).SetBufferSize(replayer.Core.Options().AudioBuffers * 4)
+	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(replayer.Core(), replayer.Core().Options().SampleRate))
+	audioPlayer.(oto.BufferSizeSetter).SetBufferSize(replayer.Core().Options().AudioBuffers * 4)
 
 	g := &Game{
 		replayer:    replayer,
