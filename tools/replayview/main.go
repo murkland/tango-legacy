@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/oto/v2"
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/game"
@@ -59,6 +60,15 @@ func (g *Game) Update() error {
 		return errors.New("mgba thread crashed")
 	}
 	g.audioPlayer.Play()
+
+	fpsTarget := g.replayer.Core().GBA().Sync().FPSTarget()
+	if inpututil.IsKeyJustPressed(ebiten.KeyEqual) {
+		g.replayer.Core().GBA().Sync().SetFPSTarget(fpsTarget + 10)
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyMinus) {
+		g.replayer.Core().GBA().Sync().SetFPSTarget(fpsTarget - 10)
+	}
+
 	return nil
 }
 
