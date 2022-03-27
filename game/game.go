@@ -252,7 +252,7 @@ func (g *Game) handleConn(ctx context.Context) error {
 				g.matchMu.Lock()
 				defer g.matchMu.Unlock()
 
-				if g.match.battle == nil {
+				if g.match == nil || g.match.battle == nil {
 					log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
 					return nil
 				}
