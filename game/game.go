@@ -252,6 +252,11 @@ func (g *Game) handleConn(ctx context.Context) error {
 				g.matchMu.Lock()
 				defer g.matchMu.Unlock()
 
+				if g.match.battle == nil {
+					log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
+					return nil
+				}
+
 				g.match.battle.iq.AddInput(g.match.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
 				return nil
 			})(); err != nil {
