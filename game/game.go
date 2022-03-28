@@ -480,7 +480,7 @@ func (g *Game) Update() error {
 		if g.match != nil && g.match.battle != nil {
 			expected := g.runaheadTicksAllowedMatchLocked()
 			lag := g.match.battle.iq.Lag(g.match.battle.RemotePlayerIndex())
-			tps := expectedFPS - (lag - expected)
+			tps := expectedFPS - (lag - expected + 1)
 			// TODO: Not thread safe.
 			g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 		}
