@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/murkland/bbn6/bn6"
@@ -28,6 +29,7 @@ type Replay struct {
 	LocalPlayerIndex int
 	Init             [2][]byte
 	InputPairs       [][2]Input
+	RNGStates        []uint32
 }
 
 func (rp *Replayer) Reset() {
@@ -138,10 +140,15 @@ func deserializeReplay(r io.Reader, core *mgba.Core) (*Replay, error) {
 
 	// read inputs
 	var inputPairs [][2]Input
+	var rngStates []uint32
 	for {
 		var tick uint32
 		if err := binary.Read(zr, binary.LittleEndian, &tick); err != nil {
 			if errors.Is(err, io.EOF) {
+				break
+			}
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Printf("replay was truncated")
 				break
 			}
 			return nil, err
@@ -150,8 +157,13 @@ func deserializeReplay(r io.Reader, core *mgba.Core) (*Replay, error) {
 		// we don't do anything with this, actually...
 		var rngState uint32
 		if err := binary.Read(zr, binary.LittleEndian, &rngState); err != nil {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Printf("replay was truncated")
+				break
+			}
 			return nil, err
 		}
+		rngStates = append(rngStates, rngState)
 
 		var inputPair [2]Input
 		inputPair[0].Tick = int(tick)
@@ -159,36 +171,60 @@ func deserializeReplay(r io.Reader, core *mgba.Core) (*Replay, error) {
 
 		var p1Joyflags uint16
 		if err := binary.Read(zr, binary.LittleEndian, &p1Joyflags); err != nil {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Printf("replay was truncated")
+				break
+			}
 			return nil, err
 		}
 		inputPair[0].Joyflags = p1Joyflags
 
 		var p1CustomScreenState uint8
 		if err := binary.Read(zr, binary.LittleEndian, &p1CustomScreenState); err != nil {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Printf("replay was truncated")
+				break
+			}
 			return nil, err
 		}
 		inputPair[0].CustomScreenState = p1CustomScreenState
 
 		var p2Joyflags uint16
 		if err := binary.Read(zr, binary.LittleEndian, &p2Joyflags); err != nil {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Printf("replay was truncated")
+				break
+			}
 			return nil, err
 		}
 		inputPair[1].Joyflags = p2Joyflags
 
 		var p2CustomScreenState uint8
 		if err := binary.Read(zr, binary.LittleEndian, &p2CustomScreenState); err != nil {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Printf("replay was truncated")
+				break
+			}
 			return nil, err
 		}
 		inputPair[1].CustomScreenState = p2CustomScreenState
 
 		var turnFlags uint8
 		if err := binary.Read(zr, binary.LittleEndian, &turnFlags); err != nil {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Printf("replay was truncated")
+				break
+			}
 			return nil, err
 		}
 
 		if turnFlags&0b01 != 0 {
 			var turn [0x100]byte
 			if _, err := io.ReadFull(zr, turn[:]); err != nil {
+				if errors.Is(err, io.ErrUnexpectedEOF) {
+					log.Printf("replay was truncated")
+					break
+				}
 				return nil, err
 			}
 			inputPair[0].Turn = turn[:]
@@ -197,6 +233,10 @@ func deserializeReplay(r io.Reader, core *mgba.Core) (*Replay, error) {
 		if turnFlags&0b10 != 0 {
 			var turn [0x100]byte
 			if _, err := io.ReadFull(zr, turn[:]); err != nil {
+				if errors.Is(err, io.ErrUnexpectedEOF) {
+					log.Printf("replay was truncated")
+					break
+				}
 				return nil, err
 			}
 			inputPair[1].Turn = turn[:]
@@ -210,6 +250,7 @@ func deserializeReplay(r io.Reader, core *mgba.Core) (*Replay, error) {
 		LocalPlayerIndex: int(localPlayerIndex),
 		Init:             init,
 		InputPairs:       inputPairs,
+		RNGStates:        rngStates,
 	}, nil
 }
 
@@ -288,4 +329,8 @@ func NewReplayer(romPath string, r io.Reader) (*Replayer, error) {
 	rp.core.InstallBeefTrap(tp.BeefHandler)
 
 	return rp, nil
+}
+
+func (r *Replayer) Replay() *Replay {
+	return r.replay
 }

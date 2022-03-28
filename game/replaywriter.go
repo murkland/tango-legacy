@@ -15,7 +15,7 @@ const replayHeader = "TOOT"
 
 type ReplayWriter struct {
 	closer io.Closer
-	w      io.WriteCloser
+	w      *zstd.Encoder
 }
 
 func newReplayWriter(filename string, core *mgba.Core) (*ReplayWriter, error) {
@@ -47,6 +47,10 @@ func newReplayWriter(filename string, core *mgba.Core) (*ReplayWriter, error) {
 		return nil, err
 	}
 
+	if err := w.Flush(); err != nil {
+		return nil, err
+	}
+
 	return &ReplayWriter{f, w}, nil
 }
 
@@ -59,7 +63,12 @@ func (rw *ReplayWriter) WriteState(playerIndex int, state *mgba.State) error {
 	if err := binary.Write(rw.w, binary.LittleEndian, uint32(len(gs))); err != nil {
 		return err
 	}
+
 	if _, err := rw.w.Write(gs); err != nil {
+		return err
+	}
+
+	if err := rw.w.Flush(); err != nil {
 		return err
 	}
 
@@ -76,6 +85,10 @@ func (rw *ReplayWriter) WriteInit(playerIndex int, marshaled []byte) error {
 	}
 
 	if _, err := rw.w.Write(marshaled); err != nil {
+		return err
+	}
+
+	if err := rw.w.Flush(); err != nil {
 		return err
 	}
 
@@ -135,7 +148,6 @@ func (rw *ReplayWriter) Write(rngState uint32, inputPair [2]Input) error {
 			return err
 		}
 	}
-
 	return nil
 }
 

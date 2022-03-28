@@ -162,11 +162,13 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
 
-		if g.match.battle.remoteInit == nil {
+		if g.match.battle.remoteInit == nil || g.match.battle.remoteInitUsed {
 			return
 		}
 
+		log.Printf("init received")
 		g.bn6.SetPlayerMarshaledBattleState(core, g.match.battle.RemotePlayerIndex(), g.match.battle.remoteInit)
+		g.match.battle.remoteInitUsed = true
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_init_marshal__ret, func() {
@@ -186,8 +188,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if err := packets.Send(ctx, g.match.dc, pkt, nil); err != nil {
 			panic(err)
 		}
-		log.Printf("init sent")
 
+		log.Printf("init sent")
 		g.bn6.SetPlayerMarshaledBattleState(core, g.match.battle.LocalPlayerIndex(), g.match.battle.localInit)
 	})
 

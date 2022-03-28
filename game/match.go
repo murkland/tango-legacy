@@ -31,16 +31,14 @@ type Match struct {
 
 	cancel context.CancelFunc
 
-	connReady      chan struct{}
-	peerConn       *webrtc.PeerConnection
-	dc             *ctxwebrtc.DataChannel
-	randSource     rand.Source
-	connectionSide signorclient.ConnectionSide
+	connReady     chan struct{}
+	peerConn      *webrtc.PeerConnection
+	dc            *ctxwebrtc.DataChannel
+	wonLastBattle bool
+	randSource    rand.Source
 
 	delayRingbuf   *ringbuf.RingBuf[time.Duration]
 	delayRingbufMu sync.RWMutex
-
-	wonLastBattle bool
 
 	stalledFrames int
 
@@ -144,7 +142,8 @@ func (m *Match) negotiate(ctx context.Context) error {
 	m.peerConn = peerConn
 	m.dc = dc
 	m.randSource = randSource
-	m.connectionSide = connectionSide
+	rng := rand.New(m.randSource)
+	m.wonLastBattle = (rng.Int31n(2) == 1) == (connectionSide == signorclient.ConnectionSideOfferer)
 	close(m.connReady)
 	log.Printf("negotiation complete!")
 	return nil
@@ -274,8 +273,9 @@ type Battle struct {
 
 	iq *InputQueue
 
-	localInit  []byte
-	remoteInit []byte
+	localInit      []byte
+	remoteInit     []byte
+	remoteInitUsed bool
 
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
