@@ -33,6 +33,6 @@ ECHO .........................................................
 ECHO    Welcome to BBN6 - Hub Batch is Prettier Now Edition
 ECHO .........................................................
 ECHO.
-set /p "SESSION_ID=matchmaking code (no spaces, pick one you and your friend agree on!): "
-bbn6.exe -connect_addr=bbn6.murk.land:12345 -session_id=%SESSION_ID% 2> bbn6.log
-pause
+bbn6.exe 2> bbn6.log
+ECHO bbn6 has exited. If this was unexpected, please report a bug with the contents of bbn6.log at either https://github.com/murkland/bbn6/issues/new or https://discord.gg/zbQngJHwSg
+PAUSE
