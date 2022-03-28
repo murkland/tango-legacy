@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"image"
@@ -12,8 +13,8 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/oto/v2"
 	"github.com/keegancsmith/nth"
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/bn6"
@@ -45,7 +46,8 @@ type Game struct {
 	fbuf   *image.RGBA
 	fbufMu sync.Mutex
 
-	audioPlayer oto.Player
+	audioCtx        *audio.Context
+	gameAudioPlayer *audio.Player
 
 	t *mgba.Thread
 
@@ -76,11 +78,7 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, randSour
 		return nil, err
 	}
 
-	audioCtx, ready, err := oto.NewContext(mainCore.Options().SampleRate, 2, 2)
-	if err != nil {
-		return nil, err
-	}
-	<-ready
+	audioCtx := audio.NewContext(mainCore.Options().SampleRate)
 
 	width, height := mainCore.DesiredVideoDimensions()
 	vb := av.NewVideoBuffer(width, height)
@@ -93,8 +91,12 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, randSour
 	}
 	mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
-	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(mainCore, mainCore.Options().SampleRate))
-	audioPlayer.(oto.BufferSizeSetter).SetBufferSize(mainCore.Options().AudioBuffers * 4)
+	gameAudioPlayer, err := audioCtx.NewPlayer(av.NewAudioReader(mainCore, mainCore.Options().SampleRate))
+	if err != nil {
+		return nil, err
+	}
+	gameAudioPlayer.SetBufferSize(time.Duration(mainCore.Options().AudioBuffers+4) * time.Second / time.Duration(mainCore.Options().SampleRate))
+	gameAudioPlayer.Play()
 
 	g := &Game{
 		conf: conf,
@@ -110,7 +112,8 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, randSour
 
 		vb: vb,
 
-		audioPlayer: audioPlayer,
+		audioCtx:        audioCtx,
+		gameAudioPlayer: gameAudioPlayer,
 
 		t: t,
 
@@ -581,8 +584,6 @@ func (g *Game) Update() error {
 	if g.t.HasCrashed() {
 		return errors.New("mgba thread crashed")
 	}
-
-	g.audioPlayer.Play()
 
 	if err := (func() error {
 		g.matchMu.Lock()

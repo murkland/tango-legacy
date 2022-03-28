@@ -4,14 +4,15 @@ go 1.18
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.2.5
-	github.com/hajimehoshi/oto/v2 v2.1.0-alpha.8.0.20220324172506-585752ada431
+	github.com/hajimehoshi/oto/v2 v2.1.0-alpha.8.0.20220324173401-b1c7eb112a82
+	github.com/klauspost/compress v1.15.1
 	github.com/pion/webrtc/v3 v3.1.23
 )
 
 require (
+	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/pion/datachannel v1.5.2 // indirect
 	github.com/pion/dtls/v2 v2.1.2 // indirect
 	github.com/pion/ice/v2 v2.1.20 // indirect
@@ -40,7 +41,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.0.0
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210727001814-0db043d8d5be // indirect
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20211213063430-748e38ca8aec // indirect
 	github.com/jezek/xgb v0.0.0-20210312150743-0e0f116e1240 // indirect
 	github.com/keegancsmith/nth v0.0.0-20160926112203-ee21de2f07b8
 	github.com/murkland/clone v0.0.0-20220305211650-2e9ef76f1dca
@@ -49,10 +50,10 @@ require (
 	github.com/murkland/signor v0.0.0-20220325090807-d38148f9652a
 	github.com/murkland/syncrand v0.0.0-20220305211705-ca5629605735
 	golang.org/x/exp v0.0.0-20220323204016-c86f0da35e87
-	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
-	golang.org/x/mobile v0.0.0-20210902104108-5d9a33257ab5 // indirect
+	golang.org/x/image v0.0.0-20211028202545-6944b10bf410
+	golang.org/x/mobile v0.0.0-20220104184238-4a8be17bd2e3 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
 )
 
-replace github.com/hajimehoshi/oto/v2 => github.com/hajimehoshi/oto/v2 v2.1.0-alpha.8.0.20220324172506-585752ada431
+replace github.com/hajimehoshi/ebiten/v2 => github.com/hajimehoshi/ebiten/v2 v2.3.0-alpha.5.0.20220326164952-2d912a2387d3
