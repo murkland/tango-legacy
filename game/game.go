@@ -347,6 +347,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if g.match.battle.tick == -1 {
 			g.match.battle.tick = 0
 			g.match.battle.committedState = core.SaveState()
+			if err := g.match.battle.rw.WriteState(g.match.battle.LocalPlayerIndex(), g.match.battle.committedState); err != nil {
+				panic(err)
+			}
 			return
 		}
 
@@ -445,10 +448,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			panic(err)
 		}
 		g.match.battle = battle
-
-		if err := g.match.battle.rw.WriteState(g.match.battle.LocalPlayerIndex(), g.mainCore.SaveState()); err != nil {
-			panic(err)
-		}
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_end__entry, func() {

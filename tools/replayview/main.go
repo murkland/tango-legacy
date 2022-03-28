@@ -38,7 +38,7 @@ type Game struct {
 func (g *Game) serviceFbuf() {
 	runtime.LockOSThread()
 	for {
-		g.replayer.Core().SetKeys(mgba.Keys(g.replayer.PeekLocalJoyflags()))
+		g.replayer.Core().SetKeys(mgba.Keys(g.replayer.PeekLocalJoyflags() & ^uint16(0xfc00)))
 		if g.replayer.Core().GBA().Sync().WaitFrameStart() {
 			g.fbufMu.Lock()
 			g.fbuf = g.vb.CopyImage()
