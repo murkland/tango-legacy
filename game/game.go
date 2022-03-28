@@ -1,12 +1,16 @@
 package game
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"errors"
 	"fmt"
 	"image"
+	"image/png"
+	"io"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"sync"
@@ -14,6 +18,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/bn6"
@@ -37,8 +42,9 @@ type Game struct {
 
 	bn6 *bn6.BN6
 
-	vb   *av.VideoBuffer
-	fbuf *image.RGBA
+	vb      *av.VideoBuffer
+	fbuf    *image.RGBA
+	overlay *overlay
 
 	audioCtx        *audio.Context
 	gameAudioPlayer *audio.Player
@@ -49,6 +55,11 @@ type Game struct {
 	matchMu sync.Mutex
 
 	debugSpew bool
+}
+
+type overlay struct {
+	img     *ebiten.Image
+	elapsed int
 }
 
 func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) {
@@ -69,6 +80,19 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 		return nil, err
 	}
 	log.Printf("loaded save file: %s", savePath)
+
+	switch mainCore.GameTitle() {
+	case "MEGAMAN6_FXX":
+		mainCore.RawWriteRange(0x086eaf99, -1, []byte("\x10\x26\x37\x39\x1d\x35\x2e\x33\xe6\x10\x26\x37\x39\x1d\x35\x2e\x33\xe6\x10\x26\x37\x39\x1d\x35\x2e\x33\xe6"))
+		mainCore.RawWriteRange(0x086ece91, -1, []byte("\x10\x26\x37\x39\x38\x00\x34\x3a\x39\xe9\x2b\x26\x37\x39\x2e\x33\x2c\xe7"))
+		mainCore.RawWriteRange(0x086eceb9, -1, []byte("\x10\x26\x37\x39\x38\x00\x34\x3a\x39\xe9\x2b\x26\x37\x39\x2e\x33\x2c\xe7"))
+		mainCore.RawWriteRange(0x086ecee1, -1, []byte("\x10\x26\x37\x39\x38\x00\x34\x3a\x39\xe9\x2b\x26\x37\x39\x2e\x33\x2c\xe7"))
+	case "MEGAMAN6_GXX":
+		mainCore.RawWriteRange(0x086e8f1d, -1, []byte("\x10\x26\x37\x39\x1d\x35\x2e\x33\xe6\x10\x26\x37\x39\x1d\x35\x2e\x33\xe6\x10\x26\x37\x39\x1d\x35\x2e\x33\xe6"))
+		mainCore.RawWriteRange(0x086eae15, -1, []byte("\x10\x26\x37\x39\x38\x00\x34\x3a\x39\xe9\x2b\x26\x37\x39\x2e\x33\x2c\xe7"))
+		mainCore.RawWriteRange(0x086eae3d, -1, []byte("\x10\x26\x37\x39\x38\x00\x34\x3a\x39\xe9\x2b\x26\x37\x39\x2e\x33\x2c\xe7"))
+		mainCore.RawWriteRange(0x086eae65, -1, []byte("\x10\x26\x37\x39\x38\x00\x34\x3a\x39\xe9\x2b\x26\x37\x39\x2e\x33\x2c\xe7"))
+	}
 
 	bn6 := bn6.Load(mainCore.GameTitle())
 	if bn6 == nil {
@@ -130,8 +154,57 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 	return g, nil
 }
 
+func mustLoadWav(raw []byte) []byte {
+	stream, err := wav.DecodeWithSampleRate(48000, bytes.NewReader(raw))
+	if err != nil {
+		panic(err)
+	}
+	buf, err := io.ReadAll(stream)
+	if err != nil {
+		panic(err)
+	}
+	return buf
+}
+
+func mustLoadPng(raw []byte) *ebiten.Image {
+	img, err := png.Decode(bytes.NewBuffer(raw))
+	if err != nil {
+		panic(err)
+	}
+	return ebiten.NewImageFromImage(img)
+}
+
+//go:embed letsgolanhikari.wav
+var raw_letsgolanhikari []byte
+var letsgolanhikari = mustLoadWav(raw_letsgolanhikari)
+
+//go:embed youareskilled.wav
+var raw_youareskilled []byte
+var youareskilled = mustLoadWav(raw_youareskilled)
+
+//go:embed youareworthy.wav
+var raw_youareworthy []byte
+var youareworthy = mustLoadWav(raw_youareworthy)
+
+//go:embed loser.png
+var raw_loser []byte
+var loser = mustLoadPng(raw_loser)
+
+//go:embed winner.png
+var raw_winner []byte
+var winner = mustLoadPng(raw_winner)
+
 func (g *Game) InstallTraps(core *mgba.Core) error {
 	tp := trapper.New(core)
+
+	tp.Add(0x08009382, func() {
+		player, err := g.audioCtx.NewPlayer(bytes.NewReader(letsgolanhikari))
+		if err != nil {
+			return
+		}
+		player.SetVolume(g.gameAudioPlayer.Volume())
+		player.Play()
+	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_init__call__battle_copyInputData, func() {
 		match := g.Match()
@@ -283,8 +356,22 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		r := core.GBA().Register(0)
 		if r == 1 {
 			match.SetWonLastBattle(true)
+			player, err := g.audioCtx.NewPlayer(bytes.NewReader(youareworthy))
+			player.SetVolume(g.gameAudioPlayer.Volume())
+			if err != nil {
+				return
+			}
+			player.Play()
+			g.overlay = &overlay{img: winner}
 		} else if r == 2 {
 			match.SetWonLastBattle(false)
+			player, err := g.audioCtx.NewPlayer(bytes.NewReader(youareskilled))
+			player.SetVolume(g.gameAudioPlayer.Volume())
+			if err != nil {
+				return
+			}
+			player.Play()
+			g.overlay = &overlay{img: loser}
 		}
 	})
 
@@ -495,6 +582,10 @@ func (g *Game) Update() error {
 		g.debugSpew = !g.debugSpew
 	}
 
+	if inpututil.IsKeyJustPressed(ebiten.KeyM) {
+		g.gameAudioPlayer.SetVolume(0)
+	}
+
 	return nil
 }
 
@@ -504,13 +595,28 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	if g.mainCore.GBA().Sync().WaitFrameStart() {
+		if g.overlay != nil {
+			g.overlay.elapsed++
+		}
 		g.fbuf = g.vb.CopyImage()
 	}
 	g.mainCore.GBA().Sync().WaitFrameEnd()
 
 	if g.fbuf != nil {
 		opts := &ebiten.DrawImageOptions{}
+		opts.GeoM.Translate(-float64(g.fbuf.Rect.Dx()/2), -float64(g.fbuf.Rect.Dy()/2))
+		opts.GeoM.Rotate(math.Sin(float64(time.Now().UnixMilli()/1000)) * 0.01)
+		opts.GeoM.Translate(float64(g.fbuf.Rect.Dx()/2), float64(g.fbuf.Rect.Dy()/2))
 		screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
+	}
+
+	if g.overlay != nil {
+		const overlayDuration = 60
+		opts := &ebiten.DrawImageOptions{}
+		screen.DrawImage(g.overlay.img, opts)
+		if g.overlay.elapsed == overlayDuration {
+			g.overlay = nil
+		}
 	}
 
 	if g.debugSpew {
