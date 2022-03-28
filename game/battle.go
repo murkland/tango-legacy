@@ -56,7 +56,6 @@ func (s *Battle) RemotePlayerIndex() int {
 
 func NewBattle(core *mgba.Core, isP2 bool, localInputBufferSize int) (*Battle, error) {
 	b := &Battle{
-		tick: -1,
 		isP2: isP2,
 
 		lastCommittedRemoteInput: Input{Joyflags: 0xfc00},

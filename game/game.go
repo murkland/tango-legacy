@@ -337,8 +337,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		// TODO: Check if stalled frames is too high, then end the connection if it is.
 
 		ctx := context.Background()
-		if g.match.battle.tick == -1 {
-			g.match.battle.tick = 0
+		if g.match.battle.committedState == nil {
 			g.match.battle.committedState = core.SaveState()
 			if err := g.match.battle.rw.WriteState(g.match.battle.LocalPlayerIndex(), g.match.battle.committedState); err != nil {
 				panic(err)
