@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	"sync"
 
 	"github.com/murkland/ringbuf"
 )
@@ -14,48 +15,55 @@ type Input struct {
 }
 
 type InputQueue struct {
+	mu   sync.Mutex
+	cond *sync.Cond
+
 	qs         [2]*ringbuf.RingBuf[Input]
 	consumable [][2]Input
-
-	wakeCh chan struct{}
 }
 
 func NewInputQueue(n int) *InputQueue {
-	wakeCh := make(chan struct{}, 1)
-	// Write a waker value for now.
-	wakeCh <- struct{}{}
-	return &InputQueue{
+	iq := &InputQueue{
 		qs: [2]*ringbuf.RingBuf[Input]{
 			ringbuf.New[Input](n),
 			ringbuf.New[Input](n),
 		},
-		wakeCh: wakeCh,
 	}
+	iq.cond = sync.NewCond(&iq.mu)
+	return iq
 }
 
-func (q *InputQueue) AddInput(playerIndex int, input Input) {
+func (q *InputQueue) AddInput(ctx context.Context, playerIndex int, input Input) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	var ctxErr error
+	go func() {
+		<-ctx.Done()
+		ctxErr = ctx.Err()
+		q.cond.Broadcast()
+	}()
+
+	for q.qs[playerIndex].Free() == 0 && ctxErr == nil {
+		q.cond.Wait()
+	}
+	if ctxErr != nil {
+		return ctxErr
+	}
+
 	q.qs[playerIndex].Push([]Input{input})
-	q.consumable = append(q.consumable, q.advanceMany()...)
-	select {
-	case q.wakeCh <- struct{}{}:
-	default:
-	}
-}
-
-func (q *InputQueue) WaitForFree(ctx context.Context, playerIndex int) error {
-	for {
-		select {
-		case <-q.wakeCh:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-		if q.qs[playerIndex].Free() > 0 {
-			return nil
-		}
-	}
+	q.consumable = append(q.consumable, q.advanceManyLocked()...)
+	q.cond.Broadcast()
+	return nil
 }
 
 func (q *InputQueue) Peek(playerIndex int) []Input {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	n := q.qs[playerIndex].Used()
 	inputs := make([]Input, n)
 	q.qs[playerIndex].Peek(inputs, 0)
@@ -63,10 +71,13 @@ func (q *InputQueue) Peek(playerIndex int) []Input {
 }
 
 func (q *InputQueue) Lag(playerIndex int) int {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	return q.qs[1-playerIndex].Used() - q.qs[playerIndex].Used()
 }
 
-func (q *InputQueue) advanceMany() [][2]Input {
+func (q *InputQueue) advanceManyLocked() [][2]Input {
 	n := q.qs[0].Used()
 	if q.qs[1].Used() < n {
 		n = q.qs[1].Used()
@@ -87,6 +98,9 @@ func (q *InputQueue) advanceMany() [][2]Input {
 }
 
 func (q *InputQueue) Consume() [][2]Input {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
 	consumable := q.consumable
 	q.consumable = nil
 	return consumable

@@ -84,7 +84,7 @@ func New(conf config.Config, romPath string) (*Game, error) {
 	if err != nil {
 		return nil, err
 	}
-	gameAudioPlayer.SetBufferSize(time.Duration(mainCore.Options().AudioBuffers+4) * time.Second / time.Duration(mainCore.Options().SampleRate))
+	gameAudioPlayer.SetBufferSize(time.Duration(mainCore.Options().AudioBuffers+0x4) * time.Second / time.Duration(mainCore.Options().SampleRate))
 	gameAudioPlayer.Play()
 
 	g := &Game{
@@ -158,8 +158,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		core.GBA().SetRegister(0, 0)
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().SetRegister(0, 0x0)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
 
 		if g.match.battle.remoteInit == nil {
@@ -211,8 +211,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		core.GBA().SetRegister(0, 0)
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().SetRegister(0, 0x0)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
 
 		ctx := context.Background()
@@ -253,8 +253,20 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			}
 		}
 
-		g.match.battle.iq.WaitForFree(ctx, g.match.battle.LocalPlayerIndex())
-		g.match.battle.iq.AddInput(g.match.battle.LocalPlayerIndex(), Input{int(g.match.battle.tick), joyflags, customScreenState, turn})
+		const timeout = 5 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		if err := g.match.battle.iq.AddInput(ctx, g.match.battle.LocalPlayerIndex(), Input{int(g.match.battle.tick), joyflags, customScreenState, turn}); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				log.Printf("could not queue local input within %s, dropping connection", timeout)
+				g.match.Close()
+				g.match = nil
+				g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
+				// TODO: Figure out how to gracefully exit the battle.
+				panic(err)
+			}
+			panic(err)
+		}
 
 		var pkt packets.Input
 		pkt.ForTick = uint32(g.match.battle.tick)
@@ -406,7 +418,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			}
 		}
 
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
 	})
 
@@ -418,7 +430,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.match = nil
 		log.Printf("match canceled by user")
 
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
 	})
 
@@ -432,7 +444,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_inBattle__call__commMenu_handleLinkCableInput, func() {
-		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
 	})
 

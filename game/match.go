@@ -217,9 +217,7 @@ func (m *Match) handleConn(ctx context.Context) error {
 				log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
 				continue
 			}
-
-			m.battle.iq.WaitForFree(ctx, m.battle.RemotePlayerIndex())
-			m.battle.iq.AddInput(m.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
+			m.battle.iq.AddInput(ctx, m.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
 		}
 	}
 }
