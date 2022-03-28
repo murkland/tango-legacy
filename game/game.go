@@ -405,6 +405,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 					panic(err)
 				}
 				g.match = match
+				// TODO: Check the errors from this.
 				go g.match.Run(ctx)
 			}
 		}
