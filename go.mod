@@ -6,6 +6,7 @@ require (
 	github.com/hajimehoshi/ebiten/v2 v2.2.5
 	github.com/hajimehoshi/oto/v2 v2.1.0-alpha.8.0.20220324173401-b1c7eb112a82
 	github.com/klauspost/compress v1.15.1
+	github.com/ncruces/zenity v0.7.15
 	github.com/pion/webrtc/v3 v3.1.23
 )
 
@@ -16,7 +17,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/josephspurrier/goversioninfo v1.3.0 // indirect
-	github.com/ncruces/zenity v0.7.15 // indirect
 	github.com/pion/datachannel v1.5.2 // indirect
 	github.com/pion/dtls/v2 v2.1.2 // indirect
 	github.com/pion/ice/v2 v2.1.20 // indirect
@@ -61,4 +61,4 @@ require (
 	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
 )
 
-replace github.com/hajimehoshi/ebiten/v2 => github.com/hajimehoshi/ebiten/v2 v2.3.0-alpha.5.0.20220326164952-2d912a2387d3
+replace github.com/hajimehoshi/ebiten/v2 => github.com/hajimehoshi/ebiten/v2 v2.3.0-alpha.5.0.20220325114701-7a33837ed7cc
