@@ -22,9 +22,14 @@ type Keymapping struct {
 	DebugSpew ebiten.Key
 }
 
+type Matchmaking struct {
+	ConnectAddr string
+}
+
 type Config struct {
-	Keymapping Keymapping
-	WebRTC     webrtc.Configuration
+	Keymapping  Keymapping
+	Matchmaking Matchmaking
+	WebRTC      webrtc.Configuration
 }
 
 var DefaultConfig = Config{
@@ -40,6 +45,9 @@ var DefaultConfig = Config{
 		Start:     ebiten.KeyEnter,
 		Select:    ebiten.KeyBackspace,
 		DebugSpew: ebiten.KeyBackquote,
+	},
+	Matchmaking: Matchmaking{
+		ConnectAddr: "bbn6.murk.land:12345",
 	},
 	WebRTC: webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
@@ -77,8 +85,9 @@ type RawKeymapping struct {
 }
 
 type RawConfig struct {
-	Keymapping RawKeymapping
-	WebRTC     webrtc.Configuration
+	Keymapping  RawKeymapping
+	Matchmaking Matchmaking
+	WebRTC      webrtc.Configuration
 }
 
 func (c Config) ToRaw() RawConfig {
@@ -96,7 +105,8 @@ func (c Config) ToRaw() RawConfig {
 			Select:    keyName(c.Keymapping.Select),
 			DebugSpew: keyName(c.Keymapping.DebugSpew),
 		},
-		WebRTC: c.WebRTC,
+		Matchmaking: c.Matchmaking,
+		WebRTC:      c.WebRTC,
 	}
 }
 
@@ -115,7 +125,8 @@ func (rc RawConfig) ToParsed() Config {
 			Select:    keyCode(rc.Keymapping.Select),
 			DebugSpew: keyCode(rc.Keymapping.DebugSpew),
 		},
-		WebRTC: rc.WebRTC,
+		Matchmaking: rc.Matchmaking,
+		WebRTC:      rc.WebRTC,
 	}
 }
 func Save(config Config, w io.Writer) error {

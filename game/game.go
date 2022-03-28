@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"math/rand"
 	"runtime"
 	"sync"
 	"time"
@@ -15,26 +14,19 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/keegancsmith/nth"
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/config"
 	"github.com/murkland/bbn6/mgba"
 	"github.com/murkland/bbn6/packets"
 	"github.com/murkland/bbn6/trapper"
-	"github.com/murkland/ctxwebrtc"
-	"github.com/murkland/ringbuf"
-	signorclient "github.com/murkland/signor/client"
+	"github.com/ncruces/zenity"
 	"golang.org/x/exp/constraints"
 	"golang.org/x/sync/errgroup"
 )
 
 type Game struct {
 	conf config.Config
-
-	dc             *ctxwebrtc.DataChannel
-	randSource     rand.Source
-	connectionSide signorclient.ConnectionSide
 
 	mainCore      *mgba.Core
 	fastforwarder *fastforwarder
@@ -55,12 +47,9 @@ type Game struct {
 	matchMu sync.Mutex
 
 	debugSpew bool
-
-	delayRingbuf   *ringbuf.RingBuf[time.Duration]
-	delayRingbufMu sync.RWMutex
 }
 
-func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, randSource rand.Source, connectionSide signorclient.ConnectionSide) (*Game, error) {
+func New(conf config.Config, romPath string) (*Game, error) {
 	mainCore, err := newCore(romPath)
 	if err != nil {
 		return nil, err
@@ -101,10 +90,6 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, randSour
 	g := &Game{
 		conf: conf,
 
-		dc:             dc,
-		randSource:     randSource,
-		connectionSide: connectionSide,
-
 		mainCore:      mainCore,
 		fastforwarder: fastforwarder,
 
@@ -116,8 +101,6 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, randSour
 		gameAudioPlayer: gameAudioPlayer,
 
 		t: t,
-
-		delayRingbuf: ringbuf.New[time.Duration](10),
 	}
 	g.InstallTraps(mainCore)
 
@@ -126,14 +109,6 @@ func New(conf config.Config, romPath string, dc *ctxwebrtc.DataChannel, randSour
 
 func (g *Game) RunBackgroundTasks(ctx context.Context) error {
 	errg, ctx := errgroup.WithContext(ctx)
-
-	errg.Go(func() error {
-		return g.handleConn(ctx)
-	})
-
-	errg.Go(func() error {
-		return g.sendPings(ctx)
-	})
 
 	errg.Go(func() error {
 		g.serviceFbuf()
@@ -158,23 +133,6 @@ func (g *Game) serviceFbuf() {
 	}
 }
 
-func (g *Game) sendPings(ctx context.Context) error {
-	for {
-		now := time.Now()
-		if err := packets.Send(ctx, g.dc, packets.Ping{
-			ID: uint64(now.UnixMicro()),
-		}, nil); err != nil {
-			return err
-		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(1 * time.Second):
-		}
-	}
-}
-
 type orderableSlice[T constraints.Ordered] []T
 
 func (s orderableSlice[T]) Len() int {
@@ -187,87 +145,6 @@ func (s orderableSlice[T]) Swap(i, j int) {
 
 func (s orderableSlice[T]) Less(i, j int) bool {
 	return s[i] < s[j]
-}
-
-func (g *Game) medianDelay() time.Duration {
-	g.delayRingbufMu.RLock()
-	defer g.delayRingbufMu.RUnlock()
-
-	if g.delayRingbuf.Used() == 0 {
-		return 0
-	}
-
-	delays := make([]time.Duration, g.delayRingbuf.Used())
-	g.delayRingbuf.Peek(delays, 0)
-
-	i := len(delays) / 2
-	nth.Element(orderableSlice[time.Duration](delays), i)
-	return delays[i]
-}
-
-func (g *Game) handleConn(ctx context.Context) error {
-	for {
-		packet, trailer, err := packets.Recv(ctx, g.dc)
-		if err != nil {
-			return err
-		}
-
-		switch p := packet.(type) {
-		case packets.Ping:
-			if err := packets.Send(ctx, g.dc, packets.Pong{ID: p.ID}, nil); err != nil {
-				return err
-			}
-		case packets.Pong:
-			if err := (func() error {
-				g.delayRingbufMu.Lock()
-				defer g.delayRingbufMu.Unlock()
-
-				if g.delayRingbuf.Free() == 0 {
-					g.delayRingbuf.Advance(1)
-				}
-
-				delay := time.Now().Sub(time.UnixMicro(int64(p.ID)))
-				g.delayRingbuf.Push([]time.Duration{delay})
-				return nil
-			})(); err != nil {
-				return err
-			}
-		case packets.Ready:
-			(func() {
-				g.matchMu.Lock()
-				defer g.matchMu.Unlock()
-
-				if g.match == nil {
-					g.match = &Match{}
-				}
-
-				g.match.remoteReady = p.IsReady
-			})()
-		case packets.Init:
-			(func() {
-				g.matchMu.Lock()
-				defer g.matchMu.Unlock()
-
-				g.match.battle.remoteInit = p.Marshaled[:]
-			})()
-		case packets.Input:
-			if err := (func() error {
-				g.matchMu.Lock()
-				defer g.matchMu.Unlock()
-
-				if g.match == nil || g.match.battle == nil {
-					log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
-					return nil
-				}
-
-				g.match.battle.iq.WaitForFree(ctx, g.match.battle.RemotePlayerIndex())
-				g.match.battle.iq.AddInput(g.match.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
-				return nil
-			})(); err != nil {
-				return err
-			}
-		}
-	}
 }
 
 func (g *Game) InstallTraps(core *mgba.Core) error {
@@ -306,7 +183,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		var pkt packets.Init
 		copy(pkt.Marshaled[:], g.match.battle.localInit)
-		if err := packets.Send(ctx, g.dc, pkt, nil); err != nil {
+		if err := packets.Send(ctx, g.match.dc, pkt, nil); err != nil {
 			panic(err)
 		}
 		log.Printf("init sent")
@@ -383,7 +260,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		pkt.ForTick = uint32(g.match.battle.tick)
 		pkt.Joyflags = joyflags
 		pkt.CustomScreenState = customScreenState
-		if err := packets.Send(ctx, g.dc, pkt, turn); err != nil {
+		if err := packets.Send(ctx, g.match.dc, pkt, turn); err != nil {
 			panic(err)
 		}
 
@@ -496,29 +373,38 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput, func() {
+		ctx := context.Background()
+
 		g.matchMu.Lock()
 		defer g.matchMu.Unlock()
 
 		if g.match == nil {
-			g.match = &Match{}
-		}
-
-		ctx := context.Background()
-
-		if !g.match.localReady {
-			var pkt packets.Ready
-			pkt.IsReady = true
-			if err := packets.Send(ctx, g.dc, pkt, nil); err != nil {
-				panic(err)
+			code, err := zenity.Entry("Enter a code to matchmake with:", zenity.Title("bbn6"))
+			if err != nil {
+				g.bn6.StopMatchmakingFromCommMenu(core)
+			} else {
+				match, err := NewMatch(g.conf, code)
+				if err != nil {
+					// TODO: handle this better.
+					panic(err)
+				}
+				g.match = match
+				go g.match.Run(ctx)
 			}
-			g.match.localReady = true
 		}
 
-		if g.match.remoteReady {
-			rng := rand.New(g.randSource)
-			g.match.wonLastBattle = (rng.Int31n(2) == 1) == (g.connectionSide == signorclient.ConnectionSideOfferer)
-			log.Printf("match started")
-			g.bn6.StartBattleFromCommMenu(core)
+		if g.match != nil {
+			select {
+			case <-g.match.connReady:
+				g.bn6.StartBattleFromCommMenu(core)
+				log.Printf("match started")
+			case <-g.match.connCanceled:
+				g.bn6.DropMatchmakingFromCommMenu(core)
+				g.match.Close()
+				g.match = nil
+				log.Printf("match canceled by opponent")
+			default:
+			}
 		}
 
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
@@ -529,19 +415,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.matchMu.Lock()
 		defer g.matchMu.Unlock()
 
-		ctx := context.Background()
-
-		if g.match.localReady {
-			var pkt packets.Ready
-			pkt.IsReady = false
-			if err := packets.Send(ctx, g.dc, pkt, nil); err != nil {
-				panic(err)
-			}
-			g.match.localReady = false
-		}
-
-		log.Printf("match canceled")
+		g.match.Close()
 		g.match = nil
+		log.Printf("match canceled by user")
 
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
@@ -552,6 +428,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		defer g.matchMu.Unlock()
 
 		log.Printf("match ended")
+		g.match.Close()
 		g.match = nil
 	})
 
@@ -572,8 +449,8 @@ func (g *Game) Finish() {
 
 const expectedFPS = 60
 
-func (g *Game) runaheadTicksAllowed() int {
-	expected := int(g.medianDelay()*time.Duration(expectedFPS)/2/time.Second + 1)
+func (g *Game) runaheadTicksAllowedMatchLocked() int {
+	expected := int(g.match.medianDelay()*time.Duration(expectedFPS)/2/time.Second + 1)
 	if expected < 1 {
 		expected = 1
 	}
@@ -590,7 +467,7 @@ func (g *Game) Update() error {
 		defer g.matchMu.Unlock()
 
 		if g.match != nil && g.match.battle != nil {
-			expected := g.runaheadTicksAllowed()
+			expected := g.runaheadTicksAllowedMatchLocked()
 			lag := g.match.battle.iq.Lag(g.match.battle.RemotePlayerIndex())
 			tps := expectedFPS - (lag - expected)
 			// TODO: Not thread safe.

@@ -23,6 +23,20 @@ func (b *BN6) StartBattleFromCommMenu(core *mgba.Core) {
 	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x3, -1, 0x00)
 }
 
+func (b *BN6) StopMatchmakingFromCommMenu(core *mgba.Core) {
+	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x0, -1, 0x18)
+	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x1, -1, 0x08)
+	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x2, -1, 0x14)
+	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x3, -1, 0x08)
+}
+
+func (b *BN6) DropMatchmakingFromCommMenu(core *mgba.Core) {
+	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x0, -1, 0x18)
+	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x1, -1, 0x3c)
+	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x2, -1, 0x04)
+	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x3, -1, 0x04)
+}
+
 func (b *BN6) LocalJoyflags(core *mgba.Core) uint16 {
 	return core.RawRead16(b.Offsets.EWRAM.A_Joypad+0x00, -1)
 }
