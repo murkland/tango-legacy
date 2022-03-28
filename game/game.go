@@ -245,7 +245,7 @@ func (g *Game) handleConn(ctx context.Context) error {
 				g.matchMu.Lock()
 				defer g.matchMu.Unlock()
 
-				g.match.battle.pendingRemoteInit = p.Marshaled[:]
+				g.match.battle.remoteInit = p.Marshaled[:]
 			})()
 		case packets.Input:
 			if err := (func() error {
@@ -281,15 +281,11 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
 
-		if g.match.battle.pendingRemoteInit == nil {
+		if g.match.battle.remoteInit == nil {
 			return
 		}
 
-		g.bn6.SetPlayerMarshaledBattleState(core, g.match.battle.RemotePlayerIndex(), g.match.battle.pendingRemoteInit)
-		if err := g.match.battle.rw.WriteInit(g.match.battle.RemotePlayerIndex(), g.match.battle.pendingRemoteInit); err != nil {
-			panic(err)
-		}
-		g.match.battle.pendingRemoteInit = nil
+		g.bn6.SetPlayerMarshaledBattleState(core, g.match.battle.RemotePlayerIndex(), g.match.battle.remoteInit)
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_init_marshal__ret, func() {
@@ -302,19 +298,16 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		ctx := context.Background()
 
-		marshaled := g.bn6.LocalMarshaledBattleState(core)
+		g.match.battle.localInit = g.bn6.LocalMarshaledBattleState(core)
 
 		var pkt packets.Init
-		copy(pkt.Marshaled[:], marshaled)
+		copy(pkt.Marshaled[:], g.match.battle.localInit)
 		if err := packets.Send(ctx, g.dc, pkt, nil); err != nil {
 			panic(err)
 		}
 		log.Printf("init sent")
 
-		g.bn6.SetPlayerMarshaledBattleState(core, g.match.battle.LocalPlayerIndex(), marshaled)
-		if err := g.match.battle.rw.WriteInit(g.match.battle.LocalPlayerIndex(), marshaled); err != nil {
-			panic(err)
-		}
+		g.bn6.SetPlayerMarshaledBattleState(core, g.match.battle.LocalPlayerIndex(), g.match.battle.localInit)
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_turn_marshal__ret, func() {
@@ -348,6 +341,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			g.match.battle.tick = 0
 			g.match.battle.committedState = core.SaveState()
 			if err := g.match.battle.rw.WriteState(g.match.battle.LocalPlayerIndex(), g.match.battle.committedState); err != nil {
+				panic(err)
+			}
+			if err := g.match.battle.rw.WriteInit(g.match.battle.LocalPlayerIndex(), g.match.battle.localInit); err != nil {
+				panic(err)
+			}
+			if err := g.match.battle.rw.WriteInit(g.match.battle.RemotePlayerIndex(), g.match.battle.remoteInit); err != nil {
 				panic(err)
 			}
 			return

@@ -10,7 +10,7 @@ import (
 	"github.com/murkland/bbn6/mgba"
 )
 
-const replayVersion = 0x02
+const replayVersion = 0x03
 const replayHeader = "TOOT"
 
 type ReplayWriter struct {

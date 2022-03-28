@@ -115,7 +115,7 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localP
 		ff.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
 		ff.tick = ip[0].Tick
-		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags))
+		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags & ^uint16(0xfc00)))
 		ff.advanceOne()
 		if err := rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
 			return nil, nil, err
@@ -148,7 +148,7 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localP
 		var inputPairBuf [1][2]Input
 		ff.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
-		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags))
+		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags & ^uint16(0xfc00)))
 		ff.advanceOne()
 	}
 

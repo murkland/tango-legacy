@@ -32,7 +32,8 @@ type Battle struct {
 	localInputBuffer *ringbuf.RingBuf[uint16]
 	iq               *InputQueue
 
-	pendingRemoteInit []byte
+	localInit  []byte
+	remoteInit []byte
 
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
