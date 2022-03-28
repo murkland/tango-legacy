@@ -45,7 +45,7 @@ require (
 	github.com/keegancsmith/nth v0.0.0-20160926112203-ee21de2f07b8
 	github.com/murkland/clone v0.0.0-20220305211650-2e9ef76f1dca
 	github.com/murkland/ctxwebrtc v0.0.0-20220306073518-b5815ce4a060
-	github.com/murkland/ringbuf v0.0.0-20220324004630-6e5417e46b54
+	github.com/murkland/ringbuf v0.0.0-20220328025806-96b1615c7a7b
 	github.com/murkland/signor v0.0.0-20220325090807-d38148f9652a
 	github.com/murkland/syncrand v0.0.0-20220305211705-ca5629605735
 	golang.org/x/exp v0.0.0-20220323204016-c86f0da35e87

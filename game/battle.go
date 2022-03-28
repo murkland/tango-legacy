@@ -30,7 +30,8 @@ type Battle struct {
 	rw *ReplayWriter
 
 	localInputBuffer *ringbuf.RingBuf[uint16]
-	iq               *InputQueue
+
+	iq *InputQueue
 
 	localInit  []byte
 	remoteInit []byte
@@ -60,8 +61,9 @@ func NewBattle(core *mgba.Core, isP2 bool, localInputBufferSize int) (*Battle, e
 
 		lastCommittedRemoteInput: Input{Joyflags: 0xfc00},
 
-		iq:               NewInputQueue(60),
 		localInputBuffer: ringbuf.New[uint16](localInputBufferSize),
+
+		iq: NewInputQueue(60),
 	}
 
 	os.MkdirAll("replays", 0o700)

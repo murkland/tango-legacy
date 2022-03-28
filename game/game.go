@@ -257,6 +257,7 @@ func (g *Game) handleConn(ctx context.Context) error {
 					return nil
 				}
 
+				g.match.battle.iq.WaitForFree(ctx, g.match.battle.RemotePlayerIndex())
 				g.match.battle.iq.AddInput(g.match.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
 				return nil
 			})(); err != nil {
@@ -334,8 +335,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
 
-		// TODO: Check if stalled frames is too high, then end the connection if it is.
-
 		ctx := context.Background()
 		if g.match.battle.committedState == nil {
 			g.match.battle.committedState = core.SaveState()
@@ -374,6 +373,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			}
 		}
 
+		g.match.battle.iq.WaitForFree(ctx, g.match.battle.LocalPlayerIndex())
+		g.match.battle.iq.AddInput(g.match.battle.LocalPlayerIndex(), Input{int(g.match.battle.tick), joyflags, customScreenState, turn})
+
 		var pkt packets.Input
 		pkt.ForTick = uint32(g.match.battle.tick)
 		pkt.Joyflags = joyflags
@@ -382,7 +384,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			panic(err)
 		}
 
-		g.match.battle.iq.AddInput(g.match.battle.LocalPlayerIndex(), Input{int(g.match.battle.tick), joyflags, customScreenState, turn})
 		inputPairs := g.match.battle.iq.Consume()
 		if len(inputPairs) > 0 {
 			g.match.battle.lastCommittedRemoteInput = inputPairs[len(inputPairs)-1][1-g.match.battle.LocalPlayerIndex()]
@@ -589,18 +590,8 @@ func (g *Game) Update() error {
 
 		if g.match != nil && g.match.battle != nil {
 			expected := g.runaheadTicksAllowed()
-
 			lag := g.match.battle.iq.Lag(g.match.battle.RemotePlayerIndex())
-			if lag >= expected*2 {
-				log.Printf("input is 2x acceptable delay and had to be dropped! %d >= %d", lag, expected*2)
-				g.mainCore.GBA().Sync().SetFPSTarget(float32(0))
-				g.match.stalledFrames++
-				return nil
-			}
-			g.match.stalledFrames = 0
-
 			tps := expectedFPS - (lag - expected)
-
 			// TODO: Not thread safe.
 			g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 		}

@@ -38,6 +38,10 @@ func (t *Thread) Unpause() {
 	C.mCoreThreadUnpause(t.t)
 }
 
+func (t *Thread) IsPaused() bool {
+	return bool(C.mCoreThreadIsPaused(t.t))
+}
+
 func (t *Thread) HasStarted() bool {
 	return bool(C.mCoreThreadHasStarted(t.t))
 }
