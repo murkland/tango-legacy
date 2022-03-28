@@ -24,11 +24,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const protocolVersion = 0x02
-
 type Match struct {
 	conf      config.Config
 	sessionID string
+	matchType uint8
 
 	cancel context.CancelFunc
 
@@ -49,10 +48,11 @@ type Match struct {
 	battle       *Battle
 }
 
-func NewMatch(conf config.Config, sessionID string) (*Match, error) {
+func NewMatch(conf config.Config, sessionID string, matchType uint8) (*Match, error) {
 	return &Match{
 		conf:      conf,
 		sessionID: sessionID,
+		matchType: matchType,
 
 		connReady: make(chan struct{}),
 
@@ -102,21 +102,27 @@ func (m *Match) negotiate(ctx context.Context) error {
 
 	commitment := syncrand.Commit(nonce[:])
 	var helloPacket packets.Hello
-	helloPacket.ProtocolVersion = protocolVersion
+	helloPacket.ProtocolVersion = packets.ProtocolVersion
+	helloPacket.MatchType = m.matchType
 	copy(helloPacket.RNGCommitment[:], commitment)
 	if err := packets.Send(ctx, dc, helloPacket, nil); err != nil {
 		return fmt.Errorf("failed to send hello: %w", err)
 	}
 
-	theirHello, _, err := packets.Recv(ctx, dc)
+	rawTheirHello, _, err := packets.Recv(ctx, dc)
 	if err != nil {
 		return fmt.Errorf("failed to receive hello: %w", err)
 	}
-	if theirHello.(packets.Hello).ProtocolVersion != protocolVersion {
-		return fmt.Errorf("expected protocol version 0x%02x, got 0x%02x: are you out of date?", protocolVersion, protocolVersion)
+	theirHello := rawTheirHello.(packets.Hello)
+	if theirHello.ProtocolVersion != packets.ProtocolVersion {
+		return fmt.Errorf("expected protocol version 0x%02x, got 0x%02x: are you out of date?", packets.ProtocolVersion, theirHello.ProtocolVersion)
 	}
 
-	theirCommitment := theirHello.(packets.Hello).RNGCommitment
+	if theirHello.MatchType != m.matchType {
+		return errors.New("match type mismatch")
+	}
+
+	theirCommitment := theirHello.RNGCommitment
 
 	if err := packets.Send(ctx, dc, packets.Hello2{RNGNonce: nonce}, nil); err != nil {
 		return fmt.Errorf("failed to send hello2: %w", err)

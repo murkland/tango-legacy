@@ -384,9 +384,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			code, err := zenity.Entry("Enter a code to matchmake with:", zenity.Title("bbn6"))
 			g.gameAudioPlayer.SetVolume(volume)
 			if err != nil {
-				g.bn6.StopMatchmakingFromCommMenu(core)
+				log.Printf("matchmaking dialog did not return a code: %s", err)
+				g.bn6.DropMatchmakingFromCommMenu(core)
 			} else {
-				match, err := NewMatch(g.conf, code)
+				match, err := NewMatch(g.conf, code, 0)
 				if err != nil {
 					// TODO: handle this better.
 					panic(err)

@@ -23,13 +23,6 @@ func (b *BN6) StartBattleFromCommMenu(core *mgba.Core) {
 	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x3, -1, 0x00)
 }
 
-func (b *BN6) StopMatchmakingFromCommMenu(core *mgba.Core) {
-	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x0, -1, 0x18)
-	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x1, -1, 0x08)
-	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x2, -1, 0x14)
-	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x3, -1, 0x08)
-}
-
 func (b *BN6) DropMatchmakingFromCommMenu(core *mgba.Core) {
 	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x0, -1, 0x18)
 	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x1, -1, 0x3c)
@@ -78,4 +71,8 @@ func (b *BN6) RemoteWins(core *mgba.Core) uint8 {
 
 func (b *BN6) RNG2State(core *mgba.Core) uint32 {
 	return core.RawRead32(b.Offsets.EWRAM.A_Rng2, -1)
+}
+
+func (b *BN6) MenuControlState(core *mgba.Core, offset uint32) uint8 {
+	return core.RawRead8(b.Offsets.EWRAM.A_MenuControl+offset, -1)
 }
