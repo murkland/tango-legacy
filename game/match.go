@@ -42,8 +42,10 @@ type Match struct {
 
 	stalledFrames int
 
-	battleNumber int
-	battle       *Battle
+	battleMu                sync.Mutex
+	battleNumber            int
+	battle                  *Battle
+	battlePendingRemoteInit []byte
 }
 
 func NewMatch(conf config.Config, sessionID string, matchType uint8) (*Match, error) {
@@ -210,15 +212,73 @@ func (m *Match) handleConn(ctx context.Context) error {
 				return err
 			}
 		case packets.Init:
-			m.battle.remoteInit = p.Marshaled[:]
+			func() {
+				m.battleMu.Lock()
+				defer m.battleMu.Unlock()
+				if m.battle != nil {
+					m.battle.remoteInit = p.Marshaled[:]
+				} else {
+					m.battlePendingRemoteInit = p.Marshaled[:]
+				}
+			}()
 		case packets.Input:
-			if m == nil || m.battle == nil {
-				log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
-				continue
-			}
-			m.battle.iq.AddInput(ctx, m.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
+			func() {
+				m.battleMu.Lock()
+				defer m.battleMu.Unlock()
+				if m.battle == nil {
+					log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
+					return
+				}
+				m.battle.iq.AddInput(ctx, m.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
+			}()
 		}
 	}
+}
+
+const localInputBufferSize = 2
+
+func (m *Match) NewBattle(core *mgba.Core) error {
+	m.battleMu.Lock()
+	defer m.battleMu.Unlock()
+
+	var remoteInit []byte
+	remoteInit = m.battlePendingRemoteInit
+	m.battlePendingRemoteInit = nil
+
+	b := &Battle{
+		isP2: !m.wonLastBattle,
+
+		lastCommittedRemoteInput: Input{Joyflags: 0xfc00},
+
+		localInputBuffer: ringbuf.New[uint16](localInputBufferSize),
+
+		remoteInit: remoteInit,
+
+		iq: NewInputQueue(60),
+	}
+
+	os.MkdirAll("replays", 0o700)
+	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.bbn6replay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
+	log.Printf("writing replay: %s", fn)
+
+	il, err := newReplayWriter(fn, core)
+	if err != nil {
+		return err
+	}
+	b.rw = il
+	m.battle = b
+	return nil
+}
+
+func (m *Match) EndBattle() error {
+	m.battleMu.Lock()
+	defer m.battleMu.Unlock()
+	if err := m.battle.Close(); err != nil {
+		return err
+	}
+	m.battlePendingRemoteInit = nil
+	m.battle = nil
+	return nil
 }
 
 func (m *Match) Run(ctx context.Context) error {
@@ -242,6 +302,8 @@ func (m *Match) Run(ctx context.Context) error {
 }
 
 func (m *Match) Close() error {
+	m.battleMu.Lock()
+	defer m.battleMu.Unlock()
 	if m.cancel != nil {
 		m.cancel()
 	}
@@ -294,29 +356,6 @@ func (s *Battle) LocalPlayerIndex() int {
 
 func (s *Battle) RemotePlayerIndex() int {
 	return 1 - s.LocalPlayerIndex()
-}
-
-func NewBattle(core *mgba.Core, isP2 bool, localInputBufferSize int) (*Battle, error) {
-	b := &Battle{
-		isP2: isP2,
-
-		lastCommittedRemoteInput: Input{Joyflags: 0xfc00},
-
-		localInputBuffer: ringbuf.New[uint16](localInputBufferSize),
-
-		iq: NewInputQueue(60),
-	}
-
-	os.MkdirAll("replays", 0o700)
-	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.bbn6replay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
-	log.Printf("writing replay: %s", fn)
-
-	il, err := newReplayWriter(fn, core)
-	if err != nil {
-		return nil, err
-	}
-	b.rw = il
-	return b, nil
 }
 
 func (s *Battle) Close() error {

@@ -158,6 +158,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.match.battleMu.Lock()
+		defer g.match.battleMu.Unlock()
+
 		core.GBA().SetRegister(0, 0x0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
@@ -179,6 +182,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.match.battleMu.Lock()
+		defer g.match.battleMu.Unlock()
+
 		ctx := context.Background()
 
 		g.match.battle.localInit = g.bn6.LocalMarshaledBattleState(core)
@@ -186,7 +192,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		var pkt packets.Init
 		copy(pkt.Marshaled[:], g.match.battle.localInit)
 		if err := packets.Send(ctx, g.match.dc, pkt, nil); err != nil {
-			panic(err)
+			log.Fatalf("failed to send init info: %s", err)
 		}
 
 		log.Printf("init sent")
@@ -201,6 +207,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.match.battleMu.Lock()
+		defer g.match.battleMu.Unlock()
+
 		g.match.battle.localPendingTurn = g.bn6.LocalMarshaledBattleState(core)
 		g.match.battle.localPendingTurnWaitTicksLeft = 64
 	})
@@ -213,6 +222,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.match.battleMu.Lock()
+		defer g.match.battleMu.Unlock()
+
 		core.GBA().SetRegister(0, 0x0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
@@ -221,13 +233,13 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if g.match.battle.committedState == nil {
 			g.match.battle.committedState = core.SaveState()
 			if err := g.match.battle.rw.WriteState(g.match.battle.LocalPlayerIndex(), g.match.battle.committedState); err != nil {
-				panic(err)
+				log.Fatalf("failed to write to replay: %s", err)
 			}
 			if err := g.match.battle.rw.WriteInit(g.match.battle.LocalPlayerIndex(), g.match.battle.localInit); err != nil {
-				panic(err)
+				log.Fatalf("failed to write to replay: %s", err)
 			}
 			if err := g.match.battle.rw.WriteInit(g.match.battle.RemotePlayerIndex(), g.match.battle.remoteInit); err != nil {
-				panic(err)
+				log.Fatalf("failed to write to replay: %s", err)
 			}
 			return
 		}
@@ -265,9 +277,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				g.match = nil
 				g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 				// TODO: Figure out how to gracefully exit the battle.
-				panic(err)
+				log.Fatalf("TODO: drop the connection")
 			}
-			panic(err)
+			log.Fatalf("failed to add input: %s", err)
 		}
 
 		var pkt packets.Input
@@ -275,7 +287,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		pkt.Joyflags = joyflags
 		pkt.CustomScreenState = customScreenState
 		if err := packets.Send(ctx, g.match.dc, pkt, turn); err != nil {
-			panic(err)
+			log.Fatalf("failed to send input: %s", err)
 		}
 
 		inputPairs := g.match.battle.iq.Consume()
@@ -286,7 +298,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		left := g.match.battle.iq.Peek(g.match.battle.LocalPlayerIndex())
 		committedState, dirtyState, err := g.fastforwarder.fastforward(g.match.battle.committedState, g.match.battle.rw, g.match.battle.LocalPlayerIndex(), inputPairs, g.match.battle.lastCommittedRemoteInput, left)
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to fastforward: %s", err)
 		}
 		g.match.battle.committedState = committedState
 		g.mainCore.LoadState(dirtyState)
@@ -316,6 +328,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.match.battleMu.Lock()
+		defer g.match.battleMu.Unlock()
+
 		tick := g.match.battle.tick
 		log.Printf("turn ended on %d, rng state = %08x", tick, g.bn6.RNG2State(core))
 	})
@@ -328,19 +343,19 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.match.battleMu.Lock()
+		defer g.match.battleMu.Unlock()
+
 		if g.match.battle != nil {
-			panic("battle already started?")
+			log.Fatalf("battle already started?")
 		}
 
 		g.match.battleNumber++
 		log.Printf("battle %d started, won last battle (is p1) = %t", g.match.battleNumber, g.match.wonLastBattle)
 
-		const localInputBufferSize = 2
-		battle, err := NewBattle(g.mainCore, !g.match.wonLastBattle, localInputBufferSize)
-		if err != nil {
-			panic(err)
+		if err := g.match.NewBattle(g.mainCore); err != nil {
+			log.Fatalf("failed to start new battle: %s", err)
 		}
-		g.match.battle = battle
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_end__entry, func() {
@@ -351,11 +366,13 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.match.battleMu.Lock()
+		defer g.match.battleMu.Unlock()
+
 		log.Printf("battle ended, won = %t", g.match.wonLastBattle)
-		if err := g.match.battle.Close(); err != nil {
-			panic(err)
+		if err := g.match.EndBattle(); err != nil {
+			log.Fatalf("failed to end battle: %s", err)
 		}
-		g.match.battle = nil
 
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 	})
@@ -368,6 +385,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		g.match.battleMu.Lock()
+		defer g.match.battleMu.Unlock()
+
 		core.GBA().SetRegister(0, uint32(g.match.battle.LocalPlayerIndex()))
 	})
 
@@ -378,6 +398,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if g.match == nil {
 			return
 		}
+
+		g.match.battleMu.Lock()
+		defer g.match.battleMu.Unlock()
 
 		core.GBA().SetRegister(0, uint32(g.match.battle.LocalPlayerIndex()))
 	})
@@ -404,7 +427,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				match, err := NewMatch(g.conf, code, 0)
 				if err != nil {
 					// TODO: handle this better.
-					panic(err)
+					log.Fatalf("failed to start match: %s", err)
 				}
 				g.match = match
 				// TODO: Check the errors from this.
@@ -480,12 +503,17 @@ func (g *Game) Update() error {
 		g.matchMu.Lock()
 		defer g.matchMu.Unlock()
 
-		if g.match != nil && g.match.battle != nil {
-			expected := g.runaheadTicksAllowedMatchLocked()
-			lag := g.match.battle.iq.Lag(g.match.battle.RemotePlayerIndex())
-			tps := expectedFPS - (lag - expected + 1)
-			// TODO: Not thread safe.
-			g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
+		if g.match != nil {
+			g.match.battleMu.Lock()
+			defer g.match.battleMu.Unlock()
+
+			if g.match.battle != nil {
+				expected := g.runaheadTicksAllowedMatchLocked()
+				lag := g.match.battle.iq.Lag(g.match.battle.RemotePlayerIndex())
+				tps := expectedFPS - (lag - expected + 1)
+				// TODO: Not thread safe.
+				g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
+			}
 		}
 
 		return nil

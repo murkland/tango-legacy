@@ -2,7 +2,6 @@ package game
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/murkland/bbn6/bn6"
@@ -43,7 +42,7 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		ip := inputPairBuf[0]
 
 		if ip[0].Tick != ip[1].Tick {
-			panic(fmt.Sprintf("p1 tick != p2 tick: %d != %d", ip[0].Tick, ip[1].Tick))
+			log.Fatalf("p1 tick != p2 tick: %d != %d", ip[0].Tick, ip[1].Tick)
 		}
 
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
