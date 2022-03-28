@@ -32,7 +32,6 @@ type Match struct {
 
 	cancel context.CancelFunc
 
-	connCanceled   chan struct{}
 	connReady      chan struct{}
 	peerConn       *webrtc.PeerConnection
 	dc             *ctxwebrtc.DataChannel
@@ -55,8 +54,7 @@ func NewMatch(conf config.Config, sessionID string) (*Match, error) {
 		conf:      conf,
 		sessionID: sessionID,
 
-		connCanceled: make(chan struct{}),
-		connReady:    make(chan struct{}),
+		connReady: make(chan struct{}),
 
 		delayRingbuf: ringbuf.New[time.Duration](9),
 	}, nil
@@ -142,6 +140,7 @@ func (m *Match) negotiate(ctx context.Context) error {
 	m.randSource = randSource
 	m.connectionSide = connectionSide
 	close(m.connReady)
+	log.Printf("negotiation complete!")
 	return nil
 }
 
@@ -210,12 +209,11 @@ func (m *Match) handleConn(ctx context.Context) error {
 		case packets.Input:
 			if m == nil || m.battle == nil {
 				log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
-				return nil
+				continue
 			}
 
 			m.battle.iq.WaitForFree(ctx, m.battle.RemotePlayerIndex())
 			m.battle.iq.AddInput(m.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
-			return nil
 		}
 	}
 }
@@ -243,11 +241,6 @@ func (m *Match) Run(ctx context.Context) error {
 func (m *Match) Close() error {
 	if m.cancel != nil {
 		m.cancel()
-	}
-	select {
-	case <-m.connCanceled:
-		close(m.connCanceled)
-	default:
 	}
 	if m.battle != nil {
 		if err := m.battle.Close(); err != nil {

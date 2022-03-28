@@ -379,7 +379,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		defer g.matchMu.Unlock()
 
 		if g.match == nil {
+			volume := g.gameAudioPlayer.Volume()
+			g.gameAudioPlayer.SetVolume(0)
 			code, err := zenity.Entry("Enter a code to matchmake with:", zenity.Title("bbn6"))
+			g.gameAudioPlayer.SetVolume(volume)
 			if err != nil {
 				g.bn6.StopMatchmakingFromCommMenu(core)
 			} else {
@@ -398,11 +401,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			case <-g.match.connReady:
 				g.bn6.StartBattleFromCommMenu(core)
 				log.Printf("match started")
-			case <-g.match.connCanceled:
-				g.bn6.DropMatchmakingFromCommMenu(core)
-				g.match.Close()
-				g.match = nil
-				log.Printf("match canceled by opponent")
 			default:
 			}
 		}
