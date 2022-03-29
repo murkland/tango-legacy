@@ -14,9 +14,8 @@ import (
 )
 
 var (
-	connectAddr = flag.String("connect_addr", "localhost:12345", "address to connect to")
-	configPath  = flag.String("config_path", "bbn6.toml", "path to config")
-	romPath     = flag.String("rom_path", "bn6.gba", "path to rom")
+	configPath = flag.String("config_path", "bbn6.toml", "path to config")
+	romPath    = flag.String("rom_path", "bn6.gba", "path to rom")
 )
 
 var commitHash string
