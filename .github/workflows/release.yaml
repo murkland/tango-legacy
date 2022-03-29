@@ -10,12 +10,14 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
+              with:
+                  submodules: recursive
 
             - uses: actions/setup-go@v3
               with:
                   go-version: "^1.18"
 
-            - name: install mingw
+            - name: install mingw and cmake
               run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake
 
             - name: build mgba
@@ -24,11 +26,8 @@ jobs:
             - name: build bbn6
               run: GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
 
-            - name: copy extra files
-              run: cd build && cp ../README.md ../LICENSE .
-
             - name: zip artifacts
-              run: cd build && zip bbn6.zip bbn6.exe replayview.exe README.md LICENSE
+              run: cd build && mkdir bbn6-${{github.ref_name}} && cp bbn6.exe replayview.exe README.md LICENSE && zip -r bbn6.zip bbn6-${{github.ref_name}}
 
             - name: upload artifact
               uses: actions/upload-release-asset@v1
@@ -37,5 +36,5 @@ jobs:
               with:
                   upload_url: ${{ steps.create_release.outputs.upload_url }}
                   asset_path: ./build/bbn6.zip
-                  asset_name: bbn6-windows-amd64.zip
+                  asset_name: bbn6-${{github.ref_name}}-windows-amd64.zip
                   asset_content_type: application/zip
