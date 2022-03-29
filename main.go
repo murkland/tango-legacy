@@ -18,7 +18,6 @@ import (
 	"github.com/murkland/bbn6/config"
 	"github.com/murkland/bbn6/game"
 	"github.com/murkland/bbn6/mgba"
-	"github.com/murkland/gbarom"
 	"github.com/ncruces/zenity"
 	"golang.org/x/exp/maps"
 )
@@ -106,15 +105,18 @@ func childMain() {
 		options := map[string]string{}
 		for _, dirent := range roms {
 			if err := func() error {
-				f, err := os.Open(filepath.Join("roms", dirent.Name()))
+				path := filepath.Join("roms", dirent.Name())
+				core, err := mgba.FindCore(path)
 				if err != nil {
 					return err
 				}
-				defer f.Close()
-				romTitle, err := gbarom.ReadROMTitle(f)
-				if err != nil {
+				defer core.Close()
+
+				if err := core.LoadFile(path); err != nil {
 					return err
 				}
+
+				romTitle := core.GameTitle()
 
 				if bn6 := bn6.Load(romTitle); bn6 == nil {
 					return errors.New("unsupported rom")
