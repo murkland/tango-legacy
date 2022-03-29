@@ -2,6 +2,7 @@ package game
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/murkland/bbn6/bn6"
@@ -14,6 +15,7 @@ type fastforwarder struct {
 	core *mgba.Core
 	bn6  *bn6.BN6
 
+	err              error
 	localPlayerIndex int
 	inputPairs       *ringbuf.RingBuf[[2]Input]
 	state            *mgba.State
@@ -26,7 +28,7 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		return nil, err
 	}
 
-	ff := &fastforwarder{core, bn6, 0, nil, nil, 0}
+	ff := &fastforwarder{core, bn6, nil, 0, nil, nil, 0}
 
 	tp := trapper.New(core)
 
@@ -42,7 +44,8 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		ip := inputPairBuf[0]
 
 		if ip[0].Tick != ip[1].Tick {
-			log.Fatalf("p1 tick != p2 tick: %d != %d", ip[0].Tick, ip[1].Tick)
+			ff.err = fmt.Errorf("p1 tick != p2 tick: %d != %d", ip[0].Tick, ip[1].Tick)
+			return
 		}
 
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
@@ -82,22 +85,27 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 	return ff, nil
 }
 
-func (ff *fastforwarder) advanceOne() {
+func (ff *fastforwarder) advanceOne() error {
 	currentTick := ff.tick
 	framesAdvanced := 0
 	for ff.tick == currentTick {
 		ff.core.RunFrame()
+		if ff.err != nil {
+			return ff.err
+		}
 		framesAdvanced++
 	}
 	if framesAdvanced > 2 {
 		log.Printf("game took a long time (%d frames) to process one input on tick %d", framesAdvanced, currentTick)
 	}
+	return nil
 }
 
 // fastforward fastfowards the state to the new state.
 //
 // BEWARE: only one thread may call fastforward at a time.
 func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localPlayerIndex int, inputPairs [][2]Input, lastCommittedRemoteInput Input, localPlayerInputsLeft []Input) (*mgba.State, *mgba.State, error) {
+	ff.err = nil
 	ff.state = state
 	if !ff.core.LoadState(state) {
 		return nil, nil, errors.New("failed to load state")
@@ -115,7 +123,9 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localP
 		ip := inputPairBuf[0]
 		ff.tick = ip[0].Tick
 		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags & ^uint16(0xfc00)))
-		ff.advanceOne()
+		if err := ff.advanceOne(); err != nil {
+			return nil, nil, err
+		}
 		if err := rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
 			return nil, nil, err
 		}
@@ -148,7 +158,9 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localP
 		ff.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
 		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags & ^uint16(0xfc00)))
-		ff.advanceOne()
+		if err := ff.advanceOne(); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	dirtyState := ff.state
