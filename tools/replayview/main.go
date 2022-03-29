@@ -3,16 +3,18 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"image"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/oto/v2"
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/game"
 	"github.com/murkland/bbn6/mgba"
@@ -30,7 +32,7 @@ type Game struct {
 	fbuf   *image.RGBA
 	fbufMu sync.Mutex
 
-	audioPlayer oto.Player
+	gameAudioPlayer *audio.Player
 
 	t *mgba.Thread
 }
@@ -59,7 +61,7 @@ func (g *Game) Update() error {
 	if g.t.HasCrashed() {
 		return errors.New("mgba thread crashed")
 	}
-	g.audioPlayer.Play()
+	g.gameAudioPlayer.Play()
 
 	fpsTarget := g.replayer.Core().GBA().Sync().FPSTarget()
 	if inpututil.IsKeyJustPressed(ebiten.KeyEqual) {
@@ -103,16 +105,59 @@ func main() {
 	}
 	defer f.Close()
 
-	replayer, err := game.NewReplayer(*romPath, f)
+	replay, err := game.DeserializeReplay(f)
+	if err != nil {
+		log.Fatalf("failed to open replay: %s", err)
+	}
+
+	roms, err := os.ReadDir("roms")
+	if err != nil {
+		log.Fatalf("failed to open roms directory: %s", err)
+	}
+
+	var romPath string
+	for _, dirent := range roms {
+		path := filepath.Join("roms", dirent.Name())
+
+		if err := func() error {
+			core, err := mgba.FindCore(path)
+			if err != nil {
+				return err
+			}
+			defer core.Close()
+
+			if err := core.LoadFile(path); err != nil {
+				return err
+			}
+
+			if replay.ROMTitle != core.GameTitle() {
+				return fmt.Errorf("rom title doesn't match: %s != %s", replay.ROMTitle, core.GameTitle())
+			}
+
+			if replay.ROMCRC32 != core.GBA().ROMCRC32() {
+				return fmt.Errorf("crc32 doesn't match: %08x != %08x", replay.ROMCRC32, core.GBA().ROMCRC32())
+			}
+
+			return nil
+		}(); err != nil {
+			log.Printf("%s not eligible: %s", path, err)
+			continue
+		}
+
+		romPath = path
+		break
+	}
+
+	if romPath == "" {
+		log.Fatalf("failed find eligible rom")
+	}
+
+	replayer, err := game.NewReplayer(romPath, replay)
 	if err != nil {
 		log.Fatalf("failed to make replayer: %s", err)
 	}
 
-	audioCtx, ready, err := oto.NewContext(replayer.Core().Options().SampleRate, 2, 2)
-	if err != nil {
-		log.Fatalf("failed to initialize audio: %s", err)
-	}
-	<-ready
+	audioCtx := audio.NewContext(replayer.Core().Options().SampleRate)
 
 	width, height := replayer.Core().DesiredVideoDimensions()
 	vb := av.NewVideoBuffer(width, height)
@@ -128,14 +173,18 @@ func main() {
 	t.Unpause()
 	replayer.Core().GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
-	audioPlayer := audioCtx.NewPlayer(av.NewAudioReader(replayer.Core(), replayer.Core().Options().SampleRate))
-	audioPlayer.(oto.BufferSizeSetter).SetBufferSize(replayer.Core().Options().AudioBuffers * 4)
+	gameAudioPlayer, err := audioCtx.NewPlayer(av.NewAudioReader(replayer.Core(), replayer.Core().Options().SampleRate))
+	if err != nil {
+		log.Fatalf("failed to create audio player: %s", err)
+	}
+	gameAudioPlayer.SetBufferSize(time.Duration(replayer.Core().Options().AudioBuffers+0x4) * time.Second / time.Duration(replayer.Core().Options().SampleRate))
+	gameAudioPlayer.Play()
 
 	g := &Game{
-		replayer:    replayer,
-		vb:          vb,
-		audioPlayer: audioPlayer,
-		t:           t,
+		replayer:        replayer,
+		vb:              vb,
+		gameAudioPlayer: gameAudioPlayer,
+		t:               t,
 	}
 
 	ebiten.SetScreenClearedEveryFrame(false)

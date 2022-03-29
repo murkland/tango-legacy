@@ -32,12 +32,10 @@ func main() {
 	}
 	defer f.Close()
 
-	replayer, err := game.NewReplayer(*romPath, f)
+	replay, err := game.DeserializeReplay(f)
 	if err != nil {
-		log.Fatalf("failed to make replayer: %s", err)
+		log.Fatalf("failed to open replay: %s", err)
 	}
-
-	replay := replayer.Replay()
 
 	for i := 0; i < 2; i++ {
 		fmt.Fprintf(os.Stdout, "init p%d: %s\n", i+1, hex.EncodeToString(replay.Init[i]))

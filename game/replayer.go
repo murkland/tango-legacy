@@ -66,7 +66,7 @@ func (rp *Replayer) Reset() {
 // u8: p2customstate
 // u8: turn flags (0b00 = nobody, 0b01 = p1, 0b10 = p2, 0b11 = p1 and p2)
 // turn size: turn data
-func deserializeReplay(r io.Reader) (*Replay, error) {
+func DeserializeReplay(r io.Reader) (*Replay, error) {
 	zr, err := zstd.NewReader(r)
 	if err != nil {
 		return nil, err
@@ -266,7 +266,7 @@ func (rp *Replayer) PeekLocalJoyflags() uint16 {
 	return ip[rp.replay.LocalPlayerIndex].Joyflags
 }
 
-func NewReplayer(romPath string, r io.Reader) (*Replayer, error) {
+func NewReplayer(romPath string, replay *Replay) (*Replayer, error) {
 	core, err := newCore(romPath)
 	if err != nil {
 		return nil, err
@@ -275,11 +275,6 @@ func NewReplayer(romPath string, r io.Reader) (*Replayer, error) {
 	bn6 := bn6.Load(core.GameTitle())
 	if bn6 == nil {
 		return nil, fmt.Errorf("unsupported game: %s", core.GameTitle())
-	}
-
-	replay, err := deserializeReplay(r)
-	if err != nil {
-		return nil, err
 	}
 
 	rp := &Replayer{core, bn6, replay, nil}

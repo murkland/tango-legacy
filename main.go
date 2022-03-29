@@ -108,8 +108,9 @@ func childMain() {
 
 		options := map[string]string{}
 		for _, dirent := range roms {
+			path := filepath.Join("roms", dirent.Name())
+
 			if err := func() error {
-				path := filepath.Join("roms", dirent.Name())
 				core, err := mgba.FindCore(path)
 				if err != nil {
 					return err
