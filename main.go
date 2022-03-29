@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/murkland/bbn6/config"
@@ -14,6 +18,8 @@ import (
 )
 
 var (
+	child      = flag.Bool("child", false, "is this the child process?")
+	logFile    = flag.String("log_file", "bbn6.log", "file to log to")
 	configPath = flag.String("config_path", "bbn6.toml", "path to config")
 	romPath    = flag.String("rom_path", "bn6.gba", "path to rom")
 )
@@ -22,6 +28,32 @@ var commitHash string
 
 func main() {
 	flag.Parse()
+	if *child {
+		childMain()
+		return
+	}
+
+	runtime.LockOSThread()
+
+	logF, err := os.Create(*logFile)
+	if err != nil {
+		log.Fatalf("failed to open log file: %s", err)
+	}
+	defer logF.Close()
+
+	if err := (&exec.Cmd{
+		Path:   os.Args[0],
+		Args:   append(os.Args, "-child"),
+		Stdout: os.Stdout,
+		Stderr: io.MultiWriter(os.Stderr, logF),
+	}).Run(); err != nil {
+		log.Printf("child exited with %s", err)
+	}
+	fmt.Printf("press any key to continue...")
+	fmt.Scanln()
+}
+
+func childMain() {
 	ctx := context.Background()
 
 	log.Printf("welcome to bingus battle network 6. commit hash = %s", commitHash)
