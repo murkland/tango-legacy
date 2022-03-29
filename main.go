@@ -9,19 +9,25 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"sort"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/config"
 	"github.com/murkland/bbn6/game"
 	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/gbarom"
+	"github.com/ncruces/zenity"
+	"golang.org/x/exp/maps"
 )
 
 var (
 	child      = flag.Bool("child", false, "is this the child process?")
 	logFile    = flag.String("log_file", "bbn6.log", "file to log to")
 	configPath = flag.String("config_path", "bbn6.toml", "path to config")
-	romPath    = flag.String("rom_path", "bn6.gba", "path to rom")
+	romPath    = flag.String("rom_path", "", "path to rom to start immediately")
 )
 
 var commitHash string
@@ -54,10 +60,6 @@ func main() {
 }
 
 func childMain() {
-	ctx := context.Background()
-
-	log.Printf("welcome to bingus battle network 6. commit hash = %s", commitHash)
-
 	var conf config.Config
 	confF, err := os.Open(*configPath)
 	if err != nil {
@@ -90,6 +92,51 @@ func childMain() {
 		}
 		log.Printf("mgba: level=%d category=%s %s", level, category, message)
 	})
+
+	ctx := context.Background()
+
+	log.Printf("welcome to bingus battle network 6. commit hash = %s", commitHash)
+
+	if *romPath == "" {
+		roms, err := os.ReadDir("roms")
+		if err != nil {
+			log.Fatalf("failed to open roms directory: %s", err)
+		}
+
+		options := map[string]string{}
+		for _, dirent := range roms {
+			if err := func() error {
+				f, err := os.Open(filepath.Join("roms", dirent.Name()))
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				romTitle, err := gbarom.ReadROMTitle(f)
+				if err != nil {
+					return err
+				}
+
+				if bn6 := bn6.Load(romTitle); bn6 == nil {
+					return errors.New("unsupported rom")
+				}
+
+				options[fmt.Sprintf("%s (%s)", romTitle, dirent.Name())] = dirent.Name()
+
+				return nil
+			}(); err != nil {
+				continue
+			}
+		}
+		keys := maps.Keys(options)
+		sort.Strings(keys)
+
+		selection, err := zenity.List("Select a game to start:", keys, zenity.Title("bbn6"))
+		if err != nil {
+			log.Fatalf("failed to select game: %s", err)
+		}
+
+		*romPath = filepath.Join("roms", options[selection])
+	}
 
 	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")
