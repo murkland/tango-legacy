@@ -17,6 +17,7 @@ type fastforwarder struct {
 	localPlayerIndex int
 	inputPairs       *ringbuf.RingBuf[[2]Input]
 	state            *mgba.State
+	tick             int
 }
 
 func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
@@ -25,7 +26,7 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		return nil, err
 	}
 
-	ff := &fastforwarder{core, bn6, 0, nil, nil}
+	ff := &fastforwarder{core, bn6, 0, nil, nil, 0}
 
 	tp := trapper.New(core)
 
@@ -33,6 +34,8 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		core.GBA().SetRegister(0, 0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
+
+		ff.tick++
 
 		var inputPairBuf [1][2]Input
 		ff.inputPairs.Pop(inputPairBuf[:], 0)
@@ -42,21 +45,16 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 			log.Fatalf("p1 tick != p2 tick: %d != %d", ip[0].Tick, ip[1].Tick)
 		}
 
-		tick := bn6.InBattleTime(core)
-		if ip[0].Tick != int(tick) {
-			log.Fatalf("tick != in battle time: %d != %d", ip[0].Tick, tick)
-		}
-
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
-			log.Printf("p1 turn committed at tick %d", tick)
+			log.Printf("p1 turn committed at tick %d", ff.tick)
 		}
 
 		bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
 		if ip[1].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
-			log.Printf("p2 turn committed at tick %d", tick)
+			log.Printf("p2 turn committed at tick %d", ff.tick)
 		}
 
 		if ff.inputPairs.Used() == 0 {
@@ -85,9 +83,9 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 }
 
 func (ff *fastforwarder) advanceOne() {
-	currentTick := ff.bn6.InBattleTime(ff.core)
+	currentTick := ff.tick
 	framesAdvanced := 0
-	for ff.bn6.InBattleTime(ff.core) == currentTick {
+	for ff.tick == currentTick {
 		ff.core.RunFrame()
 		framesAdvanced++
 	}
@@ -115,6 +113,7 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localP
 		var inputPairBuf [1][2]Input
 		ff.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
+		ff.tick = ip[0].Tick
 		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags & ^uint16(0xfc00)))
 		ff.advanceOne()
 		if err := rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
@@ -131,6 +130,7 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localP
 
 		predicted := &predictedInputPairs[i][1-localPlayerIndex]
 		predicted.Tick = inp.Tick
+		ff.tick = predicted.Tick
 		predicted.CustomScreenState = lastCommittedRemoteInput.CustomScreenState
 		if lastCommittedRemoteInput.Joyflags&uint16(mgba.KeysA) != 0 {
 			predicted.Joyflags |= uint16(mgba.KeysA)

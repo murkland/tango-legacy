@@ -69,10 +69,6 @@ func (b *BN6) RemoteWins(core *mgba.Core) uint8 {
 	return core.RawRead8(b.Offsets.EWRAM.A_BattleState+0x19, -1)
 }
 
-func (b *BN6) InBattleTime(core *mgba.Core) uint32 {
-	return core.RawRead32(b.Offsets.EWRAM.A_BattleState+0x60, -1)
-}
-
 func (b *BN6) RNG2State(core *mgba.Core) uint32 {
 	return core.RawRead32(b.Offsets.EWRAM.A_Rng2, -1)
 }
