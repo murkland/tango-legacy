@@ -76,7 +76,7 @@ func New(conf config.Config, romPath string) (*Game, error) {
 	mainCore.SetVideoBuffer(vb.Pointer(), width)
 	t := mgba.NewThread(mainCore)
 	if !t.Start() {
-		log.Fatalf("failed to start mgba thread")
+		return nil, err
 	}
 	mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
