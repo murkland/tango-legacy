@@ -89,6 +89,7 @@ func (ff *fastforwarder) advanceOne() error {
 	currentTick := ff.tick
 	framesAdvanced := 0
 	for ff.tick == currentTick {
+		ff.err = nil
 		ff.core.RunFrame()
 		if ff.err != nil {
 			return ff.err
