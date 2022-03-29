@@ -35,7 +35,7 @@ type Offsets struct {
 	ROM   ROMOffsets
 }
 
-var bn6EWRAMOffsets = EWRAMOffsets{
+var ewramOffsets = EWRAMOffsets{
 	A_PlayerInputDataArr:        0x02036820,
 	A_BattleState:               0x02034880,
 	A_Joypad:                    0x0200a270,
@@ -47,7 +47,7 @@ var bn6EWRAMOffsets = EWRAMOffsets{
 
 var offsetsMap = map[string]Offsets{
 	"MEGAMAN6_FXX": {
-		EWRAM: bn6EWRAMOffsets,
+		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
 			A_battle_init__call__battle_copyInputData:                     0x08007902,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6e,
@@ -69,7 +69,7 @@ var offsetsMap = map[string]Offsets{
 		},
 	},
 	"MEGAMAN6_GXX": {
-		EWRAM: bn6EWRAMOffsets,
+		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
 			A_battle_init__call__battle_copyInputData:                     0x08007902,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6e,
@@ -88,6 +88,26 @@ var offsetsMap = map[string]Offsets{
 			A_commMenu_waitForFriend__ret__cancel:                         0x0812bd80,
 			A_commMenu_inBattle__call__commMenu_handleLinkCableInput:      0x0812d3a6,
 			A_commMenu_endBattle__entry:                                   0x0812d4e4,
+		},
+	},
+	"ROCKEXE6_RXX": {
+		EWRAM: ewramOffsets,
+		ROM: ROMOffsets{
+			A_battle_init__call__battle_copyInputData:                     0x080078ee,
+			A_battle_update__call__battle_copyInputData:                   0x08007a6a,
+			A_battle_runUnpausedStep__cmp__retval:                         0x0800811a,
+			A_battle_init_marshal__ret:                                    0x0800b8a0,
+			A_battle_turn_marshal__ret:                                    0x0800b9be,
+			A_battle_updating__ret__go_to_custom_screen:                   0x0800957e,
+			A_battle_start__ret:                                           0x080072f8,
+			A_battle_end__entry:                                           0x08007c9c,
+			A_battle_isP2__tst:                                            0x0803ed96,
+			A_link_isP2__ret:                                              0x0803edca,
+			A_commMenu_handleLinkCableInput__entry:                        0x0803fb28,
+			A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x0813299e,
+			A_commMenu_waitForFriend__ret__cancel:                         0x081329b8,
+			A_commMenu_inBattle__call__commMenu_handleLinkCableInput:      0x08133fca,
+			A_commMenu_endBattle__entry:                                   0x08134108,
 		},
 	},
 }
