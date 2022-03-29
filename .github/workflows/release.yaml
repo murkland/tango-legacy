@@ -27,7 +27,7 @@ jobs:
               run: GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
 
             - name: zip artifacts
-              run: cd build && mkdir bbn6-${{github.ref_name}} && cp bbn6.exe replayview.exe README.md LICENSE && zip -r bbn6.zip bbn6-${{github.ref_name}}
+              run: cd build && mkdir bbn6-${{github.ref_name}} && cp bbn6.exe replayview.exe ../README.md ../LICENSE bbn6-${{github.ref_name}} && zip -r bbn6.zip bbn6-${{github.ref_name}}
 
             - name: upload artifact
               uses: actions/upload-release-asset@v1
