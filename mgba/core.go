@@ -145,7 +145,7 @@ func (c *Core) LoadFile(path string) error {
 }
 
 func (c *Core) GameTitle() string {
-	var title [16]byte
+	var title [12]byte
 	C.bbn6_mgba_mCore_getGameTitle(c.ptr, (*C.char)(unsafe.Pointer(&title)))
 	return string(bytes.TrimRight(title[:], "\x00"))
 }
