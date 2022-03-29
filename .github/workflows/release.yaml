@@ -27,14 +27,14 @@ jobs:
               run: GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
 
             - name: zip artifacts
-              run: cd build && mkdir bbn6-${{github.ref_name}} && cp bbn6.exe replayview.exe ../README.md ../LICENSE bbn6-${{github.ref_name}} && zip -r bbn6.zip bbn6-${{github.ref_name}}
+              run: cd build && mkdir bbn6-${{ github.ref_name }} && cp bbn6.exe replayview.exe ../README.md ../LICENSE bbn6-${{ github.ref_name }} && zip -r bbn6.zip bbn6-${{ github.ref_name }}
 
             - name: upload artifact
               uses: actions/upload-release-asset@v1
               env:
                   GITHUB_TOKEN: ${{ github.token }}
               with:
-                  upload_url: ${{ steps.create_release.outputs.upload_url }}
+                  upload_url: ${{ github.event.release.upload_url }}
                   asset_path: ./build/bbn6.zip
-                  asset_name: bbn6-${{github.ref_name}}-windows-amd64.zip
+                  asset_name: bbn6-${{ github.ref_name }}-windows-amd64.zip
                   asset_content_type: application/zip
