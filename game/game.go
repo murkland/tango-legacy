@@ -61,6 +61,7 @@ func New(conf config.Config, romPath string) (*Game, error) {
 	if bn6 == nil {
 		return nil, fmt.Errorf("unsupported game: %s", mainCore.GameTitle())
 	}
+	ebiten.SetWindowTitle("bbn6: " + mainCore.GameTitle())
 
 	fastforwarder, err := newFastforwarder(romPath, bn6)
 	if err != nil {
