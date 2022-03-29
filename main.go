@@ -126,7 +126,7 @@ func childMain() {
 					return errors.New("unsupported rom")
 				}
 
-				options[fmt.Sprintf("%s (%s)", romTitle, dirent.Name())] = dirent.Name()
+				options[fmt.Sprintf("%s: %s", dirent.Name(), romTitle)] = dirent.Name()
 
 				return nil
 			}(); err != nil {
