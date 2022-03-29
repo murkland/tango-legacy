@@ -2,6 +2,7 @@ package mgba
 
 /*
 #include <mgba/core/core.h>
+#include <mgba/internal/gba/serialize.h>
 
 size_t bbn6_mgba_mCore_stateSize(struct mCore* core) {
 	return core->stateSize(core);
@@ -17,13 +18,32 @@ bool bbn6_mgba_mCore_loadState(struct mCore* core, void* state) {
 */
 import "C"
 import (
+	"bytes"
 	"runtime"
 	"unsafe"
 )
 
 type State struct {
+	ROMTitle string
+	ROMCRC32 uint32
+
 	ptr  unsafe.Pointer
 	size int
+}
+
+func toState(buf unsafe.Pointer, size int) *State {
+	serialized := (*C.struct_GBASerializedState)(buf)
+	s := &State{
+		ROMTitle: string(bytes.TrimRight(C.GoBytes(unsafe.Pointer(&serialized.title[0]), 12), "\x00")),
+		ROMCRC32: uint32(serialized.romCrc32),
+
+		ptr:  buf,
+		size: size,
+	}
+	runtime.SetFinalizer(s, func(s *State) {
+		C.free(s.ptr)
+	})
+	return s
 }
 
 func (c *Core) SaveState() *State {
@@ -34,12 +54,7 @@ func (c *Core) SaveState() *State {
 		C.free(buf)
 		return nil
 	}
-
-	s := &State{buf, size}
-	runtime.SetFinalizer(s, func(s *State) {
-		C.free(s.ptr)
-	})
-	return s
+	return toState(buf, size)
 }
 
 func (c *Core) LoadState(state *State) bool {
@@ -51,9 +66,5 @@ func (s *State) Bytes() []byte {
 }
 
 func StateFromBytes(b []byte) *State {
-	s := &State{C.CBytes(b), len(b)}
-	runtime.SetFinalizer(s, func(s *State) {
-		C.free(s.ptr)
-	})
-	return s
+	return toState(C.CBytes(b), len(b))
 }

@@ -124,18 +124,19 @@ func main() {
 			if err != nil {
 				return err
 			}
+			core.Config().Init("bbn6")
 			defer core.Close()
 
 			if err := core.LoadFile(path); err != nil {
 				return err
 			}
 
-			if replay.ROMTitle != core.GameTitle() {
-				return fmt.Errorf("rom title doesn't match: %s != %s", replay.ROMTitle, core.GameTitle())
+			if replay.State.ROMTitle != core.GameTitle() {
+				return fmt.Errorf("rom title doesn't match: %s != %s", replay.State.ROMTitle, core.GameTitle())
 			}
 
-			if replay.ROMCRC32 != core.GBA().ROMCRC32() {
-				return fmt.Errorf("crc32 doesn't match: %08x != %08x", replay.ROMCRC32, core.GBA().ROMCRC32())
+			if replay.State.ROMCRC32 != core.CRC32() {
+				return fmt.Errorf("crc32 doesn't match: %08x != %08x", replay.State.ROMCRC32, core.GBA().ROMCRC32())
 			}
 
 			return nil

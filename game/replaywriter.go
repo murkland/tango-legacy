@@ -10,7 +10,7 @@ import (
 	"github.com/murkland/bbn6/mgba"
 )
 
-const replayVersion = 0x03
+const replayVersion = 0x04
 const replayHeader = "TOOT"
 
 type ReplayWriter struct {
@@ -36,17 +36,6 @@ func newReplayWriter(filename string, core *mgba.Core) (*ReplayWriter, error) {
 	if err := binary.Write(w, binary.LittleEndian, uint8(replayVersion)); err != nil {
 		return nil, err
 	}
-
-	var rawGameTitle [12]byte
-	copy(rawGameTitle[:], []byte(core.GameTitle()))
-	if _, err := w.Write(rawGameTitle[:]); err != nil {
-		return nil, err
-	}
-
-	if err := binary.Write(w, binary.LittleEndian, core.GBA().ROMCRC32()); err != nil {
-		return nil, err
-	}
-
 	if err := w.Flush(); err != nil {
 		return nil, err
 	}

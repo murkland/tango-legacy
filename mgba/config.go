@@ -21,7 +21,7 @@ func (c *Config) Init(name string) {
 }
 
 func (c *Config) Deinit() {
-	C.mCoreConfigLoad(c.ptr)
+	C.mCoreConfigDeinit(c.ptr)
 }
 
 func (c *Config) SetValue(key string, value string) {

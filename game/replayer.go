@@ -1,7 +1,6 @@
 package game
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -25,8 +24,6 @@ type Replayer struct {
 }
 
 type Replay struct {
-	ROMTitle         string
-	ROMCRC32         uint32
 	State            *mgba.State
 	LocalPlayerIndex int
 	Init             [2][]byte
@@ -47,8 +44,6 @@ func (rp *Replayer) Reset() {
 // header:
 // u8[4]: TOOT
 // u8: replay version
-// u8[12]: game title
-// u32: game crc32
 // u8: local player index
 // u32: state size
 // state size: state
@@ -88,17 +83,6 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 	}
 	if version != replayVersion {
 		return nil, fmt.Errorf("unsupported replay version: %02x vs %02x", version, replayVersion)
-	}
-
-	var titleRaw [12]byte
-	if _, err := io.ReadFull(zr, titleRaw[:]); err != nil {
-		return nil, err
-	}
-	gameTitle := string(bytes.TrimRight(titleRaw[:], "\x00"))
-
-	var crc32 uint32
-	if err := binary.Read(zr, binary.LittleEndian, &crc32); err != nil {
-		return nil, err
 	}
 
 	var localPlayerIndex uint8
@@ -241,8 +225,6 @@ func DeserializeReplay(r io.Reader) (*Replay, error) {
 	}
 
 	return &Replay{
-		ROMTitle:         gameTitle,
-		ROMCRC32:         crc32,
 		State:            state,
 		LocalPlayerIndex: int(localPlayerIndex),
 		Init:             init,

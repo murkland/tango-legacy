@@ -50,6 +50,10 @@ uint32_t bbn6_mgba_mCore_frameCounter(struct mCore* core) {
 	return core->frameCounter(core);
 }
 
+void bbn6_mgba_mCore_checksum(struct mCore* core, void* data, enum mCoreChecksumType type) {
+	core->checksum(core, data, type);
+}
+
 struct blip_t* bbn6_mgba_mCore_getAudioChannel(struct mCore* core, int ch) {
 	return core->getAudioChannel(core, ch);
 }
@@ -199,7 +203,13 @@ func (c *Core) Close() {
 	if c.ptr == nil {
 		return
 	}
-	C.bbn6_mgba_mCore_deinit(c.ptr)
 	c.Config().Deinit()
+	C.bbn6_mgba_mCore_deinit(c.ptr)
 	c.ptr = nil
+}
+
+func (c *Core) CRC32() uint32 {
+	var data [4]byte
+	C.bbn6_mgba_mCore_checksum(c.ptr, unsafe.Pointer(&data), C.mCHECKSUM_CRC32)
+	return uint32(*(*C.uint32_t)(unsafe.Pointer(&data)))
 }
