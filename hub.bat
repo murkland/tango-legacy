@@ -33,7 +33,4 @@ ECHO .........................................................
 ECHO    Welcome to BBN6 - Hub Batch is Prettier Now Edition
 ECHO .........................................................
 ECHO.
-SET EBITEN_GRAPHICS_LIBRARY=opengl
-bbn6.exe 2> bbn6.log
-ECHO bbn6 has exited. If this was unexpected, please report a bug with the contents of bbn6.log at either https://github.com/murkland/bbn6/issues/new or https://discord.gg/zbQngJHwSg
-PAUSE
+bbn6.exe
