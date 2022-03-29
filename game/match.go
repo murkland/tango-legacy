@@ -241,6 +241,10 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 	m.battleMu.Lock()
 	defer m.battleMu.Unlock()
 
+	if m.battle != nil {
+		return errors.New("battle already started")
+	}
+
 	var remoteInit []byte
 	remoteInit = m.battlePendingRemoteInit
 	m.battlePendingRemoteInit = nil
@@ -267,12 +271,17 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 	}
 	b.rw = il
 	m.battle = b
+	m.battleNumber++
+	log.Printf("battle %d started, won last battle (is p1) = %t", m.battleNumber, m.wonLastBattle)
 	return nil
 }
 
 func (m *Match) EndBattle() error {
 	m.battleMu.Lock()
 	defer m.battleMu.Unlock()
+
+	log.Printf("battle ended, won = %t", m.wonLastBattle)
+
 	if err := m.battle.Close(); err != nil {
 		return err
 	}

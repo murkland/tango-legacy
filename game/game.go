@@ -161,6 +161,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.match.battleMu.Lock()
 		defer g.match.battleMu.Unlock()
 
+		if g.match.battle == nil {
+			log.Fatalf("attempting to copy init data while no battle was active!")
+		}
+
 		core.GBA().SetRegister(0, 0x0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
@@ -184,6 +188,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		g.match.battleMu.Lock()
 		defer g.match.battleMu.Unlock()
+
+		if g.match.battle == nil {
+			log.Fatalf("attempting to marshal init data while no battle was active!")
+		}
 
 		ctx := context.Background()
 
@@ -210,6 +218,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.match.battleMu.Lock()
 		defer g.match.battleMu.Unlock()
 
+		if g.match.battle == nil {
+			log.Fatalf("attempting to marshal turn data while no battle was active!")
+		}
+
 		g.match.battle.localPendingTurn = g.bn6.LocalMarshaledBattleState(core)
 		g.match.battle.localPendingTurnWaitTicksLeft = 64
 	})
@@ -224,6 +236,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		g.match.battleMu.Lock()
 		defer g.match.battleMu.Unlock()
+
+		if g.match.battle == nil {
+			log.Fatalf("attempting to copy input data while no battle was active!")
+		}
 
 		core.GBA().SetRegister(0, 0x0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
@@ -331,6 +347,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.match.battleMu.Lock()
 		defer g.match.battleMu.Unlock()
 
+		if g.match.battle == nil {
+			log.Fatalf("turn ended while no battle was active!")
+		}
+
 		tick := g.match.battle.tick
 		log.Printf("turn ended on %d, rng state = %08x", tick, g.bn6.RNG2State(core))
 	})
@@ -342,16 +362,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if g.match == nil {
 			return
 		}
-
-		g.match.battleMu.Lock()
-		defer g.match.battleMu.Unlock()
-
-		if g.match.battle != nil {
-			log.Fatalf("battle already started?")
-		}
-
-		g.match.battleNumber++
-		log.Printf("battle %d started, won last battle (is p1) = %t", g.match.battleNumber, g.match.wonLastBattle)
 
 		if err := g.match.NewBattle(g.mainCore); err != nil {
 			log.Fatalf("failed to start new battle: %s", err)
@@ -366,10 +376,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		g.match.battleMu.Lock()
-		defer g.match.battleMu.Unlock()
-
-		log.Printf("battle ended, won = %t", g.match.wonLastBattle)
 		if err := g.match.EndBattle(); err != nil {
 			log.Fatalf("failed to end battle: %s", err)
 		}
@@ -388,6 +394,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.match.battleMu.Lock()
 		defer g.match.battleMu.Unlock()
 
+		if g.match.battle == nil {
+			log.Fatalf("attempted to get battle p2 information while no battle was active!")
+		}
+
 		core.GBA().SetRegister(0, uint32(g.match.battle.LocalPlayerIndex()))
 	})
 
@@ -401,6 +411,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		g.match.battleMu.Lock()
 		defer g.match.battleMu.Unlock()
+
+		if g.match.battle == nil {
+			log.Fatalf("attempted to get link p2 information while no battle was active!")
+		}
 
 		core.GBA().SetRegister(0, uint32(g.match.battle.LocalPlayerIndex()))
 	})
