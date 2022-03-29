@@ -1,0 +1,41 @@
+name: release
+
+on:
+    release:
+        types: [created]
+
+jobs:
+    release-windows-amd64:
+        name: release windows/amd64
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - uses: actions/setup-go@v3
+              with:
+                  go-version: "^1.18"
+
+            - name: install mingw
+              run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake
+
+            - name: build mgba
+              run: cd external/mgba && mkdir build && cd build && cmake .. -DLIBMGBA_ONLY=ON -DCMAKE_TOOLCHAIN_FILE=../../../mgba/Toolchain-x86_64-w64-mingw32.cmake && make -j
+
+            - name: build bbn6
+              run: GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
+
+            - name: copy extra files
+              run: cd build && cp ../README.md ../LICENSE .
+
+            - name: zip artifacts
+              run: cd build && zip bbn6.zip bbn6.exe replayview.exe README.md LICENSE
+
+            - name: upload artifact
+              uses: actions/upload-release-asset@v1
+              env:
+                  GITHUB_TOKEN: ${{ github.token }}
+              with:
+                  upload_url: ${{ steps.create_release.outputs.upload_url }}
+                  asset_path: ./build/bbn6.zip
+                  asset_name: bbn6-windows-amd64.zip
+                  asset_content_type: application/zip
