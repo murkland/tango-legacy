@@ -390,3 +390,9 @@ func (m *Match) DataChannel() *ctxwebrtc.DataChannel {
 func (m *Match) SetWonLastBattle(v bool) {
 	m.wonLastBattle = v
 }
+
+func (m *Match) RandomBattleSettingsAndBackground() uint16 {
+	rng := rand.New(m.randSource)
+	_ = rng
+	return 0
+}

@@ -80,3 +80,7 @@ func (b *BN6) RNG2State(core *mgba.Core) uint32 {
 func (b *BN6) MenuControlState(core *mgba.Core, offset uint32) uint8 {
 	return core.RawRead8(b.Offsets.EWRAM.A_MenuControl+offset, -1)
 }
+
+func (b *BN6) SetLinkBattleSettingsAndBackground(core *mgba.Core, linkBattleSettingsAndBackground uint16) {
+	core.RawWrite16(b.Offsets.EWRAM.A_MenuControl+0x2a, -1, linkBattleSettingsAndBackground)
+}
