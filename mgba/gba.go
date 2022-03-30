@@ -3,10 +3,6 @@ package mgba
 /*
 #include <mgba/internal/gba/gba.h>
 #include <mgba/internal/arm/isa-inlines.h>
-
-void bbn6_mgba_ARMMemory_setActiveRegion(struct ARMCore* cpu, uint32_t address) {
-	cpu->memory.setActiveRegion(cpu, address);
-}
 */
 import "C"
 import (
