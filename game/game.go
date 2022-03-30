@@ -180,19 +180,20 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		ctx := context.Background()
 
-		battle.localInit = g.bn6.LocalMarshaledBattleState(core)
+		localInit := g.bn6.LocalMarshaledBattleState(core)
 
 		var pkt packets.Init
-		copy(pkt.Marshaled[:], battle.localInit)
+		copy(pkt.Marshaled[:], localInit)
 		if err := packets.Send(ctx, g.match.dc, pkt, nil); err != nil {
 			log.Fatalf("failed to send init info: %s", err)
 		}
 
 		log.Printf("init sent")
-		g.bn6.SetPlayerMarshaledBattleState(core, battle.LocalPlayerIndex(), battle.localInit)
+		g.bn6.SetPlayerMarshaledBattleState(core, battle.LocalPlayerIndex(), localInit)
 
+		var remoteInit []byte
 		select {
-		case <-battle.remoteInitWaitCh:
+		case remoteInit = <-battle.remoteInitCh:
 		case <-ctx.Done():
 			if err := ctx.Err(); errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				g.match.Close()
@@ -202,9 +203,20 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				log.Fatalf("TODO: drop the connection")
 			}
 		}
+
 		log.Printf("init received")
-		g.bn6.SetPlayerMarshaledBattleState(core, battle.RemotePlayerIndex(), battle.remoteInit)
+		g.bn6.SetPlayerMarshaledBattleState(core, battle.RemotePlayerIndex(), remoteInit)
 		battle.committedState = core.SaveState()
+
+		if err := battle.rw.WriteState(battle.LocalPlayerIndex(), battle.committedState); err != nil {
+			log.Fatalf("failed to write to replay: %s", err)
+		}
+		if err := battle.rw.WriteInit(battle.LocalPlayerIndex(), localInit); err != nil {
+			log.Fatalf("failed to write to replay: %s", err)
+		}
+		if err := battle.rw.WriteInit(battle.RemotePlayerIndex(), remoteInit); err != nil {
+			log.Fatalf("failed to write to replay: %s", err)
+		}
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_turn_marshal__ret, func() {
@@ -238,18 +250,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().ThumbWritePC()
 
 		ctx := context.Background()
-		if battle.committedState == nil {
-			if err := battle.rw.WriteState(battle.LocalPlayerIndex(), battle.committedState); err != nil {
-				log.Fatalf("failed to write to replay: %s", err)
-			}
-			if err := battle.rw.WriteInit(battle.LocalPlayerIndex(), battle.localInit); err != nil {
-				log.Fatalf("failed to write to replay: %s", err)
-			}
-			if err := battle.rw.WriteInit(battle.RemotePlayerIndex(), battle.remoteInit); err != nil {
-				log.Fatalf("failed to write to replay: %s", err)
-			}
-			return
-		}
 
 		nextJoyflags := g.bn6.LocalJoyflags(core)
 		tick := g.bn6.InBattleTime(core)

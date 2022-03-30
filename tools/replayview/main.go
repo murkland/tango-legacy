@@ -119,16 +119,14 @@ func main() {
 		log.Fatalf("failed to open replay: %s", err)
 	}
 
-	romsDir := filepath.Join(filepath.Base(os.Args[0]), "roms")
-
-	roms, err := os.ReadDir(romsDir)
+	roms, err := os.ReadDir("roms")
 	if err != nil {
 		log.Fatalf("failed to open roms directory: %s", err)
 	}
 
 	var romPath string
 	for _, dirent := range roms {
-		path := filepath.Join(romsDir, dirent.Name())
+		path := filepath.Join("roms", dirent.Name())
 
 		if err := func() error {
 			core, err := mgba.FindCore(path)
