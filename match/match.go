@@ -29,7 +29,7 @@ import (
 
 const expectedFPS = 60
 
-var ErrNotReady = errors.New("match not reay")
+var ErrNotReady = errors.New("match not ready")
 var ErrMatchTypeMismatch = errors.New("match type mismatch")
 
 type Match struct {

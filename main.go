@@ -25,7 +25,7 @@ var (
 	romPath    = flag.String("rom_path", "", "path to rom to start immediately")
 )
 
-var commitHash string
+var version string
 
 func main() {
 	flag.Parse()
@@ -68,7 +68,7 @@ func main() {
 
 	ctx := context.Background()
 
-	log.Printf("welcome to bingus battle network 6. commit hash = %s", commitHash)
+	log.Printf("welcome to bingus battle network 6 %s", version)
 
 	if *romPath == "" {
 		roms, err := os.ReadDir("roms")
