@@ -335,7 +335,6 @@ func (m *Match) Close() error {
 }
 
 type Battle struct {
-	tick int32
 	isP2 bool
 
 	rw *ReplayWriter

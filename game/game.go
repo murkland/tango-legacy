@@ -261,9 +261,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		g.match.battle.tick++
-
 		nextJoyflags := g.bn6.LocalJoyflags(core)
+		tick := g.bn6.InBattleTime(core)
 		g.match.battle.localInputBuffer.Push([]uint16{nextJoyflags})
 
 		joyflags := uint16(0xfc00)
@@ -287,7 +286,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		const timeout = 5 * time.Second
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		if err := g.match.battle.iq.AddInput(ctx, g.match.battle.LocalPlayerIndex(), Input{int(g.match.battle.tick), joyflags, customScreenState, turn}); err != nil {
+		if err := g.match.battle.iq.AddInput(ctx, g.match.battle.LocalPlayerIndex(), Input{int(tick), joyflags, customScreenState, turn}); err != nil {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				log.Printf("could not queue local input within %s, dropping connection", timeout)
 				g.match.Close()
@@ -300,7 +299,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		var pkt packets.Input
-		pkt.ForTick = uint32(g.match.battle.tick)
+		pkt.ForTick = uint32(tick)
 		pkt.Joyflags = joyflags
 		pkt.CustomScreenState = customScreenState
 		if err := packets.Send(ctx, g.match.dc, pkt, turn); err != nil {
@@ -352,7 +351,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Fatalf("turn ended while no battle was active!")
 		}
 
-		tick := g.match.battle.tick
+		tick := g.bn6.InBattleTime(core)
 		log.Printf("turn ended on %d, rng state = %08x", tick, g.bn6.RNG2State(core))
 	})
 
