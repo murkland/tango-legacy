@@ -47,7 +47,8 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 
 		tick := bn6.InBattleTime(core)
 		if ip[0].Tick != int(tick) {
-			log.Fatalf("tick != in battle time: %d != %d", ip[0].Tick, tick)
+			ff.err = fmt.Errorf("tick != in battle time: %d != %d", ip[0].Tick, tick)
+			return
 		}
 
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)

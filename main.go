@@ -28,6 +28,8 @@ var (
 var commitHash string
 
 func main() {
+	flag.Parse()
+
 	var conf config.Config
 	confF, err := os.Open(*configPath)
 	if err != nil {

@@ -13,9 +13,12 @@ import (
 const replayVersion = 0x04
 const replayHeader = "TOOT"
 
+const flushEvery = 60
+
 type ReplayWriter struct {
-	closer io.Closer
-	w      *zstd.Encoder
+	closer        io.Closer
+	w             *zstd.Encoder
+	inputsWritten int
 }
 
 func newReplayWriter(filename string, core *mgba.Core) (*ReplayWriter, error) {
@@ -40,7 +43,7 @@ func newReplayWriter(filename string, core *mgba.Core) (*ReplayWriter, error) {
 		return nil, err
 	}
 
-	return &ReplayWriter{f, w}, nil
+	return &ReplayWriter{f, w, 0}, nil
 }
 
 func (rw *ReplayWriter) WriteState(playerIndex int, state *mgba.State) error {
@@ -137,6 +140,14 @@ func (rw *ReplayWriter) Write(rngState uint32, inputPair [2]Input) error {
 			return err
 		}
 	}
+
+	rw.inputsWritten++
+	if rw.inputsWritten%flushEvery == 0 {
+		if err := rw.w.Flush(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
