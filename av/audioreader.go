@@ -32,7 +32,7 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 
 	realBufSize := a.core.Options().AudioBuffers * 2 * 2
 
-	bufSize := int(float64(realBufSize) / float64(fauxClock))
+	bufSize := int(float64(realBufSize) * float64(fauxClock))
 
 	if sync != nil {
 		sync.LockAudio()

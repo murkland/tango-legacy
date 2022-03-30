@@ -9,6 +9,7 @@ bool bbn6_mgba_util_VFile_close(struct VFile* vf) {
 */
 import "C"
 import (
+	"os"
 	"unsafe"
 )
 
@@ -17,9 +18,32 @@ type VFile struct {
 }
 
 func OpenVF(path string, flags int) *VFile {
+	realFlags := 0
+	if flags&os.O_APPEND != 0 {
+		realFlags |= C.O_APPEND
+	}
+	if flags&os.O_CREATE != 0 {
+		realFlags |= C.O_CREAT
+	}
+	if flags&os.O_EXCL != 0 {
+		realFlags |= C.O_EXCL
+	}
+	if flags&os.O_RDONLY != 0 {
+		realFlags |= C.O_RDONLY
+	}
+	if flags&os.O_RDWR != 0 {
+		realFlags |= C.O_RDWR
+	}
+	if flags&os.O_TRUNC != 0 {
+		realFlags |= C.O_TRUNC
+	}
+	if flags&os.O_WRONLY != 0 {
+		realFlags |= C.O_WRONLY
+	}
+
 	pathCstr := C.CString(path)
 	defer C.free(unsafe.Pointer(pathCstr))
-	ptr := C.VFileOpen(pathCstr, C.int(flags))
+	ptr := C.VFileOpen(pathCstr, C.int(realFlags))
 	if ptr == nil {
 		return nil
 	}
