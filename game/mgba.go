@@ -12,7 +12,7 @@ var coreOptions = mgba.CoreOptions{
 }
 
 func newCore(romPath string) (*mgba.Core, error) {
-	core, err := mgba.FindCore(romPath)
+	core, err := mgba.NewGBACore()
 	if err != nil {
 		return nil, err
 	}

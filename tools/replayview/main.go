@@ -129,7 +129,7 @@ func main() {
 		path := filepath.Join("roms", dirent.Name())
 
 		if err := func() error {
-			core, err := mgba.FindCore(path)
+			core, err := mgba.NewGBACore()
 			if err != nil {
 				return err
 			}

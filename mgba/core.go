@@ -2,6 +2,7 @@ package mgba
 
 /*
 #include <mgba/core/core.h>
+#include <mgba/gba/core.h>
 #include <mgba/internal/gba/gba.h>
 
 typedef void bbn6_mgba_bkpt16_irqh(struct ARMCore* cpu, int immediate);
@@ -82,13 +83,10 @@ type Core struct {
 	beefTrap       func()
 }
 
-func FindCore(fn string) (*Core, error) {
-	fnCstr := C.CString(fn)
-	defer C.free(unsafe.Pointer(fnCstr))
-
-	ptr := C.mCoreFind(fnCstr)
+func NewGBACore() (*Core, error) {
+	ptr := C.GBACoreCreate()
 	if ptr == nil {
-		return nil, fmt.Errorf("could not find core for %s", fn)
+		return nil, errors.New("could not create core")
 	}
 
 	core := &Core{ptr, nil, nil}
