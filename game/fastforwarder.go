@@ -89,18 +89,12 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 }
 
 func (ff *fastforwarder) advanceOne() error {
-	currentTick := ff.bn6.InBattleTime(ff.core)
-	framesAdvanced := 0
-	for ff.bn6.InBattleTime(ff.core) == currentTick {
+	for qlen := ff.inputPairs.Used(); ff.inputPairs.Used() == qlen; {
 		ff.core.RunFrame()
 		ff.err = nil
 		if ff.err != nil {
 			return ff.err
 		}
-		framesAdvanced++
-	}
-	if framesAdvanced > 2 {
-		log.Printf("game took a long time (%d frames) to process one input on tick %d", framesAdvanced, currentTick)
 	}
 	return nil
 }

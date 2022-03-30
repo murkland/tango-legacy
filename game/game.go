@@ -250,8 +250,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		ctx := context.Background()
 
-		nextJoyflags := g.bn6.LocalJoyflags(core)
 		tick := g.bn6.InBattleTime(core)
+
+		nextJoyflags := g.bn6.LocalJoyflags(core)
 		battle.localInputBuffer.Push([]uint16{nextJoyflags})
 
 		joyflags := uint16(0xfc00)
