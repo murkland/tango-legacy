@@ -43,7 +43,7 @@ func NewWriter(filename string, core *mgba.Core) (*Writer, error) {
 		return nil, err
 	}
 
-	return &Writer{f, w, 0}, nil
+	return &Writer{f, w}, nil
 }
 
 func (rw *Writer) WriteState(playerIndex int, state *mgba.State) error {
