@@ -418,6 +418,17 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().ThumbWritePC()
 	})
 
+	tp.Add(g.bn6.Offsets.ROM.A_battle_setLinkBattleSettingsAndBackground__entry, func() {
+		match := g.Match()
+		if match == nil {
+			return
+		}
+
+		log.Printf("TODO: set r0 and r1 appropriately to set a random stage")
+		core.GBA().SetRegister(0, 1)
+		core.GBA().SetRegister(1, 3)
+	})
+
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_waitForFriend__ret__cancel, func() {
 		log.Printf("match canceled by user")
 		g.endMatch()
