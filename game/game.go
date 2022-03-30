@@ -369,6 +369,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput, func() {
+		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
+		core.GBA().ThumbWritePC()
+
 		ctx := context.Background()
 
 		g.matchMu.Lock()
@@ -383,7 +386,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				log.Printf("matchmaking dialog did not return a code: %s", err)
 				g.bn6.DropMatchmakingFromCommMenu(core)
 			} else {
-				match, err := match.New(g.conf, code, g.bn6.BattleType(g.mainCore), g.mainCore.GameTitle())
+				match, err := match.New(g.conf, code, g.bn6.BattleType(g.mainCore), g.mainCore.GameTitle(), g.mainCore.CRC32())
 				if err != nil {
 					// TODO: handle this better.
 					log.Fatalf("failed to start match: %s", err)
@@ -395,19 +398,23 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		if g.match != nil {
-			ready, err := g.match.PollForReady(ctx)
+			err := g.match.PollForReady(ctx)
 			if err != nil {
-				log.Fatalf("match did not become ready: %s", err)
+				if errors.Is(err, match.ErrNotReady) {
+					return
+				}
+				if errors.Is(err, match.ErrMatchTypeMismatch) {
+					// TODO: Actually show the right message.
+					log.Printf("match type mismatched")
+					g.bn6.DropMatchmakingFromCommMenu(core)
+					return
+				}
+				log.Fatalf("failed to poll match: %s", err)
 			}
 
-			if ready {
-				g.bn6.StartBattleFromCommMenu(core)
-				log.Printf("match started")
-			}
+			g.bn6.StartBattleFromCommMenu(core)
+			log.Printf("match started")
 		}
-
-		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
-		core.GBA().ThumbWritePC()
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_initBattle__entry, func() {

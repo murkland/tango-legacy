@@ -51,6 +51,7 @@ func (Pong) packetType() packetType { return packetTypePong }
 type Hello struct {
 	ProtocolVersion uint8
 	GameTitle       [12]byte
+	GameCRC32       uint32
 	MatchType       uint8
 	RNGCommitment   [32]uint8
 }

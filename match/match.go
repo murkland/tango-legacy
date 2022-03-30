@@ -29,15 +29,19 @@ import (
 
 const expectedFPS = 60
 
+var ErrNotReady = errors.New("match not reay")
+var ErrMatchTypeMismatch = errors.New("match type mismatch")
+
 type Match struct {
 	conf      config.Config
 	sessionID string
 	matchType uint8
 	gameTitle string
+	gameCRC32 uint32
 
 	cancel context.CancelFunc
 
-	connReady     chan struct{}
+	connReady     chan error
 	peerConn      *webrtc.PeerConnection
 	dc            *ctxwebrtc.DataChannel
 	wonLastBattle bool
@@ -60,14 +64,15 @@ func (m *Match) Battle() *Battle {
 	return m.battle
 }
 
-func New(conf config.Config, sessionID string, matchType uint8, gameTitle string) (*Match, error) {
+func New(conf config.Config, sessionID string, matchType uint8, gameTitle string, gameCRC32 uint32) (*Match, error) {
 	return &Match{
 		conf:      conf,
 		sessionID: sessionID,
 		matchType: matchType,
 		gameTitle: gameTitle,
+		gameCRC32: gameCRC32,
 
-		connReady: make(chan struct{}),
+		connReady: make(chan error),
 
 		delayRingbuf: ringbuf.New[time.Duration](9),
 	}, nil
@@ -115,8 +120,9 @@ func (m *Match) negotiate(ctx context.Context) error {
 
 	commitment := syncrand.Commit(nonce[:])
 	var helloPacket packets.Hello
-	copy(helloPacket.GameTitle[:], []byte(m.gameTitle))
 	helloPacket.ProtocolVersion = packets.ProtocolVersion
+	copy(helloPacket.GameTitle[:], []byte(m.gameTitle))
+	helloPacket.GameCRC32 = m.gameCRC32
 	helloPacket.MatchType = m.matchType
 	copy(helloPacket.RNGCommitment[:], commitment)
 	if err := packets.Send(ctx, dc, helloPacket, nil); err != nil {
@@ -133,7 +139,7 @@ func (m *Match) negotiate(ctx context.Context) error {
 	}
 
 	if theirHello.MatchType != m.matchType {
-		return errors.New("match type mismatch")
+		return ErrMatchTypeMismatch
 	}
 
 	theirCommitment := theirHello.RNGCommitment
@@ -161,7 +167,6 @@ func (m *Match) negotiate(ctx context.Context) error {
 	rng := rand.New(m.randSource)
 	m.wonLastBattle = (rng.Int31n(2) == 1) == (connectionSide == signorclient.ConnectionSideOfferer)
 	log.Printf("negotiation complete!")
-	close(m.connReady)
 	return nil
 }
 
@@ -330,8 +335,10 @@ func (m *Match) Run(ctx context.Context) error {
 	defer m.Close()
 
 	if err := m.negotiate(ctx); err != nil {
+		m.connReady <- err
 		return err
 	}
+	close(m.connReady)
 
 	errg, ctx := errgroup.WithContext(ctx)
 	errg.Go(func() error {
@@ -375,14 +382,14 @@ func (m *Match) RunaheadTicksAllowed() int {
 	return expected
 }
 
-func (m *Match) PollForReady(ctx context.Context) (bool, error) {
+func (m *Match) PollForReady(ctx context.Context) error {
 	select {
-	case <-m.connReady:
-		return true, nil
+	case err := <-m.connReady:
+		return err
 	case <-ctx.Done():
-		return false, ctx.Err()
+		return ctx.Err()
 	default:
-		return false, nil
+		return ErrNotReady
 	}
 }
 
