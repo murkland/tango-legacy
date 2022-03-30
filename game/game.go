@@ -22,7 +22,6 @@ import (
 	"github.com/murkland/bbn6/input"
 	"github.com/murkland/bbn6/match"
 	"github.com/murkland/bbn6/mgba"
-	"github.com/murkland/bbn6/packets"
 	"github.com/murkland/bbn6/trapper"
 	"github.com/ncruces/zenity"
 	"golang.org/x/sync/errgroup"
@@ -183,10 +182,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		ctx := context.Background()
 
 		localInit := g.bn6.LocalMarshaledBattleState(core)
-
-		var pkt packets.Init
-		copy(pkt.Marshaled[:], localInit)
-		if err := packets.Send(ctx, match.DataChannel(), pkt, nil); err != nil {
+		if err := match.SendInit(ctx, localInit); err != nil {
 			log.Fatalf("failed to send init info: %s", err)
 		}
 
@@ -263,7 +259,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		const timeout = 5 * time.Second
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		if err := battle.AddInput(ctx, battle.LocalPlayerIndex(), input.Input{int(tick), joyflags, customScreenState, turn}); err != nil {
+		if err := battle.AddInput(ctx, battle.LocalPlayerIndex(), input.Input{Tick: int(tick), Joyflags: joyflags, CustomScreenState: customScreenState, Turn: turn}); err != nil {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				log.Printf("could not queue local input within %s, dropping connection", timeout)
 				g.endMatch()
@@ -274,11 +270,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Fatalf("failed to add input: %s", err)
 		}
 
-		var pkt packets.Input
-		pkt.ForTick = uint32(tick)
-		pkt.Joyflags = joyflags
-		pkt.CustomScreenState = customScreenState
-		if err := packets.Send(ctx, match.DataChannel(), pkt, turn); err != nil {
+		if err := match.SendInput(ctx, tick, joyflags, customScreenState, turn); err != nil {
 			log.Fatalf("failed to send input: %s", err)
 		}
 

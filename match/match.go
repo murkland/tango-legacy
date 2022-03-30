@@ -386,8 +386,18 @@ func (m *Match) PollForReady(ctx context.Context) (bool, error) {
 	}
 }
 
-func (m *Match) DataChannel() *ctxwebrtc.DataChannel {
-	return m.dc
+func (m *Match) SendInit(ctx context.Context, init []byte) error {
+	var pkt packets.Init
+	copy(pkt.Marshaled[:], init)
+	return packets.Send(ctx, m.dc, pkt, nil)
+}
+
+func (m *Match) SendInput(ctx context.Context, tick uint32, joyflags uint16, customScreenState uint8, turn []byte) error {
+	var pkt packets.Input
+	pkt.ForTick = uint32(tick)
+	pkt.Joyflags = joyflags
+	pkt.CustomScreenState = customScreenState
+	return packets.Send(ctx, m.dc, pkt, turn)
 }
 
 func (m *Match) SetWonLastBattle(v bool) {
