@@ -1,4 +1,4 @@
-package game
+package replay
 
 import (
 	"encoding/binary"
@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/murkland/bbn6/input"
 	"github.com/murkland/bbn6/mgba"
 )
 
@@ -15,13 +16,13 @@ const replayHeader = "TOOT"
 
 const flushEvery = 60
 
-type ReplayWriter struct {
+type Writer struct {
 	closer        io.Closer
 	w             *zstd.Encoder
 	inputsWritten int
 }
 
-func newReplayWriter(filename string, core *mgba.Core) (*ReplayWriter, error) {
+func NewWriter(filename string, core *mgba.Core) (*Writer, error) {
 	f, err := os.Create(filename)
 	if err != nil {
 		return nil, err
@@ -43,10 +44,10 @@ func newReplayWriter(filename string, core *mgba.Core) (*ReplayWriter, error) {
 		return nil, err
 	}
 
-	return &ReplayWriter{f, w, 0}, nil
+	return &Writer{f, w, 0}, nil
 }
 
-func (rw *ReplayWriter) WriteState(playerIndex int, state *mgba.State) error {
+func (rw *Writer) WriteState(playerIndex int, state *mgba.State) error {
 	if err := binary.Write(rw.w, binary.LittleEndian, uint8(playerIndex)); err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func (rw *ReplayWriter) WriteState(playerIndex int, state *mgba.State) error {
 	return nil
 }
 
-func (rw *ReplayWriter) WriteInit(playerIndex int, marshaled []byte) error {
+func (rw *Writer) WriteInit(playerIndex int, marshaled []byte) error {
 	if err := binary.Write(rw.w, binary.LittleEndian, uint8(playerIndex)); err != nil {
 		return err
 	}
@@ -87,7 +88,7 @@ func (rw *ReplayWriter) WriteInit(playerIndex int, marshaled []byte) error {
 	return nil
 }
 
-func (rw *ReplayWriter) Write(rngState uint32, inputPair [2]Input) error {
+func (rw *Writer) Write(rngState uint32, inputPair [2]input.Input) error {
 	p1 := inputPair[0]
 	p2 := inputPair[1]
 
@@ -151,7 +152,7 @@ func (rw *ReplayWriter) Write(rngState uint32, inputPair [2]Input) error {
 	return nil
 }
 
-func (rw *ReplayWriter) Close() error {
+func (rw *Writer) Close() error {
 	if err := rw.w.Close(); err != nil {
 		return err
 	}

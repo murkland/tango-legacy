@@ -1,4 +1,4 @@
-package game
+package input
 
 import (
 	"context"
@@ -7,14 +7,7 @@ import (
 	"github.com/murkland/ringbuf"
 )
 
-type Input struct {
-	Tick              int
-	Joyflags          uint16
-	CustomScreenState uint8
-	Turn              []byte
-}
-
-type InputQueue struct {
+type Queue struct {
 	mu   sync.Mutex
 	cond *sync.Cond
 
@@ -22,8 +15,8 @@ type InputQueue struct {
 	consumable [][2]Input
 }
 
-func NewInputQueue(n int) *InputQueue {
-	iq := &InputQueue{
+func NewQueue(n int) *Queue {
+	iq := &Queue{
 		qs: [2]*ringbuf.RingBuf[Input]{
 			ringbuf.New[Input](n),
 			ringbuf.New[Input](n),
@@ -33,7 +26,7 @@ func NewInputQueue(n int) *InputQueue {
 	return iq
 }
 
-func (q *InputQueue) AddInput(ctx context.Context, playerIndex int, input Input) error {
+func (q *Queue) AddInput(ctx context.Context, playerIndex int, input Input) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -60,7 +53,7 @@ func (q *InputQueue) AddInput(ctx context.Context, playerIndex int, input Input)
 	return nil
 }
 
-func (q *InputQueue) Peek(playerIndex int) []Input {
+func (q *Queue) Peek(playerIndex int) []Input {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -70,14 +63,14 @@ func (q *InputQueue) Peek(playerIndex int) []Input {
 	return inputs
 }
 
-func (q *InputQueue) Lag(playerIndex int) int {
+func (q *Queue) Lag(playerIndex int) int {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	return q.qs[1-playerIndex].Used() - q.qs[playerIndex].Used()
 }
 
-func (q *InputQueue) advanceManyLocked() [][2]Input {
+func (q *Queue) advanceManyLocked() [][2]Input {
 	n := q.qs[0].Used()
 	if q.qs[1].Used() < n {
 		n = q.qs[1].Used()
@@ -97,7 +90,7 @@ func (q *InputQueue) advanceManyLocked() [][2]Input {
 	return inputPairs
 }
 
-func (q *InputQueue) Consume() [][2]Input {
+func (q *Queue) Consume() [][2]Input {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 

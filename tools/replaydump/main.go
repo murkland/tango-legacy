@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/murkland/bbn6/game"
 	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/bbn6/replay"
 )
 
 var (
@@ -32,7 +32,7 @@ func main() {
 	}
 	defer f.Close()
 
-	replay, err := game.DeserializeReplay(f)
+	replay, err := replay.Unmarshal(f)
 	if err != nil {
 		log.Fatalf("failed to open replay: %s", err)
 	}

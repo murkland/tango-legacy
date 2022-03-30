@@ -19,11 +19,12 @@ import (
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/config"
+	"github.com/murkland/bbn6/input"
+	"github.com/murkland/bbn6/match"
 	"github.com/murkland/bbn6/mgba"
 	"github.com/murkland/bbn6/packets"
 	"github.com/murkland/bbn6/trapper"
 	"github.com/ncruces/zenity"
-	"golang.org/x/exp/constraints"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -47,7 +48,7 @@ type Game struct {
 
 	t *mgba.Thread
 
-	match   *Match
+	match   *match.Match
 	matchMu sync.Mutex
 
 	debugSpew bool
@@ -149,20 +150,6 @@ func (g *Game) serviceFbuf() {
 	}
 }
 
-type orderableSlice[T constraints.Ordered] []T
-
-func (s orderableSlice[T]) Len() int {
-	return len(s)
-}
-
-func (s orderableSlice[T]) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s orderableSlice[T]) Less(i, j int) bool {
-	return s[i] < s[j]
-}
-
 func (g *Game) InstallTraps(core *mgba.Core) error {
 	tp := trapper.New(core)
 
@@ -199,36 +186,36 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		var pkt packets.Init
 		copy(pkt.Marshaled[:], localInit)
-		if err := packets.Send(ctx, match.dc, pkt, nil); err != nil {
+		if err := packets.Send(ctx, match.DataChannel(), pkt, nil); err != nil {
 			log.Fatalf("failed to send init info: %s", err)
 		}
 
 		log.Printf("init sent")
 		g.bn6.SetPlayerMarshaledBattleState(core, battle.LocalPlayerIndex(), localInit)
 
-		var remoteInit []byte
-		select {
-		case remoteInit = <-battle.remoteInitCh:
-		case <-ctx.Done():
-			if err := ctx.Err(); errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		remoteInit, err := battle.ReadRemoteInit(ctx)
+		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				g.endMatch()
 				g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 				// TODO: Figure out how to gracefully exit the battle.
 				log.Fatalf("TODO: drop the connection")
 			}
+			log.Fatalf("failed to receive init info: %s", err)
 		}
 
 		log.Printf("init received")
 		g.bn6.SetPlayerMarshaledBattleState(core, battle.RemotePlayerIndex(), remoteInit)
-		battle.committedState = core.SaveState()
+		committedState := core.SaveState()
+		battle.SetCommittedState(committedState)
 
-		if err := battle.rw.WriteState(battle.LocalPlayerIndex(), battle.committedState); err != nil {
+		if err := battle.ReplayWriter().WriteState(battle.LocalPlayerIndex(), committedState); err != nil {
 			log.Fatalf("failed to write to replay: %s", err)
 		}
-		if err := battle.rw.WriteInit(battle.LocalPlayerIndex(), localInit); err != nil {
+		if err := battle.ReplayWriter().WriteInit(battle.LocalPlayerIndex(), localInit); err != nil {
 			log.Fatalf("failed to write to replay: %s", err)
 		}
-		if err := battle.rw.WriteInit(battle.RemotePlayerIndex(), remoteInit); err != nil {
+		if err := battle.ReplayWriter().WriteInit(battle.RemotePlayerIndex(), remoteInit); err != nil {
 			log.Fatalf("failed to write to replay: %s", err)
 		}
 	})
@@ -244,8 +231,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Fatalf("attempting to marshal turn data while no battle was active!")
 		}
 
-		battle.localPendingTurn = g.bn6.LocalMarshaledBattleState(core)
-		battle.localPendingTurnWaitTicksLeft = 64
+		battle.AddLocalPendingTurn(g.bn6.LocalMarshaledBattleState(core))
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
@@ -268,30 +254,16 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		tick := g.bn6.InBattleTime(core)
 
 		nextJoyflags := g.bn6.LocalJoyflags(core)
-		battle.localInputBuffer.Push([]uint16{nextJoyflags})
-
-		joyflags := uint16(0xfc00)
-		if battle.localInputBuffer.Free() == 0 {
-			var joyflagsBuf [1]uint16
-			battle.localInputBuffer.Pop(joyflagsBuf[:], 0)
-			joyflags = joyflagsBuf[0]
-		}
+		joyflags := battle.AddLocalBufferedInputAndConsume(nextJoyflags)
 
 		customScreenState := g.bn6.LocalCustomScreenState(core)
 
-		var turn []byte
-		if battle.localPendingTurnWaitTicksLeft > 0 {
-			battle.localPendingTurnWaitTicksLeft--
-			if battle.localPendingTurnWaitTicksLeft == 0 {
-				turn = battle.localPendingTurn
-				battle.localPendingTurn = nil
-			}
-		}
+		turn := battle.ConsumeLocalPendingTurn()
 
 		const timeout = 5 * time.Second
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		if err := battle.iq.AddInput(ctx, battle.LocalPlayerIndex(), Input{int(tick), joyflags, customScreenState, turn}); err != nil {
+		if err := battle.AddInput(ctx, battle.LocalPlayerIndex(), input.Input{int(tick), joyflags, customScreenState, turn}); err != nil {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				log.Printf("could not queue local input within %s, dropping connection", timeout)
 				g.endMatch()
@@ -306,21 +278,16 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		pkt.ForTick = uint32(tick)
 		pkt.Joyflags = joyflags
 		pkt.CustomScreenState = customScreenState
-		if err := packets.Send(ctx, match.dc, pkt, turn); err != nil {
+		if err := packets.Send(ctx, match.DataChannel(), pkt, turn); err != nil {
 			log.Fatalf("failed to send input: %s", err)
 		}
 
-		inputPairs := battle.iq.Consume()
-		if len(inputPairs) > 0 {
-			battle.lastCommittedRemoteInput = inputPairs[len(inputPairs)-1][1-battle.LocalPlayerIndex()]
-		}
-
-		left := battle.iq.Peek(battle.LocalPlayerIndex())
-		committedState, dirtyState, err := g.fastforwarder.fastforward(battle.committedState, battle.rw, battle.LocalPlayerIndex(), inputPairs, battle.lastCommittedRemoteInput, left)
+		inputPairs, left := battle.ConsumeInputs()
+		committedState, dirtyState, err := g.fastforwarder.fastforward(battle.CommittedState(), battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
 			log.Fatalf("failed to fastforward: %s", err)
 		}
-		battle.committedState = committedState
+		battle.SetCommittedState(committedState)
 		g.mainCore.LoadState(dirtyState)
 	})
 
@@ -332,9 +299,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		r := core.GBA().Register(0)
 		if r == 1 {
-			match.wonLastBattle = true
+			match.SetWonLastBattle(true)
 		} else if r == 2 {
-			match.wonLastBattle = false
+			match.SetWonLastBattle(false)
 		}
 	})
 
@@ -424,7 +391,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				log.Printf("matchmaking dialog did not return a code: %s", err)
 				g.bn6.DropMatchmakingFromCommMenu(core)
 			} else {
-				match, err := NewMatch(g.conf, code, 0)
+				match, err := match.New(g.conf, code, 0)
 				if err != nil {
 					// TODO: handle this better.
 					log.Fatalf("failed to start match: %s", err)
@@ -436,11 +403,14 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		if g.match != nil {
-			select {
-			case <-g.match.connReady:
+			ready, err := g.match.PollForReady(ctx)
+			if err != nil {
+				log.Fatalf("match did not become ready: %s", err)
+			}
+
+			if ready {
 				g.bn6.StartBattleFromCommMenu(core)
 				log.Printf("match started")
-			default:
 			}
 		}
 
@@ -489,7 +459,7 @@ func (g *Game) Update() error {
 			battle := match.Battle()
 			if battle != nil {
 				expected := match.RunaheadTicksAllowed()
-				lag := battle.iq.Lag(battle.RemotePlayerIndex())
+				lag := battle.Lag()
 				tps := expectedFPS - (lag - expected + 1)
 				// TODO: Not thread safe.
 				g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
@@ -565,7 +535,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 }
 
-func (g *Game) Match() *Match {
+func (g *Game) Match() *match.Match {
 	g.matchMu.Lock()
 	defer g.matchMu.Unlock()
 	return g.match

@@ -1,6 +1,7 @@
-package game
+package match
 
 import (
+	"constraints"
 	"context"
 	"errors"
 	"fmt"
@@ -13,8 +14,10 @@ import (
 
 	"github.com/keegancsmith/nth"
 	"github.com/murkland/bbn6/config"
+	"github.com/murkland/bbn6/input"
 	"github.com/murkland/bbn6/mgba"
 	"github.com/murkland/bbn6/packets"
+	"github.com/murkland/bbn6/replay"
 	"github.com/murkland/clone"
 	"github.com/murkland/ctxwebrtc"
 	"github.com/murkland/ringbuf"
@@ -23,6 +26,8 @@ import (
 	"github.com/pion/webrtc/v3"
 	"golang.org/x/sync/errgroup"
 )
+
+const expectedFPS = 60
 
 type Match struct {
 	conf      config.Config
@@ -54,7 +59,7 @@ func (m *Match) Battle() *Battle {
 	return m.battle
 }
 
-func NewMatch(conf config.Config, sessionID string, matchType uint8) (*Match, error) {
+func New(conf config.Config, sessionID string, matchType uint8) (*Match, error) {
 	return &Match{
 		conf:      conf,
 		sessionID: sessionID,
@@ -152,12 +157,26 @@ func (m *Match) negotiate(ctx context.Context) error {
 	m.randSource = randSource
 	rng := rand.New(m.randSource)
 	m.wonLastBattle = (rng.Int31n(2) == 1) == (connectionSide == signorclient.ConnectionSideOfferer)
-	close(m.connReady)
 	log.Printf("negotiation complete!")
+	close(m.connReady)
 	return nil
 }
 
-func (m *Match) medianDelay() time.Duration {
+type orderableSlice[T constraints.Ordered] []T
+
+func (s orderableSlice[T]) Len() int {
+	return len(s)
+}
+
+func (s orderableSlice[T]) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s orderableSlice[T]) Less(i, j int) bool {
+	return s[i] < s[j]
+}
+
+func (m *Match) MedianDelay() time.Duration {
 	m.delayRingbufMu.RLock()
 	defer m.delayRingbufMu.RUnlock()
 
@@ -237,7 +256,7 @@ func (m *Match) handleConn(ctx context.Context) error {
 					log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
 					return
 				}
-				m.battle.iq.AddInput(ctx, m.battle.RemotePlayerIndex(), Input{int(p.ForTick), p.Joyflags, p.CustomScreenState, trailer})
+				m.battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{Tick: int(p.ForTick), Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
 			}()
 		}
 	}
@@ -263,20 +282,20 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 	b := &Battle{
 		isP2: !m.wonLastBattle,
 
-		lastCommittedRemoteInput: Input{Joyflags: 0xfc00},
+		lastCommittedRemoteInput: input.Input{Joyflags: 0xfc00},
 
 		localInputBuffer: ringbuf.New[uint16](localInputBufferSize),
 
 		remoteInitCh: remoteInitCh,
 
-		iq: NewInputQueue(60),
+		iq: input.NewQueue(60),
 	}
 
 	os.MkdirAll("replays", 0o700)
 	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.bbn6replay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
 	log.Printf("writing replay: %s", fn)
 
-	il, err := newReplayWriter(fn, core)
+	il, err := replay.NewWriter(fn, core)
 	if err != nil {
 		return err
 	}
@@ -346,46 +365,28 @@ func (m *Match) Close() error {
 }
 
 func (m *Match) RunaheadTicksAllowed() int {
-	expected := int(m.medianDelay()*time.Duration(expectedFPS)/2/time.Second + 1)
+	expected := int(m.MedianDelay()*time.Duration(expectedFPS)/2/time.Second + 1)
 	if expected < 1 {
 		expected = 1
 	}
 	return expected
 }
 
-type Battle struct {
-	isP2 bool
-
-	rw *ReplayWriter
-
-	localInputBuffer *ringbuf.RingBuf[uint16]
-
-	iq *InputQueue
-
-	remoteInitCh chan []byte
-
-	localPendingTurnWaitTicksLeft int
-	localPendingTurn              []byte
-
-	lastCommittedRemoteInput Input
-
-	committedState *mgba.State
-}
-
-func (s *Battle) LocalPlayerIndex() int {
-	if s.isP2 {
-		return 1
+func (m *Match) PollForReady(ctx context.Context) (bool, error) {
+	select {
+	case <-m.connReady:
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		return false, nil
 	}
-	return 0
 }
 
-func (s *Battle) RemotePlayerIndex() int {
-	return 1 - s.LocalPlayerIndex()
+func (m *Match) DataChannel() *ctxwebrtc.DataChannel {
+	return m.dc
 }
 
-func (s *Battle) Close() error {
-	if err := s.rw.Close(); err != nil {
-		return err
-	}
-	return nil
+func (m *Match) SetWonLastBattle(v bool) {
+	m.wonLastBattle = v
 }

@@ -6,7 +6,9 @@ import (
 	"log"
 
 	"github.com/murkland/bbn6/bn6"
+	"github.com/murkland/bbn6/input"
 	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/bbn6/replay"
 	"github.com/murkland/bbn6/trapper"
 	"github.com/murkland/ringbuf"
 )
@@ -17,7 +19,7 @@ type fastforwarder struct {
 
 	err              error
 	localPlayerIndex int
-	inputPairs       *ringbuf.RingBuf[[2]Input]
+	inputPairs       *ringbuf.RingBuf[[2]input.Input]
 	state            *mgba.State
 }
 
@@ -36,7 +38,7 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
 
-		var inputPairBuf [1][2]Input
+		var inputPairBuf [1][2]input.Input
 		ff.inputPairs.Pop(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
 
@@ -102,7 +104,7 @@ func (ff *fastforwarder) advanceOne() error {
 // fastforward fastfowards the state to the new state.
 //
 // BEWARE: only one thread may call fastforward at a time.
-func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localPlayerIndex int, inputPairs [][2]Input, lastCommittedRemoteInput Input, localPlayerInputsLeft []Input) (*mgba.State, *mgba.State, error) {
+func (ff *fastforwarder) fastforward(state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input, lastCommittedRemoteInput input.Input, localPlayerInputsLeft []input.Input) (*mgba.State, *mgba.State, error) {
 	ff.err = nil
 	ff.state = state
 	if !ff.core.LoadState(state) {
@@ -112,11 +114,11 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localP
 	ff.localPlayerIndex = localPlayerIndex
 
 	// Run the paired inputs we already have and create the new committed state.
-	ff.inputPairs = ringbuf.New[[2]Input](len(inputPairs))
+	ff.inputPairs = ringbuf.New[[2]input.Input](len(inputPairs))
 	ff.inputPairs.Push(inputPairs)
 
 	for ff.inputPairs.Used() > 0 {
-		var inputPairBuf [1][2]Input
+		var inputPairBuf [1][2]input.Input
 		ff.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
 		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags & ^uint16(0xfc00)))
@@ -131,7 +133,7 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localP
 	committedState := ff.state
 
 	// Run the local inputs and predict what the remote side did and create the new dirty state.
-	predictedInputPairs := make([][2]Input, len(localPlayerInputsLeft))
+	predictedInputPairs := make([][2]input.Input, len(localPlayerInputsLeft))
 	for i, inp := range localPlayerInputsLeft {
 		predictedInputPairs[i][localPlayerIndex] = inp
 
@@ -146,11 +148,11 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *ReplayWriter, localP
 		}
 	}
 
-	ff.inputPairs = ringbuf.New[[2]Input](len(localPlayerInputsLeft))
+	ff.inputPairs = ringbuf.New[[2]input.Input](len(localPlayerInputsLeft))
 	ff.inputPairs.Push(predictedInputPairs)
 
 	for ff.inputPairs.Used() > 0 {
-		var inputPairBuf [1][2]Input
+		var inputPairBuf [1][2]input.Input
 		ff.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
 		ff.core.SetKeys(mgba.Keys(ip[ff.localPlayerIndex].Joyflags & ^uint16(0xfc00)))

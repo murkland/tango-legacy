@@ -18,6 +18,7 @@ import (
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/game"
 	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/bbn6/replay"
 	"github.com/ncruces/zenity"
 )
 
@@ -114,7 +115,7 @@ func main() {
 	}
 	defer f.Close()
 
-	replay, err := game.DeserializeReplay(f)
+	r, err := replay.Unmarshal(f)
 	if err != nil {
 		log.Fatalf("failed to open replay: %s", err)
 	}
@@ -145,12 +146,12 @@ func main() {
 				return err
 			}
 
-			if replay.State.ROMTitle != core.GameTitle() {
-				return fmt.Errorf("rom title doesn't match: %s != %s", replay.State.ROMTitle, core.GameTitle())
+			if r.State.ROMTitle != core.GameTitle() {
+				return fmt.Errorf("rom title doesn't match: %s != %s", r.State.ROMTitle, core.GameTitle())
 			}
 
-			if replay.State.ROMCRC32 != core.CRC32() {
-				return fmt.Errorf("crc32 doesn't match: %08x != %08x", replay.State.ROMCRC32, core.GBA().ROMCRC32())
+			if r.State.ROMCRC32 != core.CRC32() {
+				return fmt.Errorf("crc32 doesn't match: %08x != %08x", r.State.ROMCRC32, core.GBA().ROMCRC32())
 			}
 
 			return nil
@@ -167,7 +168,7 @@ func main() {
 		log.Fatalf("failed find eligible rom")
 	}
 
-	replayer, err := game.NewReplayer(romPath, replay)
+	replayer, err := game.NewReplayer(romPath, r)
 	if err != nil {
 		log.Fatalf("failed to make replayer: %s", err)
 	}
