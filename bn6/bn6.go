@@ -84,3 +84,7 @@ func (b *BN6) MenuControlState(core *mgba.Core, offset uint32) uint8 {
 func (b *BN6) SetLinkBattleSettingsAndBackground(core *mgba.Core, linkBattleSettingsAndBackground uint16) {
 	core.RawWrite16(b.Offsets.EWRAM.A_MenuControl+0x2a, -1, linkBattleSettingsAndBackground)
 }
+
+func (b *BN6) BattleType(core *mgba.Core) uint8 {
+	return core.RawRead8(b.Offsets.EWRAM.A_MenuControl+0x12, -1)
+}

@@ -19,7 +19,7 @@ var (
 
 var ErrUnknownPacket = errors.New("unknown packet")
 
-const ProtocolVersion = 0x03
+const ProtocolVersion = 0x04
 
 type packetType uint8
 
@@ -50,6 +50,7 @@ func (Pong) packetType() packetType { return packetTypePong }
 
 type Hello struct {
 	ProtocolVersion uint8
+	GameTitle       [12]byte
 	MatchType       uint8
 	RNGCommitment   [32]uint8
 }

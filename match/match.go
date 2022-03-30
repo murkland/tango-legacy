@@ -33,6 +33,7 @@ type Match struct {
 	conf      config.Config
 	sessionID string
 	matchType uint8
+	gameTitle string
 
 	cancel context.CancelFunc
 
@@ -59,11 +60,12 @@ func (m *Match) Battle() *Battle {
 	return m.battle
 }
 
-func New(conf config.Config, sessionID string, matchType uint8) (*Match, error) {
+func New(conf config.Config, sessionID string, matchType uint8, gameTitle string) (*Match, error) {
 	return &Match{
 		conf:      conf,
 		sessionID: sessionID,
 		matchType: matchType,
+		gameTitle: gameTitle,
 
 		connReady: make(chan struct{}),
 
@@ -113,6 +115,7 @@ func (m *Match) negotiate(ctx context.Context) error {
 
 	commitment := syncrand.Commit(nonce[:])
 	var helloPacket packets.Hello
+	copy(helloPacket.GameTitle[:], []byte(m.gameTitle))
 	helloPacket.ProtocolVersion = packets.ProtocolVersion
 	helloPacket.MatchType = m.matchType
 	copy(helloPacket.RNGCommitment[:], commitment)
@@ -393,6 +396,18 @@ func (m *Match) SetWonLastBattle(v bool) {
 
 func (m *Match) RandomBattleSettingsAndBackground() uint16 {
 	rng := rand.New(m.randSource)
-	_ = rng
-	return 0
+
+	rngMax := 0x44
+	if m.matchType == 1 {
+		rngMax = 0x60
+	}
+
+	lo := rng.Int31n(int32(rngMax))
+	hi := []int32{
+		0x0, 0x1, 0x1, 0x3, 0x4, 0x5, 0x6,
+		0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD,
+		0xE, 0xF, 0x10, 0x11, 0x11, 0x13, 0x13,
+	}[rng.Int31n(0x16)]
+
+	return uint16(hi<<0x8 | lo)
 }
