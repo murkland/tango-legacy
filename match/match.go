@@ -41,11 +41,11 @@ type Match struct {
 
 	cancel context.CancelFunc
 
-	connReady     chan error
-	peerConn      *webrtc.PeerConnection
-	dc            *ctxwebrtc.DataChannel
-	wonLastBattle bool
-	randSource    rand.Source
+	negotiationErrCh chan error
+	peerConn         *webrtc.PeerConnection
+	dc               *ctxwebrtc.DataChannel
+	wonLastBattle    bool
+	randSource       rand.Source
 
 	delayRingbuf   *ringbuf.RingBuf[time.Duration]
 	delayRingbufMu sync.RWMutex
@@ -72,7 +72,7 @@ func New(conf config.Config, sessionID string, matchType uint8, gameTitle string
 		gameTitle: gameTitle,
 		gameCRC32: gameCRC32,
 
-		connReady: make(chan error),
+		negotiationErrCh: make(chan error),
 
 		delayRingbuf: ringbuf.New[time.Duration](9),
 	}, nil
@@ -335,10 +335,10 @@ func (m *Match) Run(ctx context.Context) error {
 	defer m.Close()
 
 	if err := m.negotiate(ctx); err != nil {
-		m.connReady <- err
+		m.negotiationErrCh <- err
 		return err
 	}
-	close(m.connReady)
+	close(m.negotiationErrCh)
 
 	errg, ctx := errgroup.WithContext(ctx)
 	errg.Go(func() error {
@@ -384,7 +384,7 @@ func (m *Match) RunaheadTicksAllowed() int {
 
 func (m *Match) PollForReady(ctx context.Context) error {
 	select {
-	case err := <-m.connReady:
+	case err := <-m.negotiationErrCh:
 		return err
 	case <-ctx.Done():
 		return ctx.Err()
