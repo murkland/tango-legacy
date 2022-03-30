@@ -65,13 +65,13 @@ func New(conf config.Config, romPath string) (*Game, error) {
 	savePath := filepath.Join("saves", romFilename[:len(romFilename)-len(ext)]+".sav")
 	saveVF := mgba.OpenVF(savePath, os.O_CREATE|os.O_RDWR)
 	if saveVF == nil {
-		log.Printf("failed to load save file")
-	} else {
-		if err := mainCore.LoadSave(saveVF); err != nil {
-			return nil, err
-		}
-		log.Printf("loaded save file: %s", savePath)
+		return nil, errors.New("failed to open save file")
 	}
+
+	if err := mainCore.LoadSave(saveVF); err != nil {
+		return nil, err
+	}
+	log.Printf("loaded save file: %s", savePath)
 
 	bn6 := bn6.Load(mainCore.GameTitle())
 	if bn6 == nil {

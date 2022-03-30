@@ -54,6 +54,9 @@ func main() {
 		confF.Close()
 	}
 
+	os.MkdirAll("saves", 0o700)
+	os.MkdirAll("roms", 0o700)
+
 	log.Printf("config settings: %+v", conf.ToRaw())
 
 	mgba.SetDefaultLogger(func(category string, level int, message string) {
@@ -121,8 +124,6 @@ func main() {
 
 		*romPath = filepath.Join("roms", options[key])
 	}
-
-	os.MkdirAll("saves", 0o700)
 
 	log.Printf("loading rom: %s", *romPath)
 
