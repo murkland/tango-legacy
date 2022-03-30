@@ -1,7 +1,6 @@
 package match
 
 import (
-	"constraints"
 	"context"
 	"errors"
 	"fmt"
@@ -24,6 +23,7 @@ import (
 	signorclient "github.com/murkland/signor/client"
 	"github.com/murkland/syncrand"
 	"github.com/pion/webrtc/v3"
+	"golang.org/x/exp/constraints"
 	"golang.org/x/sync/errgroup"
 )
 
