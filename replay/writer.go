@@ -17,9 +17,8 @@ const replayHeader = "TOOT"
 const flushEvery = 60
 
 type Writer struct {
-	closer        io.Closer
-	w             *zstd.Encoder
-	inputsWritten int
+	closer io.Closer
+	w      *zstd.Encoder
 }
 
 func NewWriter(filename string, core *mgba.Core) (*Writer, error) {
@@ -142,11 +141,8 @@ func (rw *Writer) Write(rngState uint32, inputPair [2]input.Input) error {
 		}
 	}
 
-	rw.inputsWritten++
-	if rw.inputsWritten%flushEvery == 0 {
-		if err := rw.w.Flush(); err != nil {
-			return err
-		}
+	if err := rw.w.Flush(); err != nil {
+		return err
 	}
 
 	return nil
