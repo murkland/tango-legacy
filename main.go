@@ -115,6 +115,7 @@ func childMain() {
 				if err != nil {
 					return err
 				}
+				core.Config().Init("bbn6")
 				defer core.Close()
 
 				if err := core.LoadFile(path); err != nil {
