@@ -5,12 +5,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -23,7 +20,6 @@ import (
 )
 
 var (
-	child      = flag.Bool("child", false, "is this the child process?")
 	logFile    = flag.String("log_file", "bbn6.log", "file to log to")
 	configPath = flag.String("config_path", "bbn6.toml", "path to config")
 	romPath    = flag.String("rom_path", "", "path to rom to start immediately")
@@ -32,33 +28,6 @@ var (
 var commitHash string
 
 func main() {
-	flag.Parse()
-	if *child {
-		childMain()
-		return
-	}
-
-	runtime.LockOSThread()
-
-	logF, err := os.Create(*logFile)
-	if err != nil {
-		log.Fatalf("failed to open log file: %s", err)
-	}
-	defer logF.Close()
-
-	if err := (&exec.Cmd{
-		Path:   os.Args[0],
-		Args:   append(os.Args, "-child"),
-		Stdout: os.Stdout,
-		Stderr: io.MultiWriter(os.Stderr, logF),
-	}).Run(); err != nil {
-		log.Printf("child exited with %s", err)
-	}
-	fmt.Printf("press any key to continue...")
-	fmt.Scanln()
-}
-
-func childMain() {
 	var conf config.Config
 	confF, err := os.Open(*configPath)
 	if err != nil {
@@ -138,13 +107,15 @@ func childMain() {
 		keys := maps.Keys(options)
 		sort.Strings(keys)
 
-		selection, err := zenity.List("Select a game to start:", keys, zenity.Title("bbn6"))
+		key, err := zenity.List("Select a game to start:", keys, zenity.Title("bbn6"))
 		if err != nil {
 			log.Fatalf("failed to select game: %s", err)
 		}
 
-		*romPath = filepath.Join("roms", options[selection])
+		*romPath = filepath.Join("roms", options[key])
 	}
+
+	log.Printf("loading rom: %s", *romPath)
 
 	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")
