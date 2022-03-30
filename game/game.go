@@ -189,7 +189,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		log.Printf("init sent")
 		g.bn6.SetPlayerMarshaledBattleState(core, battle.LocalPlayerIndex(), localInit)
 
-		remoteInit, err := battle.ReadRemoteInit(ctx)
+		remoteInit, err := match.ReadRemoteInit(ctx)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				g.endMatch()

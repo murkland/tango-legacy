@@ -50,10 +50,11 @@ type Match struct {
 	delayRingbuf   *ringbuf.RingBuf[time.Duration]
 	delayRingbufMu sync.RWMutex
 
-	battleMu                sync.Mutex
-	battleNumber            int
-	battle                  *Battle
-	battlePendingRemoteInit []byte
+	battleMu     sync.Mutex
+	battleNumber int
+	battle       *Battle
+
+	remoteInitCh chan []byte
 }
 
 func (m *Match) Battle() *Battle {
@@ -73,6 +74,8 @@ func New(conf config.Config, sessionID string, matchType uint8, gameTitle string
 		negotiationErrCh: make(chan error),
 
 		delayRingbuf: ringbuf.New[time.Duration](9),
+
+		remoteInitCh: make(chan []byte),
 	}, nil
 }
 
@@ -243,27 +246,18 @@ func (m *Match) handleConn(ctx context.Context) error {
 				return err
 			}
 		case packets.Init:
-			func() {
-				m.battleMu.Lock()
-				defer m.battleMu.Unlock()
-				if m.battle != nil {
-					m.battle.remoteInitCh <- p.Marshaled[:]
-					close(m.battle.remoteInitCh)
-				} else {
-					log.Printf("init packet received before we started, holding it for now")
-					m.battlePendingRemoteInit = p.Marshaled[:]
-				}
-			}()
+			select {
+			case m.remoteInitCh <- p.Marshaled[:]:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		case packets.Input:
-			func() {
-				m.battleMu.Lock()
-				defer m.battleMu.Unlock()
-				if m.battle == nil {
-					log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
-					return
-				}
-				m.battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{Tick: int(p.ForTick), Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
-			}()
+			battle := m.Battle()
+			if battle == nil {
+				log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
+				continue
+			}
+			battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{Tick: int(p.ForTick), Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
 		}
 	}
 }
@@ -278,21 +272,12 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 		return errors.New("battle already started")
 	}
 
-	remoteInitCh := make(chan []byte, 1)
-	if m.battlePendingRemoteInit != nil {
-		remoteInitCh <- m.battlePendingRemoteInit
-		close(remoteInitCh)
-		m.battlePendingRemoteInit = nil
-	}
-
 	b := &Battle{
 		isP2: !m.wonLastBattle,
 
 		lastCommittedRemoteInput: input.Input{Joyflags: 0xfc00},
 
 		localInputBuffer: ringbuf.New[uint16](localInputBufferSize),
-
-		remoteInitCh: remoteInitCh,
 
 		iq: input.NewQueue(60),
 	}
@@ -321,7 +306,6 @@ func (m *Match) EndBattle() error {
 	if err := m.battle.Close(); err != nil {
 		return err
 	}
-	m.battlePendingRemoteInit = nil
 	m.battle = nil
 	return nil
 }
@@ -425,4 +409,13 @@ func (m *Match) RandomBattleSettingsAndBackground() uint16 {
 	}[rng.Int31n(0x16)]
 
 	return uint16(hi<<0x8 | lo)
+}
+
+func (m *Match) ReadRemoteInit(ctx context.Context) ([]byte, error) {
+	select {
+	case init := <-m.remoteInitCh:
+		return init, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }

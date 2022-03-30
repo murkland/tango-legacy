@@ -18,8 +18,6 @@ type Battle struct {
 
 	iq *input.Queue
 
-	remoteInitCh chan []byte
-
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
 
@@ -52,15 +50,6 @@ func (b *Battle) SetCommittedState(state *mgba.State) {
 
 func (b *Battle) CommittedState() *mgba.State {
 	return b.committedState
-}
-
-func (b *Battle) ReadRemoteInit(ctx context.Context) ([]byte, error) {
-	select {
-	case init := <-b.remoteInitCh:
-		return init, nil
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
 }
 
 func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {
