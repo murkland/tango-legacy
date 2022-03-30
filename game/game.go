@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
@@ -55,7 +57,18 @@ func New(conf config.Config, romPath string) (*Game, error) {
 		return nil, err
 	}
 
-	mainCore.AutoloadSave()
+	romFilename := filepath.Base(romPath)
+	ext := filepath.Ext(romFilename)
+	savePath := filepath.Join("saves", romFilename[:len(romFilename)-len(ext)]+".sav")
+	saveVF := mgba.OpenVF(savePath, os.O_CREATE|os.O_RDWR)
+	if saveVF == nil {
+		log.Printf("failed to load save file")
+	} else {
+		if err := mainCore.LoadSave(saveVF); err != nil {
+			return nil, err
+		}
+		log.Printf("loaded save file: %s", savePath)
+	}
 
 	bn6 := bn6.Load(mainCore.GameTitle())
 	if bn6 == nil {

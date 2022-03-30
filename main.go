@@ -89,7 +89,12 @@ func main() {
 				core.Config().Init("bbn6")
 				defer core.Close()
 
-				if err := core.LoadFile(path); err != nil {
+				vf := mgba.OpenVF(path, os.O_RDONLY)
+				if vf == nil {
+					return errors.New("failed to open file")
+				}
+
+				if err := core.LoadROM(vf); err != nil {
 					return err
 				}
 
@@ -116,6 +121,8 @@ func main() {
 
 		*romPath = filepath.Join("roms", options[key])
 	}
+
+	os.MkdirAll("saves", 0o700)
 
 	log.Printf("loading rom: %s", *romPath)
 

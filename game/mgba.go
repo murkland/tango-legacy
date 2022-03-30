@@ -1,6 +1,11 @@
 package game
 
-import "github.com/murkland/bbn6/mgba"
+import (
+	"errors"
+	"os"
+
+	"github.com/murkland/bbn6/mgba"
+)
 
 var coreOptions = mgba.CoreOptions{
 	SampleRate:   48000,
@@ -18,7 +23,12 @@ func newCore(romPath string) (*mgba.Core, error) {
 	}
 	core.SetOptions(coreOptions)
 
-	if err := core.LoadFile(romPath); err != nil {
+	vf := mgba.OpenVF(romPath, os.O_RDONLY)
+	if vf == nil {
+		return nil, errors.New("failed to open file")
+	}
+
+	if err := core.LoadROM(vf); err != nil {
 		return nil, err
 	}
 

@@ -11,8 +11,16 @@ bool bbn6_mgba_mCore_init(struct mCore* core) {
 	return core->init(core);
 }
 
+bool bbn6_mgba_mCore_loadROM(struct mCore* core, struct VFile* vf) {
+	return core->loadROM(core, vf);
+}
+
+bool bbn6_mgba_mCore_loadSave(struct mCore* core, struct VFile* vf) {
+	return core->loadSave(core, vf);
+}
+
 void bbn6_mgba_mCore_deinit(struct mCore* core) {
-	return core->deinit(core);
+	core->deinit(core);
 }
 
 void bbn6_mgba_mCore_getGameTitle(struct mCore* core, char* title) {
@@ -63,7 +71,6 @@ import "C"
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"runtime"
 	"unsafe"
 )
@@ -133,11 +140,16 @@ func (c *Core) SetVideoBuffer(buf unsafe.Pointer, width int) {
 	C.bbn6_mgba_mCore_setVideoBuffer(c.ptr, (*C.uint)(buf), C.size_t(width))
 }
 
-func (c *Core) LoadFile(path string) error {
-	pathCstr := C.CString(path)
-	defer C.free(unsafe.Pointer(pathCstr))
-	if !C.mCoreLoadFile(c.ptr, pathCstr) {
-		return fmt.Errorf("could not load file %s", path)
+func (c *Core) LoadROM(vf *VFile) error {
+	if !C.bbn6_mgba_mCore_loadROM(c.ptr, vf.ptr) {
+		return errors.New("could not load rom")
+	}
+	return nil
+}
+
+func (c *Core) LoadSave(vf *VFile) error {
+	if !C.bbn6_mgba_mCore_loadSave(c.ptr, vf.ptr) {
+		return errors.New("could not load save")
 	}
 	return nil
 }
@@ -201,7 +213,7 @@ func (c *Core) Close() {
 	if c.ptr == nil {
 		return
 	}
-	c.Config().Deinit()
+	//c.Config().Deinit()
 	C.bbn6_mgba_mCore_deinit(c.ptr)
 	c.ptr = nil
 }
