@@ -345,6 +345,14 @@ func (m *Match) Close() error {
 	return nil
 }
 
+func (m *Match) RunaheadTicksAllowed() int {
+	expected := int(m.medianDelay()*time.Duration(expectedFPS)/2/time.Second + 1)
+	if expected < 1 {
+		expected = 1
+	}
+	return expected
+}
+
 type Battle struct {
 	isP2 bool
 

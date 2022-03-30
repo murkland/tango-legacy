@@ -35,19 +35,21 @@ func init() {
 }
 
 func (g *Game) spewDebug(screen *ebiten.Image) {
-	g.matchMu.Lock()
-	defer g.matchMu.Unlock()
-
 	lines := []string{
 		fmt.Sprintf("emu fps: %.0f", g.mainCore.GBA().Sync().FPSTarget()),
 		fmt.Sprintf("fps:     %.0f", ebiten.CurrentFPS()),
 	}
-	if g.match != nil && g.match.battle != nil {
-		lines = append(lines,
-			fmt.Sprintf("ping:    %s", g.match.medianDelay()),
-			fmt.Sprintf("is p2:   %t", g.match.battle.isP2),
-			fmt.Sprintf("lag:     %2d (max %2d)", g.match.battle.iq.Lag(g.match.battle.RemotePlayerIndex()), g.runaheadTicksAllowedMatchLocked()),
-		)
+
+	match := g.Match()
+	if match != nil {
+		battle := match.Battle()
+		if battle != nil {
+			lines = append(lines,
+				fmt.Sprintf("ping:    %s", match.medianDelay()),
+				fmt.Sprintf("is p2:   %t", battle.isP2),
+				fmt.Sprintf("lag:     %2d (max %2d)", battle.iq.Lag(battle.RemotePlayerIndex()), match.RunaheadTicksAllowed()),
+			)
+		}
 	}
 	text.Draw(screen, strings.Join(lines, "\n"), mplusNormalFont, 2, 14, color.RGBA{0xff, 0x00, 0xff, 0xff})
 }
