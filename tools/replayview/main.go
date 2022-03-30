@@ -18,6 +18,7 @@ import (
 	"github.com/murkland/bbn6/av"
 	"github.com/murkland/bbn6/game"
 	"github.com/murkland/bbn6/mgba"
+	"github.com/ncruces/zenity"
 )
 
 var (
@@ -99,6 +100,14 @@ func main() {
 	})
 
 	replayName := flag.Arg(0)
+	if replayName == "" {
+		fn, err := zenity.SelectFile(zenity.Title("Select a replay to watch"))
+		if err != nil {
+			log.Fatalf("failed to prompt for replay: %s", err)
+		}
+		replayName = fn
+	}
+
 	f, err := os.Open(replayName)
 	if err != nil {
 		log.Fatalf("failed to open replay: %s", err)
@@ -110,14 +119,16 @@ func main() {
 		log.Fatalf("failed to open replay: %s", err)
 	}
 
-	roms, err := os.ReadDir("roms")
+	romsDir := filepath.Join(filepath.Base(os.Args[0]), "roms")
+
+	roms, err := os.ReadDir(romsDir)
 	if err != nil {
 		log.Fatalf("failed to open roms directory: %s", err)
 	}
 
 	var romPath string
 	for _, dirent := range roms {
-		path := filepath.Join("roms", dirent.Name())
+		path := filepath.Join(romsDir, dirent.Name())
 
 		if err := func() error {
 			core, err := mgba.FindCore(path)
