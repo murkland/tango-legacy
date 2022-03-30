@@ -33,6 +33,8 @@ type Game struct {
 	mainCore      *mgba.Core
 	fastforwarder *fastforwarder
 
+	pressedKeys []ebiten.Key
+
 	bn6 *bn6.BN6
 
 	vb *av.VideoBuffer
@@ -499,8 +501,10 @@ func (g *Game) Update() error {
 		return err
 	}
 
+	g.pressedKeys = inpututil.AppendPressedKeys(g.pressedKeys[:0])
+
 	var keys mgba.Keys
-	for _, key := range inpututil.AppendPressedKeys(nil) {
+	for _, key := range g.pressedKeys {
 		if key == g.conf.Keymapping.A {
 			keys |= mgba.KeysA
 		}
