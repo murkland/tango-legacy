@@ -50,8 +50,6 @@ type Match struct {
 	delayRingbuf   *ringbuf.RingBuf[time.Duration]
 	delayRingbufMu sync.RWMutex
 
-	stalledFrames int
-
 	battleMu                sync.Mutex
 	battleNumber            int
 	battle                  *Battle
