@@ -48,6 +48,12 @@ type Match struct {
 	battlePendingRemoteInit []byte
 }
 
+func (m *Match) Battle() *Battle {
+	m.battleMu.Lock()
+	defer m.battleMu.Unlock()
+	return m.battle
+}
+
 func NewMatch(conf config.Config, sessionID string, matchType uint8) (*Match, error) {
 	return &Match{
 		conf:      conf,
@@ -217,7 +223,9 @@ func (m *Match) handleConn(ctx context.Context) error {
 				defer m.battleMu.Unlock()
 				if m.battle != nil {
 					m.battle.remoteInit = p.Marshaled[:]
+					close(m.battle.remoteInitWaitCh)
 				} else {
+					log.Printf("init packet received before we started, holding it for now")
 					m.battlePendingRemoteInit = p.Marshaled[:]
 				}
 			}()
@@ -246,8 +254,12 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 	}
 
 	var remoteInit []byte
-	remoteInit = m.battlePendingRemoteInit
-	m.battlePendingRemoteInit = nil
+	remoteInitWaitCh := make(chan struct{})
+	if m.battlePendingRemoteInit != nil {
+		remoteInit = m.battlePendingRemoteInit
+		m.battlePendingRemoteInit = nil
+		close(remoteInitWaitCh)
+	}
 
 	b := &Battle{
 		isP2: !m.wonLastBattle,
@@ -256,7 +268,8 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 
 		localInputBuffer: ringbuf.New[uint16](localInputBufferSize),
 
-		remoteInit: remoteInit,
+		remoteInit:       remoteInit,
+		remoteInitWaitCh: remoteInitWaitCh,
 
 		iq: NewInputQueue(60),
 	}
@@ -343,9 +356,9 @@ type Battle struct {
 
 	iq *InputQueue
 
-	localInit      []byte
-	remoteInit     []byte
-	remoteInitUsed bool
+	localInit        []byte
+	remoteInit       []byte
+	remoteInitWaitCh chan struct{}
 
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
