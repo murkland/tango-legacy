@@ -174,10 +174,6 @@ func (c *Core) Config() *Config {
 	return &Config{&c.ptr.config}
 }
 
-func (c *Core) LoadConfig() {
-	C.mCoreLoadConfig(c.ptr)
-}
-
 func (c *Core) Reset() {
 	C.bbn6_mgba_mCore_reset(c.ptr)
 }

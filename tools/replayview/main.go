@@ -151,7 +151,7 @@ func main() {
 			}
 
 			if r.State.ROMCRC32 != core.CRC32() {
-				return fmt.Errorf("crc32 doesn't match: %08x != %08x", r.State.ROMCRC32, core.GBA().ROMCRC32())
+				return fmt.Errorf("crc32 doesn't match: %08x != %08x", r.State.ROMCRC32, core.CRC32())
 			}
 
 			return nil

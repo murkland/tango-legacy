@@ -34,7 +34,6 @@ func newCore(romPath string) (*mgba.Core, error) {
 
 	core.Config().Init("bbn6")
 	core.Config().Load()
-	core.LoadConfig()
 
 	return core, nil
 }
