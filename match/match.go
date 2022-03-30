@@ -396,13 +396,17 @@ func (m *Match) SetWonLastBattle(v bool) {
 func (m *Match) RandomBattleSettingsAndBackground() uint16 {
 	rng := rand.New(m.randSource)
 
-	rngMax := 0x44
-	if m.matchType == 1 {
-		rngMax = 0x60
+	var lo uint16
+	switch m.matchType {
+	case 0:
+		lo = uint16(rng.Int31n(0x44))
+	case 1:
+		lo = uint16(rng.Int31n(0x60))
+	case 2:
+		lo = uint16(rng.Int31n(0x44)) + 0x60
 	}
 
-	lo := rng.Int31n(int32(rngMax))
-	hi := []int32{
+	hi := []uint16{
 		0x0, 0x1, 0x1, 0x3, 0x4, 0x5, 0x6,
 		0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD,
 		0xE, 0xF, 0x10, 0x11, 0x11, 0x13, 0x13,
