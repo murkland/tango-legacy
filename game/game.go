@@ -467,22 +467,16 @@ func (g *Game) Update() error {
 		return errors.New("mgba thread crashed")
 	}
 
-	if err := (func() error {
-		match := g.Match()
-		if match != nil && !match.Aborted() {
-			battle := match.Battle()
-			if battle != nil {
-				expected := match.RunaheadTicksAllowed()
-				lag := battle.Lag()
-				tps := expectedFPS - (lag - expected)
-				// TODO: Not thread safe.
-				g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
-			}
+	match := g.Match()
+	if match != nil && !match.Aborted() {
+		battle := match.Battle()
+		if battle != nil {
+			expected := match.RunaheadTicksAllowed()
+			lag := battle.Lag()
+			tps := expectedFPS - (lag - expected)
+			// TODO: Not thread safe.
+			g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 		}
-
-		return nil
-	})(); err != nil {
-		return err
 	}
 
 	g.joyflags = ebitenToMgbaKeys(g.conf.Keymapping, inpututil.AppendPressedKeys(nil))
