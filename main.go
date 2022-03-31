@@ -126,7 +126,6 @@ func main() {
 
 	log.Printf("loading rom: %s", *romPath)
 
-	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")
 	ebiten.SetWindowResizable(true)
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
