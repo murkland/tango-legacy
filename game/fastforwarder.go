@@ -62,7 +62,9 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 			log.Printf("p2 turn committed at tick %d", ip[1].Tick)
 		}
 
-		ff.state.saveState = core.SaveState()
+		if ff.state.inputPairs.Used() == 0 {
+			ff.state.saveState = core.SaveState()
+		}
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_battle_isP2__tst, func() {
@@ -112,9 +114,8 @@ func (ff *fastforwarder) applyInputs(state *mgba.State, rw *replay.Writer, local
 		// TODO: This is probably not the right place, it should probably be handled via interrupt.
 		ff.core.SetKeys(mgba.Keys(ip[localPlayerIndex].Joyflags & ^uint16(0xfc00)))
 
-		ff.state.saveState = nil
 		ff.state.err = nil
-		for ff.state.saveState == nil {
+		for qlen := ff.state.inputPairs.Used(); ff.state.inputPairs.Used() == qlen; {
 			ff.core.RunFrame()
 			if ff.state.err != nil {
 				return nil, ff.state.err
