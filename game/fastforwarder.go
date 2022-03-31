@@ -98,10 +98,13 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 func (ff *fastforwarder) advanceOne() error {
 	// Run until one item is consumed from the input queue.
 	ff.state.inputConsumed = false
-	defer func() { ff.state.inputConsumed = false }()
+	ff.state.err = nil
+	defer func() {
+		ff.state.inputConsumed = false
+		ff.state.err = nil
+	}()
 	for !ff.state.inputConsumed {
 		ff.core.RunFrame()
-		ff.state.err = nil
 		if ff.state.err != nil {
 			return ff.state.err
 		}
