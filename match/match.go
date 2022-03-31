@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -287,7 +286,6 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 		iq: input.NewQueue(60),
 	}
 
-	os.MkdirAll("replays", 0o700)
 	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.bbn6replay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
 	log.Printf("writing replay: %s", fn)
 

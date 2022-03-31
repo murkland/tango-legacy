@@ -55,6 +55,7 @@ func main() {
 
 	os.MkdirAll("saves", 0o700)
 	os.MkdirAll("roms", 0o700)
+	os.MkdirAll("replays", 0o700)
 
 	log.Printf("config settings: %+v", conf.ToRaw())
 
