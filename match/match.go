@@ -28,8 +28,12 @@ import (
 
 const expectedFPS = 60
 
-var ErrNotReady = errors.New("match not ready")
-var ErrMatchTypeMismatch = errors.New("match type mismatch")
+var (
+	ErrNotReady                = errors.New("match not ready")
+	ErrMatchTypeMismatch       = errors.New("match type mismatch")
+	ErrGameTypeMismatch        = errors.New("game type mismatch (US vs JP)")
+	ErrProtocolVersionMismatch = errors.New("protocol version mismatch")
+)
 
 type Match struct {
 	conf      config.Config
@@ -150,7 +154,7 @@ func (m *Match) negotiate(ctx context.Context) error {
 	}
 	theirHello := rawTheirHello.(packets.Hello)
 	if theirHello.ProtocolVersion != packets.ProtocolVersion {
-		return fmt.Errorf("expected protocol version 0x%02x, got 0x%02x: are you out of date?", packets.ProtocolVersion, theirHello.ProtocolVersion)
+		return ErrProtocolVersionMismatch
 	}
 
 	if theirHello.MatchType != m.matchType {
@@ -159,7 +163,7 @@ func (m *Match) negotiate(ctx context.Context) error {
 
 	// MEGAMAN or ROCKEXE must match.
 	if string(theirHello.GameTitle[:7]) != m.gameTitle[:7] {
-		return ErrMatchTypeMismatch
+		return ErrGameTypeMismatch
 	}
 
 	theirCommitment := theirHello.RNGCommitment

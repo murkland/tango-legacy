@@ -398,7 +398,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 					log.Fatalf("failed to start match: %s", err)
 				}
 				g.match = match
-				// TODO: Check the errors from this.
 				go g.match.Run(ctx)
 			}
 		}
@@ -409,9 +408,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				if errors.Is(err, match.ErrNotReady) {
 					return
 				}
-				if errors.Is(err, match.ErrMatchTypeMismatch) {
+				if errors.Is(err, match.ErrProtocolVersionMismatch) || errors.Is(err, match.ErrGameTypeMismatch) || errors.Is(err, match.ErrMatchTypeMismatch) {
 					// TODO: Actually show the right message.
-					log.Printf("match type mismatched")
+					log.Printf("mismatch: %s", err)
 					g.bn6.DropMatchmakingFromCommMenu(core)
 					return
 				}
