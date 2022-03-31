@@ -8,8 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
-	"sync"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -27,32 +25,11 @@ var (
 )
 
 type Game struct {
-	replayer *game.Replayer
-
-	vb *av.VideoBuffer
-
-	fbuf   *image.RGBA
-	fbufMu sync.Mutex
-
+	replayer        *game.Replayer
+	vb              *av.VideoBuffer
+	fbuf            *image.RGBA
 	gameAudioPlayer *audio.Player
-
-	t *mgba.Thread
-}
-
-func (g *Game) serviceFbuf() {
-	runtime.LockOSThread()
-	for {
-		g.replayer.Core().SetKeys(mgba.Keys(g.replayer.PeekLocalJoyflags() & ^uint16(0xfc00)))
-		if g.replayer.Core().GBA().Sync().WaitFrameStart() {
-			g.fbufMu.Lock()
-			g.fbuf = g.vb.CopyImage()
-			g.fbufMu.Unlock()
-		} else {
-			// TODO: Optimize this.
-			time.Sleep(500 * time.Microsecond)
-		}
-		g.replayer.Core().GBA().Sync().WaitFrameEnd()
-	}
+	t               *mgba.Thread
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -77,15 +54,16 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.fbufMu.Lock()
-	defer g.fbufMu.Unlock()
-
-	if g.fbuf == nil {
-		return
+	g.replayer.Core().SetKeys(mgba.Keys(g.replayer.PeekLocalJoyflags() & ^uint16(0xfc00)))
+	if g.replayer.Core().GBA().Sync().WaitFrameStart() {
+		g.fbuf = g.vb.CopyImage()
 	}
+	g.replayer.Core().GBA().Sync().WaitFrameEnd()
 
-	opts := &ebiten.DrawImageOptions{}
-	screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
+	if g.fbuf != nil {
+		opts := &ebiten.DrawImageOptions{}
+		screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
+	}
 }
 
 const expectedFPS = 60
@@ -210,8 +188,6 @@ func main() {
 	ebiten.SetMaxTPS(ebiten.UncappedTPS)
 	ebiten.SetWindowResizable(true)
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
-
-	go g.serviceFbuf()
 
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatalf("failed to run mgba: %s", err)
