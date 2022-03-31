@@ -56,7 +56,7 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 		rp.currentInputPairs.Pop(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
 
-		rp.core.SetKeys(mgba.Keys(ip[0].Joyflags & ^uint16(0xfc00)))
+		rp.core.SetKeys(mgba.Keys(ip[rp.replay.LocalPlayerIndex].Joyflags & ^uint16(0xfc00)))
 
 		bn6.SetPlayerInputState(rp.core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
