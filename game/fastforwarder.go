@@ -24,7 +24,6 @@ type fastforwarderState struct {
 	localPlayerIndex int
 	inputPairs       *ringbuf.RingBuf[[2]input.Input]
 	saveState        *mgba.State
-	tick             int
 }
 
 func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
