@@ -31,7 +31,7 @@ type Game struct {
 	mainCore      *mgba.Core
 	fastforwarder *fastforwarder
 
-	pressedKeys []ebiten.Key
+	joyflags mgba.Keys
 
 	bn6 *bn6.BN6
 
@@ -197,6 +197,14 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		battle.AddLocalPendingTurn(g.bn6.LocalMarshaledBattleState(core))
+	})
+
+	tp.Add(g.bn6.Offsets.ROM.A_main__readJoyflags, func() {
+		match := g.Match()
+		if match == nil {
+			return
+		}
+		core.GBA().SetRegister(4, uint32(g.joyflags))
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
@@ -470,42 +478,12 @@ func (g *Game) Update() error {
 		return err
 	}
 
-	g.pressedKeys = inpututil.AppendPressedKeys(g.pressedKeys[:0])
+	g.joyflags = ebitenToMgbaKeys(g.conf.Keymapping, inpututil.AppendPressedKeys(nil))
 
-	var keys mgba.Keys
-	for _, key := range g.pressedKeys {
-		if key == g.conf.Keymapping.A {
-			keys |= mgba.KeysA
-		}
-		if key == g.conf.Keymapping.B {
-			keys |= mgba.KeysB
-		}
-		if key == g.conf.Keymapping.L {
-			keys |= mgba.KeysL
-		}
-		if key == g.conf.Keymapping.R {
-			keys |= mgba.KeysR
-		}
-		if key == g.conf.Keymapping.Left {
-			keys |= mgba.KeysLeft
-		}
-		if key == g.conf.Keymapping.Right {
-			keys |= mgba.KeysRight
-		}
-		if key == g.conf.Keymapping.Up {
-			keys |= mgba.KeysUp
-		}
-		if key == g.conf.Keymapping.Down {
-			keys |= mgba.KeysDown
-		}
-		if key == g.conf.Keymapping.Start {
-			keys |= mgba.KeysStart
-		}
-		if key == g.conf.Keymapping.Select {
-			keys |= mgba.KeysSelect
-		}
+	if g.Match() == nil {
+		// Use regular input handling outside of a match.
+		g.mainCore.SetKeys(g.joyflags)
 	}
-	g.mainCore.SetKeys(keys)
 
 	if g.conf.Keymapping.DebugSpew != -1 && inpututil.IsKeyJustPressed(g.conf.Keymapping.DebugSpew) {
 		g.debugSpew = !g.debugSpew

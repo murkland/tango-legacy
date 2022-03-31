@@ -36,6 +36,13 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 
 	tp := trapper.New(core)
 
+	tp.Add(bn6.Offsets.ROM.A_main__readJoyflags, func() {
+		var inputPairBuf [1][2]input.Input
+		ff.state.inputPairs.Peek(inputPairBuf[:], 0)
+		ip := inputPairBuf[0]
+		core.GBA().SetRegister(4, uint32(ip[ff.state.localPlayerIndex].Joyflags))
+	})
+
 	tp.Add(bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
 		core.GBA().SetRegister(0, 0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
@@ -49,8 +56,6 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 			ff.state.err = fmt.Errorf("p1 tick != p2 tick: %d != %d", ip[0].Tick, ip[1].Tick)
 			return
 		}
-
-		ff.core.SetKeys(mgba.Keys(ip[ff.state.localPlayerIndex].Joyflags & ^uint16(0xfc00)))
 
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {

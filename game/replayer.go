@@ -47,6 +47,13 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 
 	tp := trapper.New(rp.core)
 
+	tp.Add(bn6.Offsets.ROM.A_main__readJoyflags, func() {
+		var inputPairBuf [1][2]input.Input
+		rp.currentInputPairs.Peek(inputPairBuf[:], 0)
+		ip := inputPairBuf[0]
+		core.GBA().SetRegister(4, uint32(ip[rp.replay.LocalPlayerIndex].Joyflags))
+	})
+
 	tp.Add(bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
 		rp.core.GBA().SetRegister(0, 0)
 		rp.core.GBA().SetRegister(15, rp.core.GBA().Register(15)+4)
@@ -55,8 +62,6 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 		var inputPairBuf [1][2]input.Input
 		rp.currentInputPairs.Pop(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
-
-		rp.core.SetKeys(mgba.Keys(ip[rp.replay.LocalPlayerIndex].Joyflags & ^uint16(0xfc00)))
 
 		bn6.SetPlayerInputState(rp.core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {

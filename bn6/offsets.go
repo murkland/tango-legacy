@@ -11,6 +11,7 @@ type EWRAMOffsets struct {
 }
 
 type ROMOffsets struct {
+	A_main__readJoyflags                                          uint32
 	A_getCopyDataInputState__ret                                  uint32
 	A_battle_init__call__battle_copyInputData                     uint32
 	A_battle_update__call__battle_copyInputData                   uint32
@@ -50,6 +51,7 @@ var offsetsMap = map[string]Offsets{
 	"MEGAMAN6_FXX": {
 		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
+			A_main__readJoyflags:                                          0x080003fa,
 			A_getCopyDataInputState__ret:                                  0x0801feec,
 			A_battle_init__call__battle_copyInputData:                     0x08007902,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6e,
@@ -73,6 +75,7 @@ var offsetsMap = map[string]Offsets{
 	"MEGAMAN6_GXX": {
 		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
+			A_main__readJoyflags:                                          0x080003fa,
 			A_getCopyDataInputState__ret:                                  0x0801feec,
 			A_battle_init__call__battle_copyInputData:                     0x08007902,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6e,
@@ -96,6 +99,7 @@ var offsetsMap = map[string]Offsets{
 	"ROCKEXE6_RXX": {
 		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
+			A_main__readJoyflags:                                          0x080003fa,
 			A_getCopyDataInputState__ret:                                  0x08020300,
 			A_battle_init__call__battle_copyInputData:                     0x080078ee,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6a,
@@ -119,6 +123,7 @@ var offsetsMap = map[string]Offsets{
 	"ROCKEXE6_GXX": {
 		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
+			A_main__readJoyflags:                                          0x080003fa,
 			A_getCopyDataInputState__ret:                                  0x08020300,
 			A_battle_init__call__battle_copyInputData:                     0x080078ee,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6a,

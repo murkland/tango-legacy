@@ -34,10 +34,6 @@ func (b *BN6) LocalJoyflags(core *mgba.Core) uint16 {
 	return core.RawRead16(b.Offsets.EWRAM.A_Joypad+0x00, -1)
 }
 
-func (b *BN6) SetLocalJoyflags(core *mgba.Core, joyflags uint16) {
-	core.RawWrite16(b.Offsets.EWRAM.A_Joypad+0x00, -1, joyflags)
-}
-
 func (b *BN6) LocalCustomScreenState(core *mgba.Core) uint8 {
 	return core.RawRead8(b.Offsets.EWRAM.A_BattleState+0x11, -1)
 }
