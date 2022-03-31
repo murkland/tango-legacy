@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -66,8 +65,6 @@ func main() {
 		log.Printf("mgba: level=%d category=%s %s", level, category, message)
 	})
 
-	ctx := context.Background()
-
 	log.Printf("welcome to bingus battle network 6 %s", version)
 
 	if *romPath == "" {
@@ -89,8 +86,10 @@ func main() {
 				if err != nil {
 					return err
 				}
-				core.Config().Init("bbn6")
 				defer core.Close()
+
+				core.Config().Init("bbn6")
+				core.Config().Load()
 
 				vf := mgba.OpenVF(path, os.O_RDONLY)
 				if vf == nil {
@@ -129,7 +128,6 @@ func main() {
 
 	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6")
-	ebiten.SetMaxTPS(ebiten.UncappedTPS)
 	ebiten.SetWindowResizable(true)
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
@@ -137,12 +135,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to start game: %s", err)
 	}
-
-	go func() {
-		if err := g.RunBackgroundTasks(ctx); err != nil {
-			log.Fatalf("error running background tasks: %s", err)
-		}
-	}()
 
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatalf("failed to run mgba: %s", err)

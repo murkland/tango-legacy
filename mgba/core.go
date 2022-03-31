@@ -86,6 +86,7 @@ type CoreOptions struct {
 
 type Core struct {
 	ptr            *C.struct_mCore
+	config         *Config
 	realBkpt16Irqh *C.bbn6_mgba_bkpt16_irqh
 	beefTrap       func()
 }
@@ -96,7 +97,7 @@ func NewGBACore() (*Core, error) {
 		return nil, errors.New("could not create core")
 	}
 
-	core := &Core{ptr, nil, nil}
+	core := &Core{ptr, &Config{&ptr.config, false}, nil, nil}
 
 	if !C.bbn6_mgba_mCore_init(core.ptr) {
 		return nil, errors.New("could not initialize core")
@@ -171,7 +172,7 @@ func (c *Core) AutoloadSave() bool {
 }
 
 func (c *Core) Config() *Config {
-	return &Config{&c.ptr.config}
+	return c.config
 }
 
 func (c *Core) Reset() {
@@ -209,7 +210,7 @@ func (c *Core) Close() {
 	if c.ptr == nil {
 		return
 	}
-	//c.Config().Deinit()
+	c.config.Deinit()
 	C.bbn6_mgba_mCore_deinit(c.ptr)
 	c.ptr = nil
 }

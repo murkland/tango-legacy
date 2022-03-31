@@ -5,11 +5,9 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"image"
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"time"
 
@@ -24,7 +22,6 @@ import (
 	"github.com/murkland/bbn6/mgba"
 	"github.com/murkland/bbn6/trapper"
 	"github.com/ncruces/zenity"
-	"golang.org/x/sync/errgroup"
 )
 
 type Game struct {
@@ -38,9 +35,6 @@ type Game struct {
 	bn6 *bn6.BN6
 
 	vb *av.VideoBuffer
-
-	fbuf   *image.RGBA
-	fbufMu sync.Mutex
 
 	audioCtx        *audio.Context
 	gameAudioPlayer *audio.Player
@@ -121,32 +115,6 @@ func New(conf config.Config, romPath string) (*Game, error) {
 	g.InstallTraps(mainCore)
 
 	return g, nil
-}
-
-func (g *Game) RunBackgroundTasks(ctx context.Context) error {
-	errg, ctx := errgroup.WithContext(ctx)
-
-	errg.Go(func() error {
-		g.serviceFbuf()
-		return nil
-	})
-
-	return errg.Wait()
-}
-
-func (g *Game) serviceFbuf() {
-	runtime.LockOSThread()
-	for {
-		if g.mainCore.GBA().Sync().WaitFrameStart() {
-			g.fbufMu.Lock()
-			g.fbuf = g.vb.CopyImage()
-			g.fbufMu.Unlock()
-		} else {
-			// TODO: Optimize this.
-			time.Sleep(500 * time.Microsecond)
-		}
-		g.mainCore.GBA().Sync().WaitFrameEnd()
-	}
 }
 
 func (g *Game) InstallTraps(core *mgba.Core) error {
@@ -529,15 +497,12 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.fbufMu.Lock()
-	defer g.fbufMu.Unlock()
-
-	if g.fbuf == nil {
-		return
+	if g.mainCore.GBA().Sync().WaitFrameStart() {
+		fbuf := g.vb.CopyImage()
+		opts := &ebiten.DrawImageOptions{}
+		screen.DrawImage(ebiten.NewImageFromImage(fbuf), opts)
 	}
-
-	opts := &ebiten.DrawImageOptions{}
-	screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
+	g.mainCore.GBA().Sync().WaitFrameEnd()
 
 	if g.debugSpew {
 		g.spewDebug(screen)

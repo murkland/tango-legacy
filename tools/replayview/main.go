@@ -134,8 +134,10 @@ func main() {
 			if err != nil {
 				return err
 			}
-			core.Config().Init("bbn6")
 			defer core.Close()
+
+			core.Config().Init("bbn6")
+			core.Config().Load()
 
 			vf := mgba.OpenVF(path, os.O_RDONLY)
 			if vf == nil {

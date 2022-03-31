@@ -7,7 +7,8 @@ import "C"
 import "unsafe"
 
 type Config struct {
-	ptr *C.struct_mCoreConfig
+	ptr         *C.struct_mCoreConfig
+	initialized bool
 }
 
 func (c *Config) Load() {
@@ -18,9 +19,13 @@ func (c *Config) Init(name string) {
 	nameCstr := C.CString(name)
 	defer C.free(unsafe.Pointer(nameCstr))
 	C.mCoreConfigInit(c.ptr, nameCstr)
+	c.initialized = true
 }
 
 func (c *Config) Deinit() {
+	if !c.initialized {
+		return
+	}
 	C.mCoreConfigDeinit(c.ptr)
 }
 
