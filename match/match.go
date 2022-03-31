@@ -143,6 +143,11 @@ func (m *Match) negotiate(ctx context.Context) error {
 		return ErrMatchTypeMismatch
 	}
 
+	// MEGAMAN or ROCKEXE must match.
+	if string(theirHello.GameTitle[:7]) != m.gameTitle[:7] {
+		return ErrMatchTypeMismatch
+	}
+
 	theirCommitment := theirHello.RNGCommitment
 
 	if err := packets.Send(ctx, dc, packets.Hello2{RNGNonce: nonce}, nil); err != nil {
