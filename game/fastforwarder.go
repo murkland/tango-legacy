@@ -88,6 +88,10 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		core.GBA().ThumbWritePC()
 	})
 
+	tp.Add(bn6.Offsets.ROM.A_getCopyDataInputState__ret, func() {
+		core.GBA().SetRegister(0, 2)
+	})
+
 	core.InstallBeefTrap(tp.BeefHandler)
 
 	core.Reset()

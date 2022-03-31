@@ -11,6 +11,7 @@ type EWRAMOffsets struct {
 }
 
 type ROMOffsets struct {
+	A_getCopyDataInputState__ret                                  uint32
 	A_battle_init__call__battle_copyInputData                     uint32
 	A_battle_update__call__battle_copyInputData                   uint32
 	A_battle_runUnpausedStep__cmp__retval                         uint32
@@ -49,6 +50,7 @@ var offsetsMap = map[string]Offsets{
 	"MEGAMAN6_FXX": {
 		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
+			A_getCopyDataInputState__ret:                                  0x0801feec,
 			A_battle_init__call__battle_copyInputData:                     0x08007902,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6e,
 			A_battle_runUnpausedStep__cmp__retval:                         0x08008102,
@@ -71,6 +73,7 @@ var offsetsMap = map[string]Offsets{
 	"MEGAMAN6_GXX": {
 		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
+			A_getCopyDataInputState__ret:                                  0x0801feec,
 			A_battle_init__call__battle_copyInputData:                     0x08007902,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6e,
 			A_battle_runUnpausedStep__cmp__retval:                         0x08008102,
@@ -93,6 +96,7 @@ var offsetsMap = map[string]Offsets{
 	"ROCKEXE6_RXX": {
 		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
+			A_getCopyDataInputState__ret:                                  0x08020300,
 			A_battle_init__call__battle_copyInputData:                     0x080078ee,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6a,
 			A_battle_runUnpausedStep__cmp__retval:                         0x0800811a,
@@ -115,6 +119,7 @@ var offsetsMap = map[string]Offsets{
 	"ROCKEXE6_GXX": {
 		EWRAM: ewramOffsets,
 		ROM: ROMOffsets{
+			A_getCopyDataInputState__ret:                                  0x08020300,
 			A_battle_init__call__battle_copyInputData:                     0x080078ee,
 			A_battle_update__call__battle_copyInputData:                   0x08007a6a,
 			A_battle_runUnpausedStep__cmp__retval:                         0x0800811a,

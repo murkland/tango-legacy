@@ -303,7 +303,10 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 func (m *Match) EndBattle() error {
 	m.battleMu.Lock()
 	defer m.battleMu.Unlock()
+	return m.endBattleLocked()
+}
 
+func (m *Match) endBattleLocked() error {
 	log.Printf("battle ended, won = %t", m.wonLastBattle)
 
 	if err := m.battle.Close(); err != nil {
@@ -340,21 +343,22 @@ func (m *Match) Close() error {
 	defer m.battleMu.Unlock()
 	if m.cancel != nil {
 		m.cancel()
+		m.cancel = nil
 	}
 	if m.battle != nil {
-		if err := m.battle.Close(); err != nil {
-			return err
-		}
+		m.endBattleLocked()
 	}
 	if m.dc != nil {
 		if err := m.dc.Close(); err != nil {
 			return err
 		}
+		m.dc = nil
 	}
 	if m.peerConn != nil {
 		if err := m.peerConn.Close(); err != nil {
 			return err
 		}
+		m.peerConn = nil
 	}
 	return nil
 }

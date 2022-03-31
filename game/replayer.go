@@ -91,6 +91,10 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 		rp.core.GBA().ThumbWritePC()
 	})
 
+	tp.Add(bn6.Offsets.ROM.A_getCopyDataInputState__ret, func() {
+		core.GBA().SetRegister(0, 2)
+	})
+
 	tp.Add(bn6.Offsets.ROM.A_commMenu_endBattle__entry, func() {
 		rp.Reset()
 	})

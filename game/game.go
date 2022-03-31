@@ -334,6 +334,19 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().SetRegister(0, uint32(battle.LocalPlayerIndex()))
 	})
 
+	tp.Add(g.bn6.Offsets.ROM.A_getCopyDataInputState__ret, func() {
+		match := g.Match()
+		if match == nil {
+			return
+		}
+
+		r0 := core.GBA().Register(0)
+		if r0 != 2 {
+			log.Printf("expected getCopyDataInputState to be 2 but got %d", r0)
+		}
+		core.GBA().SetRegister(0, 2)
+	})
+
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_handleLinkCableInput__entry, func() {
 		log.Printf("unhandled call to commMenu_handleLinkCableInput at 0x%08x: uh oh!", core.GBA().Register(15)-4)
 	})
