@@ -70,10 +70,6 @@ func main() {
 	if *romPath == "" {
 		roms, err := os.ReadDir("roms")
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				zenity.Error("Could not find a directory named \"roms\" in your bbn6 folder.\n\nPlease create one and put all your .gba and .sav files in it and run bbn6 again.", zenity.Title("bbn6"))
-				return
-			}
 			log.Fatalf("failed to open roms directory: %s", err)
 		}
 
