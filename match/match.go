@@ -161,8 +161,8 @@ func (m *Match) negotiate(ctx context.Context) error {
 		return ErrMatchTypeMismatch
 	}
 
-	// MEGAMAN or ROCKEXE must match.
-	if string(theirHello.GameTitle[:7]) != m.gameTitle[:7] {
+	// MEGAMAN6 or ROCKEXE6 must match.
+	if string(theirHello.GameTitle[:8]) != m.gameTitle[:8] {
 		return ErrGameTypeMismatch
 	}
 
