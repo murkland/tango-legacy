@@ -30,7 +30,7 @@ func (g *GBA) SPSR() [4]byte {
 }
 
 func (g *GBA) SetRegister(r int, v uint32) {
-	g.armRegisterFile().anon0.gprs[r] = C.int(v)
+	g.armRegisterFile().anon0.gprs[r] = C.int32_t(v)
 }
 
 func (g *GBA) SetCPSR(cpsr [4]byte) {
