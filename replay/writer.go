@@ -11,7 +11,7 @@ import (
 	"github.com/murkland/bbn6/mgba"
 )
 
-const replayVersion = 0x04
+const replayVersion = 0x05
 const replayHeader = "TOOT"
 
 const flushEvery = 60

@@ -32,17 +32,6 @@ func (rp *Replayer) Core() *mgba.Core {
 	return rp.core
 }
 
-func (rp *Replayer) PeekLocalJoyflags() uint16 {
-	if rp.currentInputPairs.Used() == 0 {
-		return 0xfc00
-	}
-
-	var inputPairBuf [1][2]input.Input
-	rp.currentInputPairs.Peek(inputPairBuf[:], 0)
-	ip := inputPairBuf[0]
-	return ip[rp.replay.LocalPlayerIndex].Joyflags
-}
-
 func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 	core, err := newCore(romPath)
 	if err != nil {
@@ -66,6 +55,8 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 		var inputPairBuf [1][2]input.Input
 		rp.currentInputPairs.Pop(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
+
+		rp.core.SetKeys(mgba.Keys(ip[0].Joyflags & ^uint16(0xfc00)))
 
 		bn6.SetPlayerInputState(rp.core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {

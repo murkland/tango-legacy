@@ -50,6 +50,8 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 			return
 		}
 
+		ff.core.SetKeys(mgba.Keys(ip[ff.state.localPlayerIndex].Joyflags & ^uint16(0xfc00)))
+
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
@@ -110,9 +112,6 @@ func (ff *fastforwarder) applyInputs(state *mgba.State, rw *replay.Writer, local
 		var inputPairBuf [1][2]input.Input
 		ff.state.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
-
-		// TODO: This is probably not the right place, it should probably be handled via interrupt.
-		ff.core.SetKeys(mgba.Keys(ip[localPlayerIndex].Joyflags & ^uint16(0xfc00)))
 
 		ff.state.err = nil
 		for qlen := ff.state.inputPairs.Used(); ff.state.inputPairs.Used() == qlen; {

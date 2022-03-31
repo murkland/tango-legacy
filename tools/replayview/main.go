@@ -54,7 +54,6 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.replayer.Core().SetKeys(mgba.Keys(g.replayer.PeekLocalJoyflags() & ^uint16(0xfc00)))
 	if g.replayer.Core().GBA().Sync().WaitFrameStart() {
 		g.fbuf = g.vb.CopyImage()
 	}
