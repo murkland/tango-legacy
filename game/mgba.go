@@ -34,6 +34,7 @@ func newCore(romPath string) (*mgba.Core, error) {
 
 	core.Config().Init("bbn6")
 	core.Config().Load()
+	core.SetAudioBufferSize(coreOptions.AudioBuffers)
 
 	return core, nil
 }

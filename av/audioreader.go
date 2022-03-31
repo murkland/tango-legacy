@@ -19,7 +19,7 @@ type AudioReader struct {
 }
 
 func (a *AudioReader) Read(p []byte) (int, error) {
-	p = p[:a.core.Options().AudioBuffers*2*2]
+	p = p[:a.core.AudioBufferSize()*2*2]
 
 	left := a.core.AudioChannel(0)
 	right := a.core.AudioChannel(1)
@@ -57,7 +57,7 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 }
 
 func NewAudioReader(core *mgba.Core, sampleRate int) *AudioReader {
-	buf := C.calloc(1, C.size_t(core.Options().AudioBuffers*2*2))
+	buf := C.calloc(1, C.size_t(core.AudioBufferSize()*2*2))
 	ar := &AudioReader{core, sampleRate, buf}
 	runtime.SetFinalizer(ar, func(ar *AudioReader) {
 		C.free(ar.buf)

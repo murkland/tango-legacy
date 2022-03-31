@@ -130,6 +130,7 @@ func main() {
 	ebiten.SetWindowTitle("bbn6")
 	ebiten.SetWindowResizable(true)
 	ebiten.SetCursorMode(ebiten.CursorModeHidden)
+	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMaximum)
 
 	g, err := game.New(conf, *romPath)
 	if err != nil {

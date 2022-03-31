@@ -66,6 +66,14 @@ void bbn6_mgba_mCore_checksum(struct mCore* core, void* data, enum mCoreChecksum
 struct blip_t* bbn6_mgba_mCore_getAudioChannel(struct mCore* core, int ch) {
 	return core->getAudioChannel(core, ch);
 }
+
+size_t bbn6_mgba_mCore_getAudioBufferSize(struct mCore* core) {
+	return core->getAudioBufferSize(core);
+}
+
+void bbn6_mgba_mCore_setAudioBufferSize(struct mCore* core, size_t samples) {
+	core->setAudioBufferSize(core, samples);
+}
 */
 import "C"
 import (
@@ -167,10 +175,6 @@ func (c *Core) GameCode() string {
 	return string(code[:])
 }
 
-func (c *Core) AutoloadSave() bool {
-	return bool(C.mCoreAutoloadSave(c.ptr))
-}
-
 func (c *Core) Config() *Config {
 	return c.config
 }
@@ -189,6 +193,14 @@ func (c *Core) Frequency() int32 {
 
 func (c *Core) FrameCounter() uint32 {
 	return uint32(C.bbn6_mgba_mCore_frameCounter(c.ptr))
+}
+
+func (c *Core) AudioBufferSize() int {
+	return int(C.bbn6_mgba_mCore_getAudioBufferSize(c.ptr))
+}
+
+func (c *Core) SetAudioBufferSize(samples int) {
+	C.bbn6_mgba_mCore_setAudioBufferSize(c.ptr, C.size_t(samples))
 }
 
 func (c *Core) AudioChannel(ch int) *Blip {

@@ -94,7 +94,7 @@ func New(conf config.Config, romPath string) (*Game, error) {
 	if err != nil {
 		return nil, err
 	}
-	gameAudioPlayer.SetBufferSize(time.Duration(mainCore.Options().AudioBuffers+0x4) * time.Second / time.Duration(mainCore.Options().SampleRate))
+	gameAudioPlayer.SetBufferSize(time.Duration(mainCore.AudioBufferSize()+0x4) * time.Second / time.Duration(mainCore.Options().SampleRate))
 	gameAudioPlayer.Play()
 
 	g := &Game{

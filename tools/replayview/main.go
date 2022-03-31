@@ -195,7 +195,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create audio player: %s", err)
 	}
-	gameAudioPlayer.SetBufferSize(time.Duration(replayer.Core().Options().AudioBuffers+0x4) * time.Second / time.Duration(replayer.Core().Options().SampleRate))
+	gameAudioPlayer.SetBufferSize(time.Duration(replayer.Core().AudioBufferSize()+0x4) * time.Second / time.Duration(replayer.Core().Options().SampleRate))
 	gameAudioPlayer.Play()
 
 	g := &Game{
