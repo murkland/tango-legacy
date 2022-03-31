@@ -220,7 +220,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		ctx := context.Background()
 
-		tick := g.bn6.InBattleTime(core)
+		tick := battle.PostIncrementTick()
 
 		nextJoyflags := g.bn6.LocalJoyflags(core)
 		joyflags := battle.AddLocalBufferedInputAndConsume(nextJoyflags)
@@ -242,7 +242,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Fatalf("failed to add input: %s", err)
 		}
 
-		if err := match.SendInput(ctx, tick, joyflags, customScreenState, turn); err != nil {
+		if err := match.SendInput(ctx, uint32(tick), joyflags, customScreenState, turn); err != nil {
 			log.Fatalf("failed to send input: %s", err)
 		}
 
@@ -280,7 +280,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Fatalf("turn ended while no battle was active!")
 		}
 
-		tick := g.bn6.InBattleTime(core)
+		tick := battle.Tick()
 		log.Printf("turn ended on %d, rng state = %08x", tick, g.bn6.RNG2State(core))
 	})
 

@@ -24,7 +24,7 @@ type fastforwarderState struct {
 	localPlayerIndex int
 	inputPairs       *ringbuf.RingBuf[[2]input.Input]
 	saveState        *mgba.State
-	inputConsumed    bool
+	tick             int
 }
 
 func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
@@ -51,28 +51,19 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 			return
 		}
 
-		tick := bn6.InBattleTime(core)
-		if ip[0].Tick != int(tick) {
-			ff.state.err = fmt.Errorf("tick != in battle time: %d != %d", ip[0].Tick, tick)
-			return
-		}
-
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
-			log.Printf("p1 turn committed at tick %d", tick)
+			log.Printf("p1 turn committed at tick %d", ip[0].Tick)
 		}
 
 		bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
 		if ip[1].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
-			log.Printf("p2 turn committed at tick %d", tick)
+			log.Printf("p2 turn committed at tick %d", ip[1].Tick)
 		}
 
-		ff.state.inputConsumed = true
-		if ff.state.inputPairs.Used() == 0 {
-			ff.state.saveState = core.SaveState()
-		}
+		ff.state.saveState = core.SaveState()
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_battle_isP2__tst, func() {
@@ -99,46 +90,45 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 	return ff, nil
 }
 
-func (ff *fastforwarder) advanceOne() error {
-	// Run until one item is consumed from the input queue.
-	ff.state.inputConsumed = false
-	ff.state.err = nil
-	defer func() {
-		ff.state.inputConsumed = false
-		ff.state.err = nil
-	}()
-	for !ff.state.inputConsumed {
-		ff.core.RunFrame()
-		if ff.state.err != nil {
-			return ff.state.err
-		}
-	}
-	return nil
-}
-
-func (ff *fastforwarder) advanceMany(rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input) (*mgba.State, error) {
+func (ff *fastforwarder) applyInputs(state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input) (*mgba.State, error) {
 	ff.state = &fastforwarderState{
+		saveState:        state,
 		localPlayerIndex: localPlayerIndex,
 		inputPairs:       ringbuf.New[[2]input.Input](len(inputPairs)),
 	}
-	defer func() { ff.state = nil }()
+	defer func() {
+		ff.state = nil
+	}()
 	ff.state.inputPairs.Push(inputPairs)
+
+	if !ff.core.LoadState(ff.state.saveState) {
+		return nil, errors.New("failed to load state")
+	}
 
 	for ff.state.inputPairs.Used() > 0 {
 		var inputPairBuf [1][2]input.Input
 		ff.state.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
+
+		// TODO: This is probably not the right place, it should probably be handled via interrupt.
 		ff.core.SetKeys(mgba.Keys(ip[localPlayerIndex].Joyflags & ^uint16(0xfc00)))
-		if err := ff.advanceOne(); err != nil {
-			return nil, err
+
+		ff.state.saveState = nil
+		ff.state.err = nil
+		for ff.state.saveState == nil {
+			ff.core.RunFrame()
+			if ff.state.err != nil {
+				return nil, ff.state.err
+			}
 		}
-		if err := rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
-			return nil, err
+
+		if rw != nil {
+			if err := rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
+				return nil, err
+			}
 		}
 	}
-	if ff.state.saveState == nil {
-		return nil, errors.New("fastforwarder never returned a save state")
-	}
+
 	return ff.state.saveState, nil
 }
 
@@ -151,15 +141,9 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *replay.Writer, local
 	}
 
 	// Run the paired inputs we already have and create the new committed state.
-	var committedState *mgba.State
-	if len(inputPairs) > 0 {
-		newState, err := ff.advanceMany(rw, localPlayerIndex, inputPairs)
-		if err != nil {
-			return nil, nil, err
-		}
-		committedState = newState
-	} else {
-		committedState = state
+	committedState, err := ff.applyInputs(state, rw, localPlayerIndex, inputPairs)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Predict input pairs before fastforwarding dirty state.
@@ -179,15 +163,9 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *replay.Writer, local
 	}
 
 	// Run the local inputs and predict what the remote side did and create the new dirty state.
-	var dirtyState *mgba.State
-	if len(predictedInputPairs) > 0 {
-		newState, err := ff.advanceMany(rw, localPlayerIndex, predictedInputPairs)
-		if err != nil {
-			return nil, nil, err
-		}
-		dirtyState = newState
-	} else {
-		dirtyState = committedState
+	dirtyState, err := ff.applyInputs(committedState, nil, localPlayerIndex, predictedInputPairs)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return committedState, dirtyState, nil

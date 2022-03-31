@@ -21,6 +21,8 @@ type Battle struct {
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
 
+	tick int
+
 	lastCommittedRemoteInput input.Input
 
 	committedState *mgba.State
@@ -35,6 +37,16 @@ func (b *Battle) LocalPlayerIndex() int {
 
 func (b *Battle) RemotePlayerIndex() int {
 	return 1 - b.LocalPlayerIndex()
+}
+
+func (b *Battle) PostIncrementTick() int {
+	tick := b.tick
+	b.tick++
+	return tick
+}
+
+func (b *Battle) Tick() int {
+	return b.tick
 }
 
 func (b *Battle) Close() error {

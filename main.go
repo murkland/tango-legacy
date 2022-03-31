@@ -134,7 +134,7 @@ func main() {
 	}
 
 	if err := ebiten.RunGame(g); err != nil {
-		log.Fatalf("failed to run mgba: %s", err)
+		log.Fatalf("failed to run game: %s", err)
 	}
 
 	g.Finish()
