@@ -162,10 +162,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		remoteInit, err := match.ReadRemoteInit(ctx)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-				g.endMatch()
 				g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
-				// TODO: Figure out how to gracefully exit the battle.
-				log.Fatalf("TODO: drop the connection")
+				match.Abort()
+				return
 			}
 			log.Fatalf("failed to receive init info: %s", err)
 		}
@@ -215,6 +214,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
 
+		if match.Aborted() {
+			return
+		}
+
 		ctx := context.Background()
 
 		tick := g.bn6.InBattleTime(core)
@@ -232,10 +235,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if err := battle.AddInput(ctx, battle.LocalPlayerIndex(), input.Input{Tick: int(tick), Joyflags: joyflags, CustomScreenState: customScreenState, Turn: turn}); err != nil {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				log.Printf("could not queue local input within %s, dropping connection", timeout)
-				g.endMatch()
 				g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
-				// TODO: Figure out how to gracefully exit the battle.
-				log.Fatalf("TODO: drop the connection")
+				match.Abort()
+				return
 			}
 			log.Fatalf("failed to add input: %s", err)
 		}
@@ -344,7 +346,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if r0 != 2 {
 			log.Printf("expected getCopyDataInputState to be 2 but got %d", r0)
 		}
-		core.GBA().SetRegister(0, 2)
+
+		r0 = 2
+		if match.Aborted() {
+			r0 = 4
+		}
+		core.GBA().SetRegister(0, r0)
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_handleLinkCableInput__entry, func() {
@@ -447,7 +454,7 @@ func (g *Game) Update() error {
 
 	if err := (func() error {
 		match := g.Match()
-		if match != nil {
+		if match != nil && !match.Aborted() {
 			battle := match.Battle()
 			if battle != nil {
 				expected := match.RunaheadTicksAllowed()

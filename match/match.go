@@ -53,6 +53,9 @@ type Match struct {
 	battleNumber int
 	battle       *Battle
 
+	abortedMu sync.Mutex
+	aborted   bool
+
 	remoteInitCh chan []byte
 }
 
@@ -60,6 +63,18 @@ func (m *Match) Battle() *Battle {
 	m.battleMu.Lock()
 	defer m.battleMu.Unlock()
 	return m.battle
+}
+
+func (m *Match) Abort() {
+	m.abortedMu.Lock()
+	defer m.abortedMu.Unlock()
+	m.aborted = true
+}
+
+func (m *Match) Aborted() bool {
+	m.abortedMu.Lock()
+	defer m.abortedMu.Unlock()
+	return m.aborted
 }
 
 func New(conf config.Config, sessionID string, matchType uint8, gameTitle string, gameCRC32 uint32) (*Match, error) {
