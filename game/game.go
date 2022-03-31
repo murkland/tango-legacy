@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"image"
 	"log"
 	"os"
 	"path/filepath"
@@ -34,7 +35,8 @@ type Game struct {
 
 	bn6 *bn6.BN6
 
-	vb *av.VideoBuffer
+	vb   *av.VideoBuffer
+	fbuf *image.RGBA
 
 	audioCtx        *audio.Context
 	gameAudioPlayer *audio.Player
@@ -498,11 +500,14 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	if g.mainCore.GBA().Sync().WaitFrameStart() {
-		fbuf := g.vb.CopyImage()
-		opts := &ebiten.DrawImageOptions{}
-		screen.DrawImage(ebiten.NewImageFromImage(fbuf), opts)
+		g.fbuf = g.vb.CopyImage()
 	}
 	g.mainCore.GBA().Sync().WaitFrameEnd()
+
+	if g.fbuf != nil {
+		opts := &ebiten.DrawImageOptions{}
+		screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
+	}
 
 	if g.debugSpew {
 		g.spewDebug(screen)
