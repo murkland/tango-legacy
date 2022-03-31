@@ -1,6 +1,7 @@
 package av
 
 import (
+	"io"
 	"runtime"
 	"unsafe"
 
@@ -12,13 +13,13 @@ import (
 */
 import "C"
 
-type AudioReader struct {
+type ClippyAudioReader struct {
 	core       *mgba.Core
 	sampleRate int
 	buf        unsafe.Pointer
 }
 
-func (a *AudioReader) Read(p []byte) (int, error) {
+func (a *ClippyAudioReader) Read(p []byte) (int, error) {
 	p = p[:a.core.AudioBufferSize()*2*2]
 
 	sync := a.core.GBA().Sync()
@@ -57,11 +58,11 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func NewAudioReader(core *mgba.Core, sampleRate int) *AudioReader {
+func NewClippyAudioReader(core *mgba.Core, sampleRate int) io.Reader {
 	audioBufRealtimeBytesSize := core.AudioBufferSize() * 2 * 2
 	buf := C.calloc(1, C.size_t(audioBufRealtimeBytesSize*2))
-	ar := &AudioReader{core, sampleRate, buf}
-	runtime.SetFinalizer(ar, func(ar *AudioReader) {
+	ar := &ClippyAudioReader{core, sampleRate, buf}
+	runtime.SetFinalizer(ar, func(ar *ClippyAudioReader) {
 		C.free(ar.buf)
 	})
 	return ar

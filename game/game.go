@@ -92,7 +92,15 @@ func New(conf config.Config, romPath string) (*Game, error) {
 	}
 	mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
-	gameAudioPlayer, err := audioCtx.NewPlayer(av.NewAudioReader(mainCore, mainCore.Options().SampleRate))
+	newAudioReader := av.NewClippyAudioReader
+	switch conf.Audio.Interpolation {
+	case config.AudioInterpolationTypeClippy:
+		newAudioReader = av.NewClippyAudioReader
+	case config.AudioInterpolationTypeRubbery:
+		newAudioReader = av.NewRubberyAudioReader
+	}
+
+	gameAudioPlayer, err := audioCtx.NewPlayer(newAudioReader(mainCore, mainCore.Options().SampleRate))
 	if err != nil {
 		return nil, err
 	}

@@ -22,12 +22,53 @@ type Keymapping struct {
 	DebugSpew ebiten.Key
 }
 
+func (k Keymapping) ToRaw() RawKeymapping {
+	return RawKeymapping{
+		A:         keyName(k.A),
+		B:         keyName(k.B),
+		L:         keyName(k.L),
+		R:         keyName(k.R),
+		Left:      keyName(k.Left),
+		Right:     keyName(k.Right),
+		Up:        keyName(k.Up),
+		Down:      keyName(k.Down),
+		Start:     keyName(k.Start),
+		Select:    keyName(k.Select),
+		DebugSpew: keyName(k.DebugSpew),
+	}
+}
+
 type Matchmaking struct {
 	ConnectAddr string
 }
 
+type AudioInterpolationType int
+
+const (
+	AudioInterpolationTypeClippy AudioInterpolationType = iota
+	AudioInterpolationTypeRubbery
+)
+
+type Audio struct {
+	Interpolation AudioInterpolationType
+}
+
+func (a Audio) ToRaw() RawAudio {
+	interpolation := "clippy"
+	switch a.Interpolation {
+	case AudioInterpolationTypeClippy:
+		interpolation = "clippy"
+	case AudioInterpolationTypeRubbery:
+		interpolation = "rubbery"
+	}
+	return RawAudio{
+		Interpolation: interpolation,
+	}
+}
+
 type Config struct {
 	Keymapping  Keymapping
+	Audio       Audio
 	Matchmaking Matchmaking
 	WebRTC      webrtc.Configuration
 }
@@ -84,27 +125,37 @@ type RawKeymapping struct {
 	DebugSpew string
 }
 
+func (rk RawKeymapping) ToParsed() Keymapping {
+	return Keymapping{
+		A:         keyCode(rk.A),
+		B:         keyCode(rk.B),
+		L:         keyCode(rk.L),
+		R:         keyCode(rk.R),
+		Left:      keyCode(rk.Left),
+		Right:     keyCode(rk.Right),
+		Up:        keyCode(rk.Up),
+		Down:      keyCode(rk.Down),
+		Start:     keyCode(rk.Start),
+		Select:    keyCode(rk.Select),
+		DebugSpew: keyCode(rk.DebugSpew),
+	}
+}
+
+type RawAudio struct {
+	Interpolation string
+}
+
 type RawConfig struct {
 	Keymapping  RawKeymapping
+	Audio       RawAudio
 	Matchmaking Matchmaking
 	WebRTC      webrtc.Configuration
 }
 
 func (c Config) ToRaw() RawConfig {
 	return RawConfig{
-		Keymapping: RawKeymapping{
-			A:         keyName(c.Keymapping.A),
-			B:         keyName(c.Keymapping.B),
-			L:         keyName(c.Keymapping.L),
-			R:         keyName(c.Keymapping.R),
-			Left:      keyName(c.Keymapping.Left),
-			Right:     keyName(c.Keymapping.Right),
-			Up:        keyName(c.Keymapping.Up),
-			Down:      keyName(c.Keymapping.Down),
-			Start:     keyName(c.Keymapping.Start),
-			Select:    keyName(c.Keymapping.Select),
-			DebugSpew: keyName(c.Keymapping.DebugSpew),
-		},
+		Keymapping:  c.Keymapping.ToRaw(),
+		Audio:       c.Audio.ToRaw(),
 		Matchmaking: c.Matchmaking,
 		WebRTC:      c.WebRTC,
 	}
@@ -112,23 +163,26 @@ func (c Config) ToRaw() RawConfig {
 
 func (rc RawConfig) ToParsed() Config {
 	return Config{
-		Keymapping: Keymapping{
-			A:         keyCode(rc.Keymapping.A),
-			B:         keyCode(rc.Keymapping.B),
-			L:         keyCode(rc.Keymapping.L),
-			R:         keyCode(rc.Keymapping.R),
-			Left:      keyCode(rc.Keymapping.Left),
-			Right:     keyCode(rc.Keymapping.Right),
-			Up:        keyCode(rc.Keymapping.Up),
-			Down:      keyCode(rc.Keymapping.Down),
-			Start:     keyCode(rc.Keymapping.Start),
-			Select:    keyCode(rc.Keymapping.Select),
-			DebugSpew: keyCode(rc.Keymapping.DebugSpew),
-		},
+		Keymapping:  rc.Keymapping.ToParsed(),
+		Audio:       rc.Audio.ToParsed(),
 		Matchmaking: rc.Matchmaking,
 		WebRTC:      rc.WebRTC,
 	}
 }
+
+func (ra RawAudio) ToParsed() Audio {
+	interpolation := AudioInterpolationTypeClippy
+	switch ra.Interpolation {
+	case "clippy":
+		interpolation = AudioInterpolationTypeClippy
+	case "rubbery":
+		interpolation = AudioInterpolationTypeRubbery
+	}
+	return Audio{
+		Interpolation: interpolation,
+	}
+}
+
 func Save(config Config, w io.Writer) error {
 	return toml.NewEncoder(w).Encode(config.ToRaw())
 }

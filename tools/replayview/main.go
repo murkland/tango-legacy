@@ -168,7 +168,7 @@ func main() {
 	t.Unpause()
 	replayer.Core().GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
-	gameAudioPlayer, err := audioCtx.NewPlayer(av.NewAudioReader(replayer.Core(), replayer.Core().Options().SampleRate))
+	gameAudioPlayer, err := audioCtx.NewPlayer(av.NewRubberyAudioReader(replayer.Core(), replayer.Core().Options().SampleRate))
 	if err != nil {
 		log.Fatalf("failed to create audio player: %s", err)
 	}
