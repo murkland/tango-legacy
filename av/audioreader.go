@@ -21,10 +21,6 @@ type AudioReader struct {
 func (a *AudioReader) Read(p []byte) (int, error) {
 	p = p[:a.core.AudioBufferSize()*2*2]
 
-	left := a.core.AudioChannel(0)
-	right := a.core.AudioChannel(1)
-	clockRate := a.core.Frequency()
-
 	sync := a.core.GBA().Sync()
 
 	fauxClock := float32(1)
@@ -32,22 +28,27 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 		fauxClock = mgba.GBAAudioCalculateRatio(1, sync.FPSTarget(), 1)
 	}
 
+	audioBufStretchedBytesSize := (int(float32(len(p))*fauxClock) + 1) / 2 * 2
+
+	left := a.core.AudioChannel(0)
+	right := a.core.AudioChannel(1)
+	clockRate := a.core.Frequency()
+
 	if sync != nil {
 		sync.LockAudio()
 	}
 
-	left.SetRates(float64(clockRate), float64(a.sampleRate)*float64(fauxClock))
-	right.SetRates(float64(clockRate), float64(a.sampleRate)*float64(fauxClock))
+	left.SetRates(float64(clockRate), float64(a.sampleRate))
+	right.SetRates(float64(clockRate), float64(a.sampleRate))
 
 	available := left.SamplesAvail()
-	if available > len(p) {
-		available = len(p)
+	if available > audioBufStretchedBytesSize {
+		available = audioBufStretchedBytesSize
 	}
 
-	// TODO: Resample the buffer from float64(a.sampleRate)*float64(fauxClock) back down to float64(a.sampleRate).
 	left.ReadSamples(a.buf, available, true)
 	right.ReadSamples(unsafe.Pointer(uintptr(a.buf)+2), available, true)
-	copy(p, C.GoBytes(a.buf, C.int(len(p))))
+	copy(p, C.GoBytes(a.buf, C.int(audioBufStretchedBytesSize)))
 
 	if sync != nil {
 		sync.ConsumeAudio()
@@ -57,7 +58,8 @@ func (a *AudioReader) Read(p []byte) (int, error) {
 }
 
 func NewAudioReader(core *mgba.Core, sampleRate int) *AudioReader {
-	buf := C.calloc(1, C.size_t(core.AudioBufferSize()*2*2))
+	audioBufRealtimeBytesSize := core.AudioBufferSize() * 2 * 2
+	buf := C.calloc(1, C.size_t(audioBufRealtimeBytesSize*2))
 	ar := &AudioReader{core, sampleRate, buf}
 	runtime.SetFinalizer(ar, func(ar *AudioReader) {
 		C.free(ar.buf)
