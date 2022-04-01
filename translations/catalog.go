@@ -44,22 +44,21 @@ var messageKeyToIndex = map[string]int{
 }
 
 var en_USIndex = []uint32{ // 3 elements
-	0x00000000, 0x0000008d, 0x000000e3,
+	0x00000000, 0x0000008d, 0x000000e4,
 } // Size: 36 bytes
 
-const en_USData string = "" + // Size: 227 bytes
+const en_USData string = "" + // Size: 228 bytes
 	"\x02Select a game to start below.\x0a\x0aIf the list is empty, remember " +
 	"to put your ROMs in the \x22roms\x22 directory (and saves in the \x22sav" +
-	"es\x22 directory)!\x02Enter a link code that you and your partner have d" +
-	"ecided on to connect to each other:"
+	"es\x22 directory)!\x02Enter a link code that you and your opponent have " +
+	"decided on to connect to each other:"
 
 var ja_JPIndex = []uint32{ // 3 elements
-	0x00000000, 0x000000ed, 0x00000172,
+	0x00000000, 0x000000ed, 0x00000169,
 } // Size: 36 bytes
 
-const ja_JPData string = "" + // Size: 370 bytes
+const ja_JPData string = "" + // Size: 361 bytes
 	"\x02下記より開始するゲームを選択してください。\x0a\x0a以下のリストが空の場合は、「roms」ディレクトリにROMファイルを、「sav" +
-	"es」ディレクトリにセーブファイルを置いてください。\x02お互いに接続するために、あなたとパートナーが決めたリンクコードを以下に入力してくださ" +
-	"い。"
+	"es」ディレクトリにセーブファイルを置いてください。\x02お互いに接続するために、あなたと相手が決めたリンクコードを以下に入力してください。"
 
-	// Total table size 669 bytes (0KiB); checksum: 6F460D93
+	// Total table size 661 bytes (0KiB); checksum: E23BDC73
