@@ -24,6 +24,7 @@ type fastforwarderState struct {
 	localPlayerIndex int
 	inputPairs       *ringbuf.RingBuf[[2]input.Input]
 	saveState        *mgba.State
+	predicting       bool
 }
 
 func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
@@ -60,13 +61,17 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
-			log.Printf("p1 turn committed at tick %d", ip[0].Tick)
+			if !ff.state.predicting {
+				log.Printf("p1 turn committed at tick %d", ip[0].Tick)
+			}
 		}
 
 		bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
 		if ip[1].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
-			log.Printf("p2 turn committed at tick %d", ip[1].Tick)
+			if !ff.state.predicting {
+				log.Printf("p2 turn committed at tick %d", ip[1].Tick)
+			}
 		}
 
 		if ff.state.inputPairs.Used() == 0 {
@@ -103,6 +108,7 @@ func (ff *fastforwarder) applyInputs(state *mgba.State, rw *replay.Writer, local
 		saveState:        state,
 		localPlayerIndex: localPlayerIndex,
 		inputPairs:       ringbuf.New[[2]input.Input](len(inputPairs)),
+		predicting:       rw == nil,
 	}
 	defer func() {
 		ff.state = nil
