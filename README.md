@@ -12,7 +12,7 @@ BBN6 はロックマンエグゼ６ネットプレイシステムです。
 
 -   if you are on windows, just run `hub.bat`. if you are on not windows, you're on your own! (for now)
 
-    Windows を使用している場合は、hub.bat を起動してください。そうでない場合は、現在サポートされていません。
+    Windows を使用している場合は、`hub.bat` を起動してください。そうでない場合は、現在サポートされていません。
 
 -   if you run any into any issues, please let us know on our discord server: https://discord.gg/zbQngJHwSg
 
