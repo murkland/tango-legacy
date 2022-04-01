@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/Xuanwo/go-locale"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/murkland/bbn6/bn6"
 	"github.com/murkland/bbn6/config"
@@ -16,6 +17,8 @@ import (
 	"github.com/murkland/bbn6/mgba"
 	"github.com/ncruces/zenity"
 	"golang.org/x/exp/maps"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 var (
@@ -28,6 +31,14 @@ var version string
 
 func main() {
 	flag.Parse()
+
+	lang, err := locale.Detect()
+	if err != nil {
+		log.Printf("could not detect language, falling back to english: %s", err)
+		lang = language.English
+	}
+	log.Printf("detected language: %s", lang)
+	p := message.NewPrinter(lang)
 
 	var conf config.Config
 	confF, err := os.Open(*configPath)
@@ -113,7 +124,7 @@ func main() {
 		keys := maps.Keys(options)
 		sort.Strings(keys)
 
-		key, err := zenity.List("Select a game to start:", keys, zenity.Title("bbn6"))
+		key, err := zenity.List(p.Sprint("SELECT_ROM"), keys, zenity.Title("bbn6"))
 		if err != nil {
 			log.Fatalf("failed to select game: %s", err)
 		}
@@ -128,7 +139,7 @@ func main() {
 	ebiten.SetRunnableOnUnfocused(true)
 	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMaximum)
 
-	g, err := game.New(conf, *romPath)
+	g, err := game.New(conf, p, *romPath)
 	if err != nil {
 		log.Fatalf("failed to start game: %s", err)
 	}
