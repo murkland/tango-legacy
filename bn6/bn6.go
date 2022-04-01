@@ -23,11 +23,23 @@ func (b *BN6) StartBattleFromCommMenu(core *mgba.Core) {
 	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x3, -1, 0x00)
 }
 
-func (b *BN6) DropMatchmakingFromCommMenu(core *mgba.Core) {
+type DropMatchmakingType int
+
+const (
+	DropMatchmakingTypeConnectionError DropMatchmakingType = 0x24
+	DropMatchmakingTypeWrongMode                           = 0x25
+)
+
+func (b *BN6) DropMatchmakingFromCommMenu(core *mgba.Core, typ DropMatchmakingType) {
 	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x0, -1, 0x18)
 	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x1, -1, 0x3c)
 	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x2, -1, 0x04)
 	core.RawWrite8(b.Offsets.EWRAM.A_MenuControl+0x3, -1, 0x04)
+	if typ != 0 {
+		core.GBA().SetRegister(0, uint32(typ))
+		core.GBA().SetRegister(15, b.Offsets.ROM.A_commMenu_run_chatbox_script__entry)
+		core.GBA().ThumbWritePC()
+	}
 }
 
 func (b *BN6) LocalJoyflags(core *mgba.Core) uint16 {
@@ -77,6 +89,6 @@ func (b *BN6) SetLinkBattleSettingsAndBackground(core *mgba.Core, linkBattleSett
 	core.RawWrite16(b.Offsets.EWRAM.A_MenuControl+0x2a, -1, linkBattleSettingsAndBackground)
 }
 
-func (b *BN6) BattleType(core *mgba.Core) uint8 {
-	return core.RawRead8(b.Offsets.EWRAM.A_MenuControl+0x12, -1)
+func (b *BN6) MatchType(core *mgba.Core) uint16 {
+	return core.RawRead16(b.Offsets.EWRAM.A_MenuControl+0x12, -1)
 }

@@ -38,7 +38,7 @@ var (
 type Match struct {
 	conf      config.Config
 	sessionID string
-	matchType uint8
+	matchType uint16
 	gameTitle string
 	gameCRC32 uint32
 
@@ -81,7 +81,7 @@ func (m *Match) Aborted() bool {
 	return m.aborted
 }
 
-func New(conf config.Config, sessionID string, matchType uint8, gameTitle string, gameCRC32 uint32) (*Match, error) {
+func New(conf config.Config, sessionID string, matchType uint16, gameTitle string, gameCRC32 uint32) (*Match, error) {
 	return &Match{
 		conf:      conf,
 		sessionID: sessionID,

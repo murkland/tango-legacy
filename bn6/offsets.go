@@ -24,6 +24,7 @@ type ROMOffsets struct {
 	A_battle_end__entry                                           uint32
 	A_battle_isP2__tst                                            uint32
 	A_link_isP2__ret                                              uint32
+	A_commMenu_run_chatbox_script__entry                          uint32
 	A_commMenu_initBattle__entry                                  uint32
 	A_commMenu_handleLinkCableInput__entry                        uint32
 	A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput uint32
@@ -64,6 +65,7 @@ var offsetsMap = map[string]Offsets{
 			A_battle_end__entry:                                           0x08007ca0,
 			A_battle_isP2__tst:                                            0x0803dd52,
 			A_link_isP2__ret:                                              0x0803dd86,
+			A_commMenu_run_chatbox_script__entry:                          0x08132280,
 			A_commMenu_initBattle__entry:                                  0x0812b608,
 			A_commMenu_handleLinkCableInput__entry:                        0x0803eae4,
 			A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x08129f8a,
@@ -88,6 +90,7 @@ var offsetsMap = map[string]Offsets{
 			A_battle_end__entry:                                           0x08007ca0,
 			A_battle_isP2__tst:                                            0x0803dd26,
 			A_link_isP2__ret:                                              0x0803dd5a,
+			A_commMenu_run_chatbox_script__entry:                          0x0813405c,
 			A_commMenu_initBattle__entry:                                  0x0812d3e4,
 			A_commMenu_handleLinkCableInput__entry:                        0x0803eab8,
 			A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x0812bd66,
@@ -112,6 +115,7 @@ var offsetsMap = map[string]Offsets{
 			A_battle_end__entry:                                           0x08007c9c,
 			A_battle_isP2__tst:                                            0x0803ed96,
 			A_link_isP2__ret:                                              0x0803edca,
+			A_commMenu_run_chatbox_script__entry:                          0x0813ac4c,
 			A_commMenu_initBattle__entry:                                  0x08134008,
 			A_commMenu_handleLinkCableInput__entry:                        0x0803fb28,
 			A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x0813299e,
@@ -136,6 +140,7 @@ var offsetsMap = map[string]Offsets{
 			A_battle_end__entry:                                           0x08007c9c,
 			A_battle_isP2__tst:                                            0x0803ed6a,
 			A_link_isP2__ret:                                              0x0803ed9e,
+			A_commMenu_run_chatbox_script__entry:                          0x0813ca14,
 			A_commMenu_initBattle__entry:                                  0x08135dd0,
 			A_commMenu_handleLinkCableInput__entry:                        0x0803fafc,
 			A_commMenu_waitForFriend__call__commMenu_handleLinkCableInput: 0x08134766,

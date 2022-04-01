@@ -390,9 +390,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			g.gameAudioPlayer.SetVolume(volume)
 			if err != nil {
 				log.Printf("matchmaking dialog did not return a code: %s", err)
-				g.bn6.DropMatchmakingFromCommMenu(core)
+				g.bn6.DropMatchmakingFromCommMenu(core, 0)
 			} else {
-				match, err := match.New(g.conf, code, g.bn6.BattleType(g.mainCore), g.mainCore.GameTitle(), g.mainCore.CRC32())
+				match, err := match.New(g.conf, code, g.bn6.MatchType(g.mainCore), g.mainCore.GameTitle(), g.mainCore.CRC32())
 				if err != nil {
 					// TODO: handle this better.
 					log.Fatalf("failed to start match: %s", err)
@@ -409,12 +409,14 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 					return
 				}
 				if errors.Is(err, match.ErrProtocolVersionMismatch) || errors.Is(err, match.ErrGameTypeMismatch) || errors.Is(err, match.ErrMatchTypeMismatch) {
-					// TODO: Actually show the right message.
+					g.bn6.DropMatchmakingFromCommMenu(core, bn6.DropMatchmakingTypeWrongMode)
 					log.Printf("mismatch: %s", err)
-					g.bn6.DropMatchmakingFromCommMenu(core)
-					return
+				} else {
+					g.bn6.DropMatchmakingFromCommMenu(core, bn6.DropMatchmakingTypeConnectionError)
+					log.Printf("failed to poll match: %s", err)
 				}
-				log.Fatalf("failed to poll match: %s", err)
+				g.match = nil
+				return
 			}
 
 			g.bn6.StartBattleFromCommMenu(core)

@@ -19,7 +19,7 @@ var (
 
 var ErrUnknownPacket = errors.New("unknown packet")
 
-const ProtocolVersion = 0x07
+const ProtocolVersion = 0x08
 
 type packetType uint8
 
@@ -52,7 +52,7 @@ type Hello struct {
 	ProtocolVersion uint8
 	GameTitle       [12]byte
 	GameCRC32       uint32
-	MatchType       uint8
+	MatchType       uint16
 	RNGCommitment   [32]uint8
 }
 
