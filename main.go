@@ -15,6 +15,7 @@ import (
 	"github.com/murkland/bbn6/config"
 	"github.com/murkland/bbn6/game"
 	"github.com/murkland/bbn6/mgba"
+	_ "github.com/murkland/bbn6/translations"
 	"github.com/ncruces/zenity"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
@@ -35,7 +36,7 @@ func main() {
 	lang, err := locale.Detect()
 	if err != nil {
 		log.Printf("could not detect language, falling back to english: %s", err)
-		lang = language.English
+		lang = language.AmericanEnglish
 	}
 	log.Printf("detected language: %s", lang)
 	p := message.NewPrinter(lang)
@@ -124,7 +125,7 @@ func main() {
 		keys := maps.Keys(options)
 		sort.Strings(keys)
 
-		key, err := zenity.List(p.Sprint("SELECT_ROM"), keys, zenity.Title("bbn6"))
+		key, err := zenity.List(p.Sprintf("SELECT_ROM"), keys, zenity.Title("bbn6"))
 		if err != nil {
 			log.Fatalf("failed to select game: %s", err)
 		}

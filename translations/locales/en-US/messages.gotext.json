@@ -1,0 +1,13 @@
+{
+    "language": "en-US",
+    "messages": [
+        {
+            "id": "SELECT_ROM",
+            "translation": "Select a game to start below.\n\nIf the list is empty, remember to put your ROMs in the \"roms\" directory (and saves in the \"saves\" directory)!"
+        },
+        {
+            "id": "ENTER_MATCHMAKING_CODE",
+            "translation": "Enter a link code that you and your partner have decided on to connect to each other:"
+        }
+    ]
+}

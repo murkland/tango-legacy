@@ -1,0 +1,13 @@
+{
+    "language": "ja-JP",
+    "messages": [
+        {
+            "id": "SELECT_ROM",
+            "translation": "下記より開始するゲームを選択してください。\n\n以下のリストが空の場合は、「roms」ディレクトリにROMファイルを、「saves」ディレクトリにセーブファイルを置いてください。"
+        },
+        {
+            "id": "ENTER_MATCHMAKING_CODE",
+            "translation": "お互いに接続するために、あなたとパートナーが決めたリンクコードを以下に入力してください。"
+        }
+    ]
+}

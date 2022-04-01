@@ -389,7 +389,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if g.match == nil {
 			volume := g.gameAudioPlayer.Volume()
 			g.gameAudioPlayer.SetVolume(0)
-			code, err := zenity.Entry(g.p.Sprint("ENTER_MATCHMAKING_CODE"), zenity.Title("bbn6"))
+			code, err := zenity.Entry(g.p.Sprintf("ENTER_MATCHMAKING_CODE"), zenity.Title("bbn6"))
 			g.gameAudioPlayer.SetVolume(volume)
 			if err != nil {
 				log.Printf("matchmaking dialog did not return a code: %s", err)
