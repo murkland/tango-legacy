@@ -51,7 +51,7 @@ func (Pong) packetType() packetType { return packetTypePong }
 type Hello struct {
 	ProtocolVersion uint8
 	GameTitle       [12]byte
-	GameCRC32       uint32
+	GameCRC32       uint32 // This is NOT a security mechanism: this is only intended to prevent people from pairing up the wrong games by accident.
 	MatchType       uint16
 	RNGCommitment   [32]uint8
 }
