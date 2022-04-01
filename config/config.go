@@ -54,7 +54,7 @@ type Audio struct {
 }
 
 func (a Audio) ToRaw() RawAudio {
-	interpolation := "rubbery"
+	interpolation := "clippy"
 	switch a.Interpolation {
 	case AudioInterpolationTypeRubbery:
 		interpolation = "rubbery"
@@ -171,7 +171,7 @@ func (rc RawConfig) ToParsed() Config {
 }
 
 func (ra RawAudio) ToParsed() Audio {
-	interpolation := AudioInterpolationTypeRubbery
+	interpolation := AudioInterpolationTypeClippy
 	switch ra.Interpolation {
 	case "rubbery":
 		interpolation = AudioInterpolationTypeRubbery
