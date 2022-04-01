@@ -212,7 +212,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if match == nil {
 			return
 		}
-		core.GBA().SetRegister(4, uint32(g.joyflags))
+		core.GBA().SetRegister(4, uint32(g.joyflags|0xfc00))
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {

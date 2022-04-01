@@ -7,7 +7,7 @@ import (
 )
 
 func ebitenToMgbaKeys(keymapping config.Keymapping, pressedKeys []ebiten.Key) mgba.Keys {
-	keys := mgba.Keys(0xfc00)
+	keys := mgba.Keys(0)
 	for _, key := range pressedKeys {
 		if key == keymapping.A {
 			keys |= mgba.KeysA
