@@ -498,8 +498,17 @@ func (g *Game) Update() error {
 	return nil
 }
 
+func (g *Game) scaleFactor(bounds image.Rectangle) int {
+	w, h := g.mainCore.DesiredVideoDimensions()
+	k := bounds.Dx() / w
+	if s := bounds.Dy() / h; s < k {
+		k = s
+	}
+	return k
+}
+
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return g.mainCore.DesiredVideoDimensions()
+	return outsideWidth, outsideHeight
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -509,7 +518,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.mainCore.GBA().Sync().WaitFrameEnd()
 
 	if g.fbuf != nil {
+		k := g.scaleFactor(screen.Bounds())
 		opts := &ebiten.DrawImageOptions{}
+		w, h := g.mainCore.DesiredVideoDimensions()
+		opts.GeoM.Scale(float64(k), float64(k))
+		opts.GeoM.Translate(float64((screen.Bounds().Dx()-w*k)/2), float64((screen.Bounds().Dy()-h*k)/2))
 		screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
 	}
 
