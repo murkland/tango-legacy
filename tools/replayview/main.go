@@ -182,11 +182,10 @@ func main() {
 		t:               t,
 	}
 
-	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowTitle("bbn6 replayview")
-	ebiten.SetMaxTPS(ebiten.UncappedTPS)
 	ebiten.SetWindowResizable(true)
-	ebiten.SetCursorMode(ebiten.CursorModeHidden)
+	ebiten.SetRunnableOnUnfocused(true)
+	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMaximum)
 
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatalf("failed to run mgba: %s", err)
