@@ -18,7 +18,6 @@ import (
 	_ "github.com/murkland/bbn6/translations"
 	"github.com/ncruces/zenity"
 	"golang.org/x/exp/maps"
-	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
@@ -33,12 +32,9 @@ var version string
 func main() {
 	flag.Parse()
 
-	lang, err := locale.Detect()
-	if err != nil {
-		log.Printf("could not detect language, falling back to english: %s", err)
-		lang = language.AmericanEnglish
-	}
-	log.Printf("detected language: %s", lang)
+	lang, _ := locale.Detect()
+	lang = message.MatchLanguage(lang.String())
+	log.Printf("selected language: %s", lang)
 	p := message.NewPrinter(lang)
 
 	var conf config.Config
