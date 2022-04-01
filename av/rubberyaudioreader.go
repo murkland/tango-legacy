@@ -46,7 +46,7 @@ func (a *RubberyAudioReader) Read(p []byte) (int, error) {
 
 	left.ReadSamples(a.buf, available, true)
 	right.ReadSamples(unsafe.Add(a.buf, 2), available, true)
-	copy(p, C.GoBytes(a.buf, C.int(n*2*2)))
+	copy(p, C.GoBytes(a.buf, C.int(available*2*2)))
 
 	if sync != nil {
 		sync.ConsumeAudio()
