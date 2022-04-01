@@ -2,7 +2,6 @@ package game
 
 import (
 	"context"
-	_ "embed"
 	"errors"
 	"fmt"
 	"image"
