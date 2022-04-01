@@ -39,8 +39,7 @@ func (a *ClippyAudioReader) Read(p []byte) (int, error) {
 	left.SetRates(float64(clockRate), float64(a.sampleRate))
 	right.SetRates(float64(clockRate), float64(a.sampleRate))
 
-	audioBufStretchedBytesSize := ((int(float32(len(p))*fauxClock)+1)/2 + 1) / 2 * 2 * 2
-	n := audioBufStretchedBytesSize / (2 * 2)
+	n := int(float64(len(p)) / float64(fauxClock) / (2 * 2))
 	available := left.SamplesAvail()
 	if available > n {
 		available = n
