@@ -20,6 +20,7 @@ type ClippyAudioReader struct {
 }
 
 func (a *ClippyAudioReader) Read(p []byte) (int, error) {
+	p = p[:a.core.AudioBufferSize()*2*2]
 	sync := a.core.GBA().Sync()
 
 	fauxClock := float32(1)
