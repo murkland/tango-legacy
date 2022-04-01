@@ -20,18 +20,16 @@ type RubberyAudioReader struct {
 }
 
 func (a *RubberyAudioReader) Read(p []byte) (int, error) {
-	p = p[:a.core.AudioBufferSize()*2*2]
-
-	left := a.core.AudioChannel(0)
-	right := a.core.AudioChannel(1)
-	clockRate := a.core.Frequency()
-
 	sync := a.core.GBA().Sync()
 
 	fauxClock := float32(1)
 	if sync != nil {
 		fauxClock = mgba.GBAAudioCalculateRatio(1, sync.FPSTarget(), 1)
 	}
+
+	left := a.core.AudioChannel(0)
+	right := a.core.AudioChannel(1)
+	clockRate := a.core.Frequency()
 
 	if sync != nil {
 		sync.LockAudio()
@@ -40,15 +38,15 @@ func (a *RubberyAudioReader) Read(p []byte) (int, error) {
 	left.SetRates(float64(clockRate), float64(a.sampleRate)*float64(fauxClock))
 	right.SetRates(float64(clockRate), float64(a.sampleRate)*float64(fauxClock))
 
+	n := len(p) / (2 * 2)
 	available := left.SamplesAvail()
-	if available > len(p) {
-		available = len(p)
+	if available > n {
+		available = n
 	}
 
-	// TODO: Resample the buffer from float64(a.sampleRate)*float64(fauxClock) back down to float64(a.sampleRate).
 	left.ReadSamples(a.buf, available, true)
-	right.ReadSamples(unsafe.Pointer(uintptr(a.buf)+2), available, true)
-	copy(p, C.GoBytes(a.buf, C.int(len(p))))
+	right.ReadSamples(unsafe.Add(a.buf, 2), available, true)
+	copy(p, C.GoBytes(a.buf, C.int(n*2*2)))
 
 	if sync != nil {
 		sync.ConsumeAudio()

@@ -45,8 +45,8 @@ type Matchmaking struct {
 type AudioInterpolationType int
 
 const (
-	AudioInterpolationTypeClippy AudioInterpolationType = iota
-	AudioInterpolationTypeRubbery
+	AudioInterpolationTypeRubbery AudioInterpolationType = iota
+	AudioInterpolationTypeClippy
 )
 
 type Audio struct {
@@ -54,12 +54,12 @@ type Audio struct {
 }
 
 func (a Audio) ToRaw() RawAudio {
-	interpolation := "clippy"
+	interpolation := "rubbery"
 	switch a.Interpolation {
-	case AudioInterpolationTypeClippy:
-		interpolation = "clippy"
 	case AudioInterpolationTypeRubbery:
 		interpolation = "rubbery"
+	case AudioInterpolationTypeClippy:
+		interpolation = "clippy"
 	}
 	return RawAudio{
 		Interpolation: interpolation,
@@ -171,12 +171,12 @@ func (rc RawConfig) ToParsed() Config {
 }
 
 func (ra RawAudio) ToParsed() Audio {
-	interpolation := AudioInterpolationTypeClippy
+	interpolation := AudioInterpolationTypeRubbery
 	switch ra.Interpolation {
-	case "clippy":
-		interpolation = AudioInterpolationTypeClippy
 	case "rubbery":
 		interpolation = AudioInterpolationTypeRubbery
+	case "clippy":
+		interpolation = AudioInterpolationTypeClippy
 	}
 	return Audio{
 		Interpolation: interpolation,
