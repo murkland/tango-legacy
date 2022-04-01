@@ -4,7 +4,7 @@
 
 [![murkland](https://discordapp.com/api/guilds/936475149069336596/widget.png?style=shield)](https://discord.gg/zbQngJHwSg)
 
-netplay for mega man battle network 6 in the style of https://github.com/ssbmars/BBN3-netcode. the b in bbn6 does NOT stand for "better".
+netplay for mega man battle network 6 in the style of <https://github.com/ssbmars/BBN3-netcode>. the b in bbn6 does NOT stand for "better".
 
 BBN6 はロックマンエグゼ６ネットプレイシステムです。
 
@@ -14,9 +14,9 @@ BBN6 はロックマンエグゼ６ネットプレイシステムです。
 
     Windows を使用している場合は、`hub.bat` を起動してください。そうでない場合は、現在サポートされていません。
 
--   if you run any into any issues, please let us know on our discord server: https://discord.gg/zbQngJHwSg
+-   if you run any into any issues, please let us know on our discord server: <https://discord.gg/zbQngJHwSg>
 
-    何か問題が発生した場合は、私たちのディスコード・サーバーに連絡ください。 https://discord.gg/zbQngJHwSg
+    何か問題が発生した場合は、私たちのディスコード・サーバーに連絡ください。 <https://discord.gg/zbQngJHwSg>
 
 ## you will need / 必要なもの
 

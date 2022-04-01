@@ -17,8 +17,8 @@ jobs:
               with:
                   go-version: "^1.18"
 
-            - name: install mingw and cmake
-              run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake
+            - name: install build dependencies
+              run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake pandoc
 
             - name: build mgba
               run: cd external/mgba && mkdir build && cd build && cmake .. -DLIBMGBA_ONLY=ON -DCMAKE_TOOLCHAIN_FILE=../../../mgba/Toolchain-x86_64-w64-mingw32.cmake && make
@@ -26,8 +26,11 @@ jobs:
             - name: build bbn6
               run: GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
 
+            - name: generate readme
+              run: pandoc --standalone -o README.html README.md
+
             - name: zip artifacts
-              run: cd build && mkdir bbn6-${{ github.ref_name }} && cp bbn6.exe replayview.exe ../hub.bat ../README.md ../LICENSE bbn6-${{ github.ref_name }} && zip -r bbn6.zip bbn6-${{ github.ref_name }}
+              run: cd build && mkdir bbn6-${{ github.ref_name }} && cp bbn6.exe replayview.exe ../hub.bat ../README.html ../logo.png ../LICENSE bbn6-${{ github.ref_name }} && zip -r bbn6.zip bbn6-${{ github.ref_name }}
 
             - name: upload artifact
               uses: actions/upload-release-asset@v1
