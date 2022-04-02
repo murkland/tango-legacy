@@ -103,6 +103,12 @@ github.com/murkland/ringbuf v0.0.0-20220328025806-96b1615c7a7b h1:zhJ7rMxlROsEnV
 github.com/murkland/ringbuf v0.0.0-20220328025806-96b1615c7a7b/go.mod h1:b1kYRSWKnGll9e2oCKAW6quDG1R8xEc7gHzHLo4t/54=
 github.com/murkland/signor v0.0.0-20220325090807-d38148f9652a h1:UwINDo+neXv+Bk+IX6Ubcb8sTCM+7gwE/BO76QXqwC4=
 github.com/murkland/signor v0.0.0-20220325090807-d38148f9652a/go.mod h1:ODYf/B4aitNuB8dqE0EyTn9sHYjvF5rtMEpJh0TWAj8=
+github.com/murkland/signor v0.0.0-20220402011116-f96dba36840a h1:3HSjWEsZv7RbpO3EDla8kLyZtAiS6GcJMxfkVlD0UAU=
+github.com/murkland/signor v0.0.0-20220402011116-f96dba36840a/go.mod h1:ODYf/B4aitNuB8dqE0EyTn9sHYjvF5rtMEpJh0TWAj8=
+github.com/murkland/signor v0.0.0-20220402014204-091e23527816 h1:FT2LqqECf2hAhGL/VJokyNIB2xv2ugiQYmAV3ZhYF3w=
+github.com/murkland/signor v0.0.0-20220402014204-091e23527816/go.mod h1:ODYf/B4aitNuB8dqE0EyTn9sHYjvF5rtMEpJh0TWAj8=
+github.com/murkland/signor v0.0.0-20220402021656-b3586ec1d974 h1:XPSsBDlHguSTaVo9JCr/W6+W29PDzUONj782+uk31fQ=
+github.com/murkland/signor v0.0.0-20220402021656-b3586ec1d974/go.mod h1:ODYf/B4aitNuB8dqE0EyTn9sHYjvF5rtMEpJh0TWAj8=
 github.com/murkland/syncrand v0.0.0-20220305211705-ca5629605735 h1:gQfdm416Q3v0VQvekToTCSJRM3GFQGxhT/tLQqvBxgA=
 github.com/murkland/syncrand v0.0.0-20220305211705-ca5629605735/go.mod h1:A5ESkPu6fXKG6ULIAjYGq5fptuUpJWlxMGPd5AodRdE=
 github.com/ncruces/zenity v0.7.15 h1:/QHGwXK/rpRhVsoQVG1D68AXkWr8esvCd1uaf/5SkKI=

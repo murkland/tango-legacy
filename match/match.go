@@ -2,6 +2,8 @@ package match
 
 import (
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -128,14 +130,15 @@ func (m *Match) negotiate(ctx context.Context) error {
 	}
 	dc := ctxwebrtc.WrapDataChannel(rtcDc)
 
-	log.Printf("signaling complete!")
 	log.Printf("local SDP: %s", peerConn.LocalDescription().SDP)
 	log.Printf("remote SDP: %s", peerConn.RemoteDescription().SDP)
 
 	var nonce [16]byte
-	if _, err := rand.Read(nonce[:]); err != nil {
+	if _, err := cryptorand.Read(nonce[:]); err != nil {
 		return fmt.Errorf("failed to generate rng seed part: %w", err)
 	}
+
+	log.Printf("our rng seed part: %s", hex.EncodeToString(nonce[:]))
 
 	commitment := syncrand.Commit(nonce[:])
 	var helloPacket packets.Hello
@@ -182,7 +185,11 @@ func (m *Match) negotiate(ctx context.Context) error {
 		return errors.New("failed to verify rng commitment")
 	}
 
+	log.Printf("their rng seed part: %s", hex.EncodeToString(theirNonce[:]))
+
 	seed := syncrand.MakeSeed(nonce[:], theirNonce[:])
+	log.Printf("rng seed: %s", hex.EncodeToString(seed))
+
 	randSource := syncrand.NewSource(seed)
 
 	m.peerConn = peerConn
