@@ -36,9 +36,11 @@ type Game struct {
 
 	bn6 *bn6.BN6
 
-	vb     *av.VideoBuffer
-	fbufMu sync.Mutex
-	fbuf   *image.RGBA
+	vb      *av.VideoBuffer
+	vbPixMu sync.Mutex
+	vbPix   []byte
+
+	fbuf *ebiten.Image
 
 	audioCtx        *audio.Context
 	gameAudioPlayer *audio.Player
@@ -111,7 +113,10 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 
 		bn6: bn6,
 
-		vb: vb,
+		vb:    vb,
+		vbPix: make([]byte, width*height*4),
+
+		fbuf: ebiten.NewImage(width, height),
 
 		audioCtx:        audioCtx,
 		gameAudioPlayer: gameAudioPlayer,
@@ -120,9 +125,9 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 
 	g.t = mgba.NewThread(mainCore)
 	g.t.SetFrameCallback(func() {
-		g.fbufMu.Lock()
-		defer g.fbufMu.Unlock()
-		g.fbuf = g.vb.CopyImage()
+		g.vbPixMu.Lock()
+		defer g.vbPixMu.Unlock()
+		copy(g.vbPix, g.vb.Pix())
 	})
 
 	if !g.t.Start() {
@@ -517,17 +522,16 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.fbufMu.Lock()
-	defer g.fbufMu.Unlock()
+	g.vbPixMu.Lock()
+	defer g.vbPixMu.Unlock()
 
-	if g.fbuf != nil {
-		k := g.scaleFactor(screen.Bounds())
-		opts := &ebiten.DrawImageOptions{}
-		w, h := g.mainCore.DesiredVideoDimensions()
-		opts.GeoM.Scale(float64(k), float64(k))
-		opts.GeoM.Translate(float64((screen.Bounds().Dx()-w*k)/2), float64((screen.Bounds().Dy()-h*k)/2))
-		screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
-	}
+	k := g.scaleFactor(screen.Bounds())
+	opts := &ebiten.DrawImageOptions{}
+	w, h := g.mainCore.DesiredVideoDimensions()
+	opts.GeoM.Scale(float64(k), float64(k))
+	opts.GeoM.Translate(float64((screen.Bounds().Dx()-w*k)/2), float64((screen.Bounds().Dy()-h*k)/2))
+	g.fbuf.ReplacePixels(g.vbPix)
+	screen.DrawImage(g.fbuf, opts)
 
 	if g.debugSpew {
 		g.spewDebug(screen)
