@@ -19,7 +19,7 @@ var (
 
 var ErrUnknownPacket = errors.New("unknown packet")
 
-const ProtocolVersion = 0x09
+const ProtocolVersion = 0x0a
 
 type packetType uint8
 
