@@ -28,9 +28,11 @@ var (
 type Game struct {
 	replayer *game.Replayer
 
-	vb     *av.VideoBuffer
-	fbufMu sync.Mutex
-	fbuf   *image.RGBA
+	vb      *av.VideoBuffer
+	vbPixMu sync.Mutex
+	vbPix   []byte
+
+	fbuf *ebiten.Image
 
 	gameAudioPlayer *audio.Player
 
@@ -68,17 +70,16 @@ func (g *Game) scaleFactor(bounds image.Rectangle) int {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.fbufMu.Lock()
-	defer g.fbufMu.Unlock()
+	g.vbPixMu.Lock()
+	defer g.vbPixMu.Unlock()
 
-	if g.fbuf != nil {
-		k := g.scaleFactor(screen.Bounds())
-		opts := &ebiten.DrawImageOptions{}
-		w, h := g.replayer.Core().DesiredVideoDimensions()
-		opts.GeoM.Scale(float64(k), float64(k))
-		opts.GeoM.Translate(float64((screen.Bounds().Dx()-w*k)/2), float64((screen.Bounds().Dy()-h*k)/2))
-		screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
-	}
+	k := g.scaleFactor(screen.Bounds())
+	opts := &ebiten.DrawImageOptions{}
+	w, h := g.replayer.Core().DesiredVideoDimensions()
+	opts.GeoM.Scale(float64(k), float64(k))
+	opts.GeoM.Translate(float64((screen.Bounds().Dx()-w*k)/2), float64((screen.Bounds().Dy()-h*k)/2))
+	g.fbuf.ReplacePixels(g.vbPix)
+	screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
 }
 
 const expectedFPS = 60
@@ -186,14 +187,16 @@ func main() {
 	g := &Game{
 		replayer:        replayer,
 		vb:              vb,
+		vbPix:           make([]byte, width*height*4),
+		fbuf:            ebiten.NewImage(width, height),
 		gameAudioPlayer: gameAudioPlayer,
 	}
 
 	g.t = mgba.NewThread(replayer.Core())
 	g.t.SetFrameCallback(func() {
-		g.fbufMu.Lock()
-		defer g.fbufMu.Unlock()
-		g.fbuf = g.vb.CopyImage()
+		g.vbPixMu.Lock()
+		defer g.vbPixMu.Unlock()
+		copy(g.vbPix, g.vb.Pix())
 	})
 
 	if !g.t.Start() {
