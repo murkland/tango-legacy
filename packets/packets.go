@@ -19,34 +19,20 @@ var (
 
 var ErrUnknownPacket = errors.New("unknown packet")
 
-const ProtocolVersion = 0x08
+const ProtocolVersion = 0x09
 
 type packetType uint8
 
 const (
-	packetTypePing   packetType = 0
-	packetTypePong   packetType = 1
-	packetTypeHello  packetType = 2
-	packetTypeHello2 packetType = 3
-	packetTypeInit   packetType = 5
-	packetTypeInput  packetType = 6
+	packetTypeHello  packetType = 0
+	packetTypeHello2 packetType = 1
+	packetTypeInit   packetType = 2
+	packetTypeInput  packetType = 3
 )
 
 type Packet interface {
 	packetType() packetType
 }
-
-type Ping struct {
-	ID uint64
-}
-
-func (Ping) packetType() packetType { return packetTypePing }
-
-type Pong struct {
-	ID uint64
-}
-
-func (Pong) packetType() packetType { return packetTypePong }
 
 type Hello struct {
 	ProtocolVersion uint8
@@ -73,6 +59,7 @@ func (Init) packetType() packetType { return packetTypeInit }
 // Input has an occasional 256 byte trailer.
 type Input struct {
 	ForTick           uint32
+	Lag               int8
 	Joyflags          uint16
 	CustomScreenState uint8
 }
@@ -103,10 +90,6 @@ func Unmarshal(r io.Reader) (Packet, error) {
 	}
 
 	switch typ {
-	case packetTypePing:
-		return unmarshal[Ping](r)
-	case packetTypePong:
-		return unmarshal[Pong](r)
 	case packetTypeHello:
 		return unmarshal[Hello](r)
 	case packetTypeHello2:

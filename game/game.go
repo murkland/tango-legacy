@@ -271,7 +271,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Fatalf("failed to add input: %s", err)
 		}
 
-		if err := match.SendInput(ctx, uint32(tick), joyflags, customScreenState, turn); err != nil {
+		if err := match.SendInput(ctx, uint32(tick), int8(battle.Lag()), joyflags, customScreenState, turn); err != nil {
 			log.Fatalf("failed to send input: %s", err)
 		}
 
@@ -280,6 +280,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if err != nil {
 			log.Fatalf("failed to fastforward: %s", err)
 		}
+		tps := expectedFPS + int(battle.LastCommittedRemoteInput().Lag) - battle.Lag()
+		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 		battle.SetCommittedState(committedState)
 		g.mainCore.LoadState(dirtyState)
 	})
@@ -480,18 +482,6 @@ const expectedFPS = 60
 func (g *Game) Update() error {
 	if g.t.HasCrashed() {
 		return errors.New("mgba thread crashed")
-	}
-
-	match := g.Match()
-	if match != nil && !match.Aborted() {
-		battle := match.Battle()
-		if battle != nil {
-			expected := match.RunaheadTicksAllowed()
-			lag := battle.Lag()
-			tps := expectedFPS - (lag - expected)
-			// TODO: Not thread safe.
-			g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
-		}
 	}
 
 	g.joyflags = ebitenToMgbaKeys(g.conf.Keymapping, inpututil.AppendPressedKeys(nil))

@@ -45,9 +45,8 @@ func (g *Game) spewDebug(screen *ebiten.Image) {
 		battle := match.Battle()
 		if battle != nil {
 			lines = append(lines,
-				fmt.Sprintf("ping:    %s", match.MedianDelay()),
 				fmt.Sprintf("is p2:   %t", battle.IsP2()),
-				fmt.Sprintf("lag:     %2d (max %2d)", battle.Lag(), match.RunaheadTicksAllowed()),
+				fmt.Sprintf("lag:     %2d", battle.Lag()),
 			)
 		}
 	}

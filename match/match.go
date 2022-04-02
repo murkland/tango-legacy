@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keegancsmith/nth"
 	"github.com/murkland/clone"
 	"github.com/murkland/ctxwebrtc"
 	"github.com/murkland/ringbuf"
@@ -24,8 +23,6 @@ import (
 	"github.com/murkland/tango/packets"
 	"github.com/murkland/tango/replay"
 	"github.com/pion/webrtc/v3"
-	"golang.org/x/exp/constraints"
-	"golang.org/x/sync/errgroup"
 )
 
 const expectedFPS = 60
@@ -51,9 +48,6 @@ type Match struct {
 	dc               *ctxwebrtc.DataChannel
 	wonLastBattle    bool
 	randSource       rand.Source
-
-	delayRingbuf   *ringbuf.RingBuf[time.Duration]
-	delayRingbufMu sync.RWMutex
 
 	battleMu     sync.Mutex
 	battleNumber int
@@ -92,8 +86,6 @@ func New(conf config.Config, sessionID string, matchType uint16, gameTitle strin
 		gameCRC32: gameCRC32,
 
 		negotiationErrCh: make(chan error),
-
-		delayRingbuf: ringbuf.New[time.Duration](9),
 
 		remoteInitCh: make(chan []byte),
 	}, nil
@@ -201,53 +193,6 @@ func (m *Match) negotiate(ctx context.Context) error {
 	return nil
 }
 
-type orderableSlice[T constraints.Ordered] []T
-
-func (s orderableSlice[T]) Len() int {
-	return len(s)
-}
-
-func (s orderableSlice[T]) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s orderableSlice[T]) Less(i, j int) bool {
-	return s[i] < s[j]
-}
-
-func (m *Match) MedianDelay() time.Duration {
-	m.delayRingbufMu.RLock()
-	defer m.delayRingbufMu.RUnlock()
-
-	if m.delayRingbuf.Used() == 0 {
-		return 0
-	}
-
-	delays := make([]time.Duration, m.delayRingbuf.Used())
-	m.delayRingbuf.Peek(delays, 0)
-
-	i := len(delays) / 2
-	nth.Element(orderableSlice[time.Duration](delays), i)
-	return delays[i]
-}
-
-func (m *Match) sendPings(ctx context.Context) error {
-	for {
-		now := time.Now()
-		if err := packets.Send(ctx, m.dc, packets.Ping{
-			ID: uint64(now.UnixMicro()),
-		}, nil); err != nil {
-			return err
-		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(1 * time.Second):
-		}
-	}
-}
-
 func (m *Match) handleConn(ctx context.Context) error {
 	for {
 		packet, trailer, err := packets.Recv(ctx, m.dc)
@@ -256,25 +201,6 @@ func (m *Match) handleConn(ctx context.Context) error {
 		}
 
 		switch p := packet.(type) {
-		case packets.Ping:
-			if err := packets.Send(ctx, m.dc, packets.Pong{ID: p.ID}, nil); err != nil {
-				return err
-			}
-		case packets.Pong:
-			if err := (func() error {
-				m.delayRingbufMu.Lock()
-				defer m.delayRingbufMu.Unlock()
-
-				if m.delayRingbuf.Free() == 0 {
-					m.delayRingbuf.Advance(1)
-				}
-
-				delay := time.Now().Sub(time.UnixMicro(int64(p.ID)))
-				m.delayRingbuf.Push([]time.Duration{delay})
-				return nil
-			})(); err != nil {
-				return err
-			}
 		case packets.Init:
 			select {
 			case m.remoteInitCh <- p.Marshaled[:]:
@@ -287,7 +213,7 @@ func (m *Match) handleConn(ctx context.Context) error {
 				log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
 				continue
 			}
-			battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{Tick: int(p.ForTick), Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
+			battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{Tick: int(p.ForTick), Lag: p.Lag, Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
 		}
 	}
 }
@@ -354,14 +280,7 @@ func (m *Match) Run(ctx context.Context) error {
 	}
 	close(m.negotiationErrCh)
 
-	errg, ctx := errgroup.WithContext(ctx)
-	errg.Go(func() error {
-		return m.handleConn(ctx)
-	})
-	errg.Go(func() error {
-		return m.sendPings(ctx)
-	})
-	return errg.Wait()
+	return m.handleConn(ctx)
 }
 
 func (m *Match) Close() error {
@@ -389,14 +308,6 @@ func (m *Match) Close() error {
 	return nil
 }
 
-func (m *Match) RunaheadTicksAllowed() int {
-	expected := int(m.MedianDelay()*time.Duration(expectedFPS)/2/time.Second + 1)
-	if expected < 1 {
-		expected = 1
-	}
-	return expected
-}
-
 func (m *Match) PollForReady(ctx context.Context) error {
 	select {
 	case err := <-m.negotiationErrCh:
@@ -414,9 +325,10 @@ func (m *Match) SendInit(ctx context.Context, init []byte) error {
 	return packets.Send(ctx, m.dc, pkt, nil)
 }
 
-func (m *Match) SendInput(ctx context.Context, tick uint32, joyflags uint16, customScreenState uint8, turn []byte) error {
+func (m *Match) SendInput(ctx context.Context, tick uint32, lag int8, joyflags uint16, customScreenState uint8, turn []byte) error {
 	var pkt packets.Input
-	pkt.ForTick = uint32(tick)
+	pkt.ForTick = tick
+	pkt.Lag = lag
 	pkt.Joyflags = joyflags
 	pkt.CustomScreenState = customScreenState
 	return packets.Send(ctx, m.dc, pkt, turn)
