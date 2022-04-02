@@ -117,10 +117,6 @@ func (b *Battle) ReplayWriter() *replay.Writer {
 	return b.rw
 }
 
-func (b *Battle) Lag() int {
-	return b.iq.Lag(b.RemotePlayerIndex())
-}
-
 func (b *Battle) IsP2() bool {
 	return b.isP2
 }

@@ -58,8 +58,8 @@ func (Init) packetType() packetType { return packetTypeInit }
 
 // Input has an occasional 256 byte trailer.
 type Input struct {
-	ForTick           uint32
-	Lag               int8
+	LocalTick         uint32
+	RemoteTick        uint32
 	Joyflags          uint16
 	CustomScreenState uint8
 }

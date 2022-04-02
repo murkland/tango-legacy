@@ -11,10 +11,8 @@ import (
 	"github.com/murkland/tango/mgba"
 )
 
-const replayVersion = 0x06
+const replayVersion = 0x07
 const replayHeader = "TOOT"
-
-const flushEvery = 60
 
 type Writer struct {
 	closer io.Closer
@@ -91,7 +89,10 @@ func (rw *Writer) Write(rngState uint32, inputPair [2]input.Input) error {
 	p1 := inputPair[0]
 	p2 := inputPair[1]
 
-	if err := binary.Write(rw.w, binary.LittleEndian, uint32(p1.Tick)); err != nil {
+	if err := binary.Write(rw.w, binary.LittleEndian, uint32(p1.LocalTick)); err != nil {
+		return err
+	}
+	if err := binary.Write(rw.w, binary.LittleEndian, uint32(p1.RemoteTick)); err != nil {
 		return err
 	}
 	if err := binary.Write(rw.w, binary.LittleEndian, uint32(rngState)); err != nil {

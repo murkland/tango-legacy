@@ -102,8 +102,20 @@ func Unmarshal(r io.Reader) (*Replay, error) {
 	var inputPairs [][2]input.Input
 	var rngStates []uint32
 	for {
-		var tick uint32
-		if err := binary.Read(zr, binary.LittleEndian, &tick); err != nil {
+		var localTick uint32
+		if err := binary.Read(zr, binary.LittleEndian, &localTick); err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Printf("replay was truncated")
+				break
+			}
+			return nil, err
+		}
+
+		var remoteTick uint32
+		if err := binary.Read(zr, binary.LittleEndian, &remoteTick); err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
@@ -126,8 +138,10 @@ func Unmarshal(r io.Reader) (*Replay, error) {
 		rngStates = append(rngStates, rngState)
 
 		var inputPair [2]input.Input
-		inputPair[0].Tick = int(tick)
-		inputPair[1].Tick = int(tick)
+		inputPair[0].LocalTick = int(localTick)
+		inputPair[0].RemoteTick = int(remoteTick)
+		inputPair[1].LocalTick = int(remoteTick)
+		inputPair[1].RemoteTick = int(remoteTick)
 
 		var p1Joyflags uint16
 		if err := binary.Read(zr, binary.LittleEndian, &p1Joyflags); err != nil {
