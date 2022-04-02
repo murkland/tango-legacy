@@ -75,7 +75,7 @@ func main() {
 		log.Printf("mgba: level=%d category=%s %s", level, category, message)
 	})
 
-	log.Printf("welcome to bingus battle network 6 %s", version)
+	log.Printf("welcome to tango %s", version)
 
 	if *romPath == "" {
 		roms, err := os.ReadDir("roms")
