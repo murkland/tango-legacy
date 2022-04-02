@@ -14,6 +14,10 @@ BBN6 はロックマンエグゼ６ネットプレイシステムです。
 
     Windows を使用している場合は、`hub.bat` を起動してください。そうでない場合は、現在サポートされていません。
 
+-   you can connect to an opponent in-game by going to the menu then going to Comm > LINK CBL > NetBattl > SnglBatt / TrplBatt (do NOT pick RandBatt) > Practice. a dialog will pop up where you can enter a matchmaking code.
+
+    ゲーム内で相手と接続するために、メニューに入り、つうしん → つうしんケーブル → ネットバトル → シングルバトル・トリプルバトル（ランダムバトルを選択しない）→ れんしゅうを選択し、リンクコードを入力ください。
+
 -   if you run any into any issues, please let us know on our discord server: <https://discord.gg/zbQngJHwSg>
 
     何か問題が発生した場合は、私たちのディスコード・サーバーに連絡ください。 <https://discord.gg/zbQngJHwSg>
