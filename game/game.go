@@ -36,8 +36,9 @@ type Game struct {
 
 	bn6 *bn6.BN6
 
-	vb   *av.VideoBuffer
-	fbuf *image.RGBA
+	vb     *av.VideoBuffer
+	fbufMu sync.Mutex
+	fbuf   *image.RGBA
 
 	audioCtx        *audio.Context
 	gameAudioPlayer *audio.Player
@@ -84,14 +85,8 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 
 	width, height := mainCore.DesiredVideoDimensions()
 	vb := av.NewVideoBuffer(width, height)
-	ebiten.SetWindowSize(width*3, height*3)
-
 	mainCore.SetVideoBuffer(vb.Pointer(), width)
-	t := mgba.NewThread(mainCore)
-	if !t.Start() {
-		return nil, err
-	}
-	mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
+	ebiten.SetWindowSize(width*3, height*3)
 
 	newAudioReader := av.NewClippyAudioReader
 	switch conf.Audio.Interpolation {
@@ -106,7 +101,6 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 		return nil, err
 	}
 	gameAudioPlayer.SetBufferSize(time.Duration(mainCore.AudioBufferSize()+1) * time.Second / time.Duration(mainCore.Options().SampleRate))
-	gameAudioPlayer.Play()
 
 	g := &Game{
 		conf: conf,
@@ -121,10 +115,22 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 
 		audioCtx:        audioCtx,
 		gameAudioPlayer: gameAudioPlayer,
-
-		t: t,
 	}
 	g.InstallTraps(mainCore)
+
+	g.t = mgba.NewThread(mainCore)
+	g.t.SetFrameCallback(func() {
+		g.fbufMu.Lock()
+		defer g.fbufMu.Unlock()
+		g.fbuf = g.vb.CopyImage()
+	})
+
+	if !g.t.Start() {
+		return nil, err
+	}
+	mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
+
+	gameAudioPlayer.Play()
 
 	return g, nil
 }
@@ -511,10 +517,8 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.mainCore.GBA().Sync().WaitFrameStart() {
-		g.fbuf = g.vb.CopyImage()
-	}
-	g.mainCore.GBA().Sync().WaitFrameEnd()
+	g.fbufMu.Lock()
+	defer g.fbufMu.Unlock()
 
 	if g.fbuf != nil {
 		k := g.scaleFactor(screen.Bounds())

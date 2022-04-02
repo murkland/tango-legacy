@@ -15,6 +15,7 @@ import (
 	"github.com/murkland/tango/config"
 	"github.com/murkland/tango/game"
 	"github.com/murkland/tango/mgba"
+
 	_ "github.com/murkland/tango/translations"
 	"github.com/ncruces/zenity"
 	"golang.org/x/exp/maps"
@@ -134,7 +135,6 @@ func main() {
 	ebiten.SetWindowTitle("tango")
 	ebiten.SetWindowResizable(true)
 	ebiten.SetRunnableOnUnfocused(true)
-	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMaximum)
 
 	g, err := game.New(conf, p, *romPath)
 	if err != nil {

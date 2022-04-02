@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -25,15 +26,19 @@ var (
 )
 
 type Game struct {
-	replayer        *game.Replayer
-	vb              *av.VideoBuffer
-	fbuf            *image.RGBA
+	replayer *game.Replayer
+
+	vb     *av.VideoBuffer
+	fbufMu sync.Mutex
+	fbuf   *image.RGBA
+
 	gameAudioPlayer *audio.Player
-	t               *mgba.Thread
+
+	t *mgba.Thread
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return g.replayer.Core().DesiredVideoDimensions()
+	return outsideWidth, outsideHeight
 }
 
 func (g *Game) Update() error {
@@ -53,14 +58,25 @@ func (g *Game) Update() error {
 	return nil
 }
 
-func (g *Game) Draw(screen *ebiten.Image) {
-	if g.replayer.Core().GBA().Sync().WaitFrameStart() {
-		g.fbuf = g.vb.CopyImage()
+func (g *Game) scaleFactor(bounds image.Rectangle) int {
+	w, h := g.replayer.Core().DesiredVideoDimensions()
+	k := bounds.Dx() / w
+	if s := bounds.Dy() / h; s < k {
+		k = s
 	}
-	g.replayer.Core().GBA().Sync().WaitFrameEnd()
+	return k
+}
+
+func (g *Game) Draw(screen *ebiten.Image) {
+	g.fbufMu.Lock()
+	defer g.fbufMu.Unlock()
 
 	if g.fbuf != nil {
+		k := g.scaleFactor(screen.Bounds())
 		opts := &ebiten.DrawImageOptions{}
+		w, h := g.replayer.Core().DesiredVideoDimensions()
+		opts.GeoM.Scale(float64(k), float64(k))
+		opts.GeoM.Translate(float64((screen.Bounds().Dx()-w*k)/2), float64((screen.Bounds().Dy()-h*k)/2))
 		screen.DrawImage(ebiten.NewImageFromImage(g.fbuf), opts)
 	}
 }
@@ -159,14 +175,6 @@ func main() {
 	ebiten.SetWindowSize(width*3, height*3)
 
 	replayer.Core().SetVideoBuffer(vb.Pointer(), width)
-	t := mgba.NewThread(replayer.Core())
-	if !t.Start() {
-		log.Fatalf("failed to start mgba thread")
-	}
-	t.Pause()
-	replayer.Reset()
-	t.Unpause()
-	replayer.Core().GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
 	gameAudioPlayer, err := audioCtx.NewPlayer(av.NewRubberyAudioReader(replayer.Core(), replayer.Core().Options().SampleRate))
 	if err != nil {
@@ -179,13 +187,26 @@ func main() {
 		replayer:        replayer,
 		vb:              vb,
 		gameAudioPlayer: gameAudioPlayer,
-		t:               t,
 	}
+
+	g.t = mgba.NewThread(replayer.Core())
+	g.t.SetFrameCallback(func() {
+		g.fbufMu.Lock()
+		defer g.fbufMu.Unlock()
+		g.fbuf = g.vb.CopyImage()
+	})
+
+	if !g.t.Start() {
+		log.Fatalf("failed to start mgba thread")
+	}
+	g.t.Pause()
+	replayer.Reset()
+	g.t.Unpause()
+	replayer.Core().GBA().Sync().SetFPSTarget(float32(expectedFPS))
 
 	ebiten.SetWindowTitle("tango replayview")
 	ebiten.SetWindowResizable(true)
 	ebiten.SetRunnableOnUnfocused(true)
-	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMaximum)
 
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatalf("failed to run mgba: %s", err)
