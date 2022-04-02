@@ -213,7 +213,7 @@ func (m *Match) handleConn(ctx context.Context) error {
 				log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
 				continue
 			}
-			battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{LocalTick: int(p.LocalTick), LastCommittedRemoteTick: battle.lastCommittedRemoteInput.LocalTick, Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
+			battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{Tick: int(p.ForTick), Lag: p.Lag, Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
 		}
 	}
 }
@@ -325,10 +325,10 @@ func (m *Match) SendInit(ctx context.Context, init []byte) error {
 	return packets.Send(ctx, m.dc, pkt, nil)
 }
 
-func (m *Match) SendInput(ctx context.Context, localTick uint32, lastCommittedRemoteTick uint32, joyflags uint16, customScreenState uint8, turn []byte) error {
+func (m *Match) SendInput(ctx context.Context, tick uint32, lag int8, joyflags uint16, customScreenState uint8, turn []byte) error {
 	var pkt packets.Input
-	pkt.LocalTick = localTick
-	pkt.LastCommittedRemoteTick = lastCommittedRemoteTick
+	pkt.ForTick = tick
+	pkt.Lag = lag
 	pkt.Joyflags = joyflags
 	pkt.CustomScreenState = customScreenState
 	return packets.Send(ctx, m.dc, pkt, turn)

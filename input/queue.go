@@ -63,8 +63,11 @@ func (q *Queue) Peek(playerIndex int) []Input {
 	return inputs
 }
 
-func (q *Queue) QueueLength(playerIndex int) int {
-	return q.qs[playerIndex].Used()
+func (q *Queue) Lag(playerIndex int) int {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	return q.qs[1-playerIndex].Used() - q.qs[playerIndex].Used()
 }
 
 func (q *Queue) advanceManyLocked() [][2]Input {

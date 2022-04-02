@@ -53,8 +53,8 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		ff.state.inputPairs.Pop(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
 
-		if ip[0].LocalTick != ip[1].LocalTick {
-			ff.state.err = fmt.Errorf("p1 tick != p2 tick: %d != %d", ip[0].LocalTick, ip[1].LocalTick)
+		if ip[0].Tick != ip[1].Tick {
+			ff.state.err = fmt.Errorf("p1 tick != p2 tick: %d != %d", ip[0].Tick, ip[1].Tick)
 			return
 		}
 
@@ -62,7 +62,7 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		if ip[0].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
 			if !ff.state.predicting {
-				log.Printf("p1 turn committed at tick %d", ip[0].LocalTick)
+				log.Printf("p1 turn committed at tick %d", ip[0].Tick)
 			}
 		}
 
@@ -70,7 +70,7 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 		if ip[1].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
 			if !ff.state.predicting {
-				log.Printf("p2 turn committed at tick %d", ip[1].LocalTick)
+				log.Printf("p2 turn committed at tick %d", ip[1].Tick)
 			}
 		}
 
@@ -162,8 +162,8 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *replay.Writer, local
 		predictedInputPairs[i][localPlayerIndex] = inp
 
 		predicted := &predictedInputPairs[i][1-localPlayerIndex]
-		predicted.LocalTick = inp.LocalTick
-		predicted.LastCommittedRemoteTick = inp.LastCommittedRemoteTick
+		predicted.Tick = inp.Tick
+		predicted.Lag = inp.Lag
 		predicted.CustomScreenState = lastCommittedRemoteInput.CustomScreenState
 		if lastCommittedRemoteInput.Joyflags&uint16(mgba.KeysA) != 0 {
 			predicted.Joyflags |= uint16(mgba.KeysA)

@@ -126,8 +126,8 @@ func Unmarshal(r io.Reader) (*Replay, error) {
 		rngStates = append(rngStates, rngState)
 
 		var inputPair [2]input.Input
-		inputPair[0].LocalTick = int(tick)
-		inputPair[1].LocalTick = int(tick)
+		inputPair[0].Tick = int(tick)
+		inputPair[1].Tick = int(tick)
 
 		var p1Joyflags uint16
 		if err := binary.Read(zr, binary.LittleEndian, &p1Joyflags); err != nil {
