@@ -39,7 +39,7 @@ func (b *Battle) RemotePlayerIndex() int {
 	return 1 - b.LocalPlayerIndex()
 }
 
-func (b *Battle) QueueLength(playerIndex int) {
+func (b *Battle) QueueLength(playerIndex int) int {
 	return b.iq.QueueLength(playerIndex)
 }
 
