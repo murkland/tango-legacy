@@ -249,7 +249,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		ctx := context.Background()
 
-		tick := battle.PostIncrementTick()
+		localTick := battle.PostIncrementTick()
+		lastCommittedRemoteInput := battle.LastCommittedRemoteInput()
+		lastCommittedRemoteTick := lastCommittedRemoteInput.LocalTick
 
 		nextJoyflags := g.bn6.LocalJoyflags(core)
 		joyflags := battle.AddLocalBufferedInputAndConsume(nextJoyflags)
@@ -261,7 +263,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		const timeout = 5 * time.Second
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		if err := battle.AddInput(ctx, battle.LocalPlayerIndex(), input.Input{Tick: int(tick), Joyflags: joyflags, CustomScreenState: customScreenState, Turn: turn}); err != nil {
+		if err := battle.AddInput(ctx, battle.LocalPlayerIndex(), input.Input{LocalTick: localTick, LastCommittedRemoteTick: lastCommittedRemoteTick, Joyflags: joyflags, CustomScreenState: customScreenState, Turn: turn}); err != nil {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				log.Printf("could not queue local input within %s, dropping connection", timeout)
 				g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
@@ -271,7 +273,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Fatalf("failed to add input: %s", err)
 		}
 
-		if err := match.SendInput(ctx, uint32(tick), int8(battle.Lag()), joyflags, customScreenState, turn); err != nil {
+		if err := match.SendInput(ctx, uint32(localTick), uint32(lastCommittedRemoteTick), joyflags, customScreenState, turn); err != nil {
 			log.Fatalf("failed to send input: %s", err)
 		}
 
@@ -280,7 +282,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if err != nil {
 			log.Fatalf("failed to fastforward: %s", err)
 		}
-		tps := expectedFPS + int(battle.LastCommittedRemoteInput().Lag) - battle.Lag()
+		tps := expectedFPS + (lastCommittedRemoteInput.LastCommittedRemoteTick - lastCommittedRemoteInput.LocalTick + 1)
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 		battle.SetCommittedState(committedState)
 		g.mainCore.LoadState(dirtyState)
