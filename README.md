@@ -1,12 +1,12 @@
-# bingus battle network 6 (tango)
+# tango
 
-![bingus battle network 6](logo.png)
+![tango](logo.png)
 
 [![murkland](https://discordapp.com/api/guilds/936475149069336596/widget.png?style=shield)](https://discord.gg/zbQngJHwSg)
 
-netplay for mega man battle network 6 in the style of <https://github.com/ssbmars/BBN3-netcode>. the b in tango does NOT stand for "better".
+netplay for mega man battle network 6 in the style of <https://github.com/ssbmars/BBN3-netcode>.
 
-BBN6 はロックマンエグゼ６ネットプレイシステムです。
+tango（タンゴ）はロックマンエグゼ６ネットプレイシステムです。
 
 ## how to use / 使用方法
 
