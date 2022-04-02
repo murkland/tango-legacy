@@ -4,7 +4,7 @@
 
 [![murkland](https://discordapp.com/api/guilds/936475149069336596/widget.png?style=shield)](https://discord.gg/zbQngJHwSg)
 
-netplay for mega man battle network 6 in the style of <https://github.com/ssbmars/BBN3-netcode>.
+netplay for mega man battle network games in the style of <https://github.com/ssbmars/BBN3-netcode>.
 
 tango（タンゴ）はロックマンエグゼ６ネットプレイシステムです。
 
@@ -16,21 +16,18 @@ tango（タンゴ）はロックマンエグゼ６ネットプレイシステム
 
 -   you can connect to an opponent in-game by going to the menu then going to Comm > LINK CBL > NetBattl > SnglBatt / TrplBatt (do NOT pick RandBatt) > Practice. a dialog will pop up where you can enter a matchmaking code.
 
-    ゲーム内で相手と接続するために、メニューに入り、つうしん → つうしんケーブル → ネットバトル → シングルバトル・トリプルバトル（ランダムバトルを選択しない）→ れんしゅうを選択し、リンクコードを入力ください。
+    ゲーム内で相手と接続するために、メニューに入り、つうしん → つうしんケーブル → ネットバトル → シングルバトル・トリプルバトル（ランダムバトルを選択しない）→ れんしゅうを選択し、リンクコードを入力してください。
 
 -   if you run any into any issues, please let us know on our discord server: <https://discord.gg/zbQngJHwSg>
 
-    何か問題が発生した場合は、私たちのディスコード・サーバーに連絡ください。 <https://discord.gg/zbQngJHwSg>
+    何か問題が発生した場合は、私たちのディスコード・サーバーに連絡してください。 <https://discord.gg/zbQngJHwSg>
 
-## you will need / 必要なもの
+## supported games / 対応ゲーム
 
--   a copy of MEGAMAN6_FXX, MEGAMAN6_GXX, ROCKEXE6_RXX, or ROCKEXE6_GXX
-
-    MEGAMAN6_FXX、MEGAMAN6_GXX、ROCKEXE6_RXX、ROCKEXE6_GXX の ROM
-
--   an indefinite amount of patience
-
-    忍耐力
+-   MEGAMAN6_FXX: Mega Man Battle Network 6: Cybeast Falzar
+-   MEGAMAN6_GXX: Mega Man Battle Network 6: Cybeast Gregar
+-   ROCKEXE6_RXX: ロックマンエグゼ 6 電脳獣ファルザー
+-   ROCKEXE6_GXX: ロックマンエグゼ 6 電脳獣グレイガ
 
 ## thank you / 感謝
 
