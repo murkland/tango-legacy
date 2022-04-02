@@ -39,6 +39,10 @@ func (b *Battle) RemotePlayerIndex() int {
 	return 1 - b.LocalPlayerIndex()
 }
 
+func (b *Battle) QueueLength(playerIndex int) {
+	return b.iq.QueueLength(playerIndex)
+}
+
 func (b *Battle) PostIncrementTick() int {
 	tick := b.tick
 	b.tick++

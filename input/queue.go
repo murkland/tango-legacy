@@ -70,6 +70,13 @@ func (q *Queue) Lag(playerIndex int) int {
 	return q.qs[1-playerIndex].Used() - q.qs[playerIndex].Used()
 }
 
+func (q *Queue) QueueLength(playerIndex int) int {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	return q.qs[playerIndex].Used()
+}
+
 func (q *Queue) advanceManyLocked() [][2]Input {
 	n := q.qs[0].Used()
 	if q.qs[1].Used() < n {
