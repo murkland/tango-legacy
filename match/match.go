@@ -432,24 +432,6 @@ var battleBackgrounds = []uint16{
 	0x0e, 0x0f, 0x10, 0x11, 0x11, 0x13, 0x13,
 }
 
-func (m *Match) RandomBattleSettingsAndBackground() uint16 {
-	rng := rand.New(m.randSource)
-
-	var lo uint16
-	switch m.matchType {
-	case 0:
-		lo = uint16(rng.Int31n(0x44))
-	case 1:
-		lo = uint16(rng.Int31n(0x60))
-	case 2:
-		lo = uint16(rng.Int31n(0x44)) + 0x60
-	}
-
-	hi := battleBackgrounds[rng.Int31n(int32(len(battleBackgrounds)))]
-
-	return uint16(hi<<0x8 | lo)
-}
-
 func (m *Match) ReadRemoteInit(ctx context.Context) ([]byte, error) {
 	select {
 	case init := <-m.remoteInitCh:
@@ -457,4 +439,12 @@ func (m *Match) ReadRemoteInit(ctx context.Context) ([]byte, error) {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+
+func (m *Match) RandSource() rand.Source {
+	return m.randSource
+}
+
+func (m *Match) Type() uint16 {
+	return m.matchType
 }

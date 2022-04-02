@@ -1,6 +1,8 @@
 package bn6
 
 import (
+	"math/rand"
+
 	"github.com/murkland/bbn6/mgba"
 )
 
@@ -91,4 +93,28 @@ func (b *BN6) SetLinkBattleSettingsAndBackground(core *mgba.Core, linkBattleSett
 
 func (b *BN6) MatchType(core *mgba.Core) uint16 {
 	return core.RawRead16(b.Offsets.EWRAM.A_MenuControl+0x12, -1)
+}
+
+var battleBackgrounds = []uint16{
+	0x00, 0x01, 0x01, 0x03, 0x04, 0x05, 0x06,
+	0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+	0x0e, 0x0f, 0x10, 0x11, 0x11, 0x13, 0x13,
+}
+
+func (b *BN6) RandomBattleSettingsAndBackground(randSource rand.Source, matchType uint8) uint16 {
+	rng := rand.New(randSource)
+
+	var lo uint16
+	switch matchType {
+	case 0:
+		lo = uint16(rng.Int31n(0x44))
+	case 1:
+		lo = uint16(rng.Int31n(0x60))
+	case 2:
+		lo = uint16(rng.Int31n(0x44)) + 0x60
+	}
+
+	hi := battleBackgrounds[rng.Int31n(int32(len(battleBackgrounds)))]
+
+	return uint16(hi<<0x8 | lo)
 }

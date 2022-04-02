@@ -431,7 +431,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if match == nil {
 			return
 		}
-		battleSettingsAndBackground := match.RandomBattleSettingsAndBackground()
+		battleSettingsAndBackground := g.bn6.RandomBattleSettingsAndBackground(match.RandSource(), uint8(match.Type()&0xff))
 		log.Printf("selected battle settings and background: %04x", battleSettingsAndBackground)
 		g.bn6.SetLinkBattleSettingsAndBackground(g.mainCore, battleSettingsAndBackground)
 	})
