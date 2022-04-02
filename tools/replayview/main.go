@@ -13,10 +13,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/murkland/bbn6/av"
-	"github.com/murkland/bbn6/game"
-	"github.com/murkland/bbn6/mgba"
-	"github.com/murkland/bbn6/replay"
+	"github.com/murkland/tango/av"
+	"github.com/murkland/tango/game"
+	"github.com/murkland/tango/mgba"
+	"github.com/murkland/tango/replay"
 	"github.com/ncruces/zenity"
 )
 
@@ -113,7 +113,7 @@ func main() {
 			}
 			defer core.Close()
 
-			core.Config().Init("bbn6")
+			core.Config().Init("tango")
 			core.Config().Load()
 
 			vf := mgba.OpenVF(path, os.O_RDONLY)
@@ -182,7 +182,7 @@ func main() {
 		t:               t,
 	}
 
-	ebiten.SetWindowTitle("bbn6 replayview")
+	ebiten.SetWindowTitle("tango replayview")
 	ebiten.SetWindowResizable(true)
 	ebiten.SetRunnableOnUnfocused(true)
 	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMaximum)

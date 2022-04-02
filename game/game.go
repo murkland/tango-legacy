@@ -14,13 +14,13 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/murkland/bbn6/av"
-	"github.com/murkland/bbn6/bn6"
-	"github.com/murkland/bbn6/config"
-	"github.com/murkland/bbn6/input"
-	"github.com/murkland/bbn6/match"
-	"github.com/murkland/bbn6/mgba"
-	"github.com/murkland/bbn6/trapper"
+	"github.com/murkland/tango/av"
+	"github.com/murkland/tango/bn6"
+	"github.com/murkland/tango/config"
+	"github.com/murkland/tango/input"
+	"github.com/murkland/tango/match"
+	"github.com/murkland/tango/mgba"
+	"github.com/murkland/tango/trapper"
 	"github.com/ncruces/zenity"
 	"golang.org/x/text/message"
 )
@@ -73,7 +73,7 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 	if bn6 == nil {
 		return nil, fmt.Errorf("unsupported game: %s", mainCore.GameTitle())
 	}
-	ebiten.SetWindowTitle("bbn6: " + mainCore.GameTitle())
+	ebiten.SetWindowTitle("tango: " + mainCore.GameTitle())
 
 	fastforwarder, err := newFastforwarder(romPath, bn6)
 	if err != nil {
@@ -388,7 +388,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if g.match == nil {
 			volume := g.gameAudioPlayer.Volume()
 			g.gameAudioPlayer.SetVolume(0)
-			code, err := zenity.Entry(g.p.Sprintf("ENTER_MATCHMAKING_CODE"), zenity.Title("bbn6"))
+			code, err := zenity.Entry(g.p.Sprintf("ENTER_MATCHMAKING_CODE"), zenity.Title("tango"))
 			g.gameAudioPlayer.SetVolume(volume)
 			if err != nil {
 				log.Printf("matchmaking dialog did not return a code: %s", err)

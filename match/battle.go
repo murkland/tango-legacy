@@ -3,10 +3,10 @@ package match
 import (
 	"context"
 
-	"github.com/murkland/bbn6/input"
-	"github.com/murkland/bbn6/mgba"
-	"github.com/murkland/bbn6/replay"
 	"github.com/murkland/ringbuf"
+	"github.com/murkland/tango/input"
+	"github.com/murkland/tango/mgba"
+	"github.com/murkland/tango/replay"
 )
 
 type Battle struct {

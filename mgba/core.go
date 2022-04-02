@@ -5,73 +5,73 @@ package mgba
 #include <mgba/gba/core.h>
 #include <mgba/internal/gba/gba.h>
 
-typedef void bbn6_mgba_bkpt16_irqh(struct ARMCore* cpu, int immediate);
+typedef void tango_mgba_bkpt16_irqh(struct ARMCore* cpu, int immediate);
 
-bool bbn6_mgba_mCore_init(struct mCore* core) {
+bool tango_mgba_mCore_init(struct mCore* core) {
 	return core->init(core);
 }
 
-bool bbn6_mgba_mCore_loadROM(struct mCore* core, struct VFile* vf) {
+bool tango_mgba_mCore_loadROM(struct mCore* core, struct VFile* vf) {
 	return core->loadROM(core, vf);
 }
 
-bool bbn6_mgba_mCore_loadSave(struct mCore* core, struct VFile* vf) {
+bool tango_mgba_mCore_loadSave(struct mCore* core, struct VFile* vf) {
 	return core->loadSave(core, vf);
 }
 
-void bbn6_mgba_mCore_deinit(struct mCore* core) {
+void tango_mgba_mCore_deinit(struct mCore* core) {
 	core->deinit(core);
 }
 
-void bbn6_mgba_mCore_getGameTitle(struct mCore* core, char* title) {
+void tango_mgba_mCore_getGameTitle(struct mCore* core, char* title) {
 	core->getGameTitle(core, title);
 }
 
-void bbn6_mgba_mCore_getGameCode(struct mCore* core, char* code) {
+void tango_mgba_mCore_getGameCode(struct mCore* core, char* code) {
 	core->getGameCode(core, code);
 }
 
-void bbn6_mgba_mCore_desiredVideoDimensions(const struct mCore* core, unsigned* width, unsigned* height) {
+void tango_mgba_mCore_desiredVideoDimensions(const struct mCore* core, unsigned* width, unsigned* height) {
 	core->desiredVideoDimensions(core, width, height);
 }
 
-void bbn6_mgba_mCore_setVideoBuffer(struct mCore* core, color_t* buffer, size_t stride) {
+void tango_mgba_mCore_setVideoBuffer(struct mCore* core, color_t* buffer, size_t stride) {
 	core->setVideoBuffer(core, buffer, stride);
 }
 
-void bbn6_mgba_mCore_reset(struct mCore* core) {
+void tango_mgba_mCore_reset(struct mCore* core) {
 	core->reset(core);
 }
 
-void bbn6_mgba_mCore_setSync(struct mCore* core, struct mCoreSync* sync) {
+void tango_mgba_mCore_setSync(struct mCore* core, struct mCoreSync* sync) {
 	core->setSync(core, sync);
 }
 
-void bbn6_mgba_mCore_runFrame(struct mCore* core) {
+void tango_mgba_mCore_runFrame(struct mCore* core) {
 	core->runFrame(core);
 }
 
-int32_t bbn6_mgba_mCore_frequency(struct mCore* core) {
+int32_t tango_mgba_mCore_frequency(struct mCore* core) {
 	return core->frequency(core);
 }
 
-uint32_t bbn6_mgba_mCore_frameCounter(struct mCore* core) {
+uint32_t tango_mgba_mCore_frameCounter(struct mCore* core) {
 	return core->frameCounter(core);
 }
 
-void bbn6_mgba_mCore_checksum(struct mCore* core, void* data, enum mCoreChecksumType type) {
+void tango_mgba_mCore_checksum(struct mCore* core, void* data, enum mCoreChecksumType type) {
 	core->checksum(core, data, type);
 }
 
-struct blip_t* bbn6_mgba_mCore_getAudioChannel(struct mCore* core, int ch) {
+struct blip_t* tango_mgba_mCore_getAudioChannel(struct mCore* core, int ch) {
 	return core->getAudioChannel(core, ch);
 }
 
-size_t bbn6_mgba_mCore_getAudioBufferSize(struct mCore* core) {
+size_t tango_mgba_mCore_getAudioBufferSize(struct mCore* core) {
 	return core->getAudioBufferSize(core);
 }
 
-void bbn6_mgba_mCore_setAudioBufferSize(struct mCore* core, size_t samples) {
+void tango_mgba_mCore_setAudioBufferSize(struct mCore* core, size_t samples) {
 	core->setAudioBufferSize(core, samples);
 }
 */
@@ -95,7 +95,7 @@ type CoreOptions struct {
 type Core struct {
 	ptr            *C.struct_mCore
 	config         *Config
-	realBkpt16Irqh *C.bbn6_mgba_bkpt16_irqh
+	realBkpt16Irqh *C.tango_mgba_bkpt16_irqh
 	beefTrap       func()
 }
 
@@ -107,7 +107,7 @@ func NewGBACore() (*Core, error) {
 
 	core := &Core{ptr, &Config{&ptr.config, false}, nil, nil}
 
-	if !C.bbn6_mgba_mCore_init(core.ptr) {
+	if !C.tango_mgba_mCore_init(core.ptr) {
 		return nil, errors.New("could not initialize core")
 	}
 
@@ -141,23 +141,23 @@ func (c *Core) Options() CoreOptions {
 func (c *Core) DesiredVideoDimensions() (int, int) {
 	var width C.uint
 	var height C.uint
-	C.bbn6_mgba_mCore_desiredVideoDimensions(c.ptr, &width, &height)
+	C.tango_mgba_mCore_desiredVideoDimensions(c.ptr, &width, &height)
 	return int(width), int(height)
 }
 
 func (c *Core) SetVideoBuffer(buf unsafe.Pointer, width int) {
-	C.bbn6_mgba_mCore_setVideoBuffer(c.ptr, (*C.uint)(buf), C.size_t(width))
+	C.tango_mgba_mCore_setVideoBuffer(c.ptr, (*C.uint)(buf), C.size_t(width))
 }
 
 func (c *Core) LoadROM(vf *VFile) error {
-	if !C.bbn6_mgba_mCore_loadROM(c.ptr, vf.ptr) {
+	if !C.tango_mgba_mCore_loadROM(c.ptr, vf.ptr) {
 		return errors.New("could not load rom")
 	}
 	return nil
 }
 
 func (c *Core) LoadSave(vf *VFile) error {
-	if !C.bbn6_mgba_mCore_loadSave(c.ptr, vf.ptr) {
+	if !C.tango_mgba_mCore_loadSave(c.ptr, vf.ptr) {
 		return errors.New("could not load save")
 	}
 	return nil
@@ -165,13 +165,13 @@ func (c *Core) LoadSave(vf *VFile) error {
 
 func (c *Core) GameTitle() string {
 	var title [12]byte
-	C.bbn6_mgba_mCore_getGameTitle(c.ptr, (*C.char)(unsafe.Pointer(&title)))
+	C.tango_mgba_mCore_getGameTitle(c.ptr, (*C.char)(unsafe.Pointer(&title)))
 	return string(bytes.TrimRight(title[:], "\x00"))
 }
 
 func (c *Core) GameCode() string {
 	var code [8]byte
-	C.bbn6_mgba_mCore_getGameCode(c.ptr, (*C.char)(unsafe.Pointer(&code)))
+	C.tango_mgba_mCore_getGameCode(c.ptr, (*C.char)(unsafe.Pointer(&code)))
 	return string(code[:])
 }
 
@@ -180,35 +180,35 @@ func (c *Core) Config() *Config {
 }
 
 func (c *Core) Reset() {
-	C.bbn6_mgba_mCore_reset(c.ptr)
+	C.tango_mgba_mCore_reset(c.ptr)
 }
 
 func (c *Core) RunFrame() {
-	C.bbn6_mgba_mCore_runFrame(c.ptr)
+	C.tango_mgba_mCore_runFrame(c.ptr)
 }
 
 func (c *Core) Frequency() int32 {
-	return int32(C.bbn6_mgba_mCore_frequency(c.ptr))
+	return int32(C.tango_mgba_mCore_frequency(c.ptr))
 }
 
 func (c *Core) FrameCounter() uint32 {
-	return uint32(C.bbn6_mgba_mCore_frameCounter(c.ptr))
+	return uint32(C.tango_mgba_mCore_frameCounter(c.ptr))
 }
 
 func (c *Core) AudioBufferSize() int {
-	return int(C.bbn6_mgba_mCore_getAudioBufferSize(c.ptr))
+	return int(C.tango_mgba_mCore_getAudioBufferSize(c.ptr))
 }
 
 func (c *Core) SetAudioBufferSize(samples int) {
-	C.bbn6_mgba_mCore_setAudioBufferSize(c.ptr, C.size_t(samples))
+	C.tango_mgba_mCore_setAudioBufferSize(c.ptr, C.size_t(samples))
 }
 
 func (c *Core) AudioChannel(ch int) *Blip {
-	return &Blip{C.bbn6_mgba_mCore_getAudioChannel(c.ptr, C.int(ch))}
+	return &Blip{C.tango_mgba_mCore_getAudioChannel(c.ptr, C.int(ch))}
 }
 
 func (c *Core) SetSync(sync *Sync) {
-	C.bbn6_mgba_mCore_setSync(c.ptr, sync.ptr)
+	C.tango_mgba_mCore_setSync(c.ptr, sync.ptr)
 }
 
 func (c *Core) GBA() *GBA {
@@ -223,12 +223,12 @@ func (c *Core) Close() {
 		return
 	}
 	c.config.Deinit()
-	C.bbn6_mgba_mCore_deinit(c.ptr)
+	C.tango_mgba_mCore_deinit(c.ptr)
 	c.ptr = nil
 }
 
 func (c *Core) CRC32() uint32 {
 	var data [4]byte
-	C.bbn6_mgba_mCore_checksum(c.ptr, unsafe.Pointer(&data), C.mCHECKSUM_CRC32)
+	C.tango_mgba_mCore_checksum(c.ptr, unsafe.Pointer(&data), C.mCHECKSUM_CRC32)
 	return uint32(*(*C.uint32_t)(unsafe.Pointer(&data)))
 }

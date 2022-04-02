@@ -7,19 +7,19 @@ import (
 /*
 #include <mgba/internal/gba/gba.h>
 
-typedef void bbn6_mgba_bkpt16_irqh(struct ARMCore* cpu, int immediate);
+typedef void tango_mgba_bkpt16_irqh(struct ARMCore* cpu, int immediate);
 
-void bbn6_cgo_hijackedGBABkpt16IRQH(struct ARMCore* cpu, int immediate);
+void tango_cgo_hijackedGBABkpt16IRQH(struct ARMCore* cpu, int immediate);
 
-void bbn6_cgo_hijackedGBABkpt16IRQH_trampoline(struct ARMCore* cpu, int immediate) {
-	bbn6_cgo_hijackedGBABkpt16IRQH(cpu, immediate);
+void tango_cgo_hijackedGBABkpt16IRQH_trampoline(struct ARMCore* cpu, int immediate) {
+	tango_cgo_hijackedGBABkpt16IRQH(cpu, immediate);
 }
 
-void bbn6_mgba_ARMInterruptHandler_setBkpt16(struct ARMInterruptHandler* irqh, bbn6_mgba_bkpt16_irqh* cb) {
+void tango_mgba_ARMInterruptHandler_setBkpt16(struct ARMInterruptHandler* irqh, tango_mgba_bkpt16_irqh* cb) {
 	irqh->bkpt16 = cb;
 }
 
-void bbn6_call_mgba_bkpt16_irqh(bbn6_mgba_bkpt16_irqh* irqh, struct ARMCore* cpu, int immediate) {
+void tango_call_mgba_bkpt16_irqh(tango_mgba_bkpt16_irqh* irqh, struct ARMCore* cpu, int immediate) {
 	irqh(cpu, immediate);
 }
 */
@@ -47,8 +47,8 @@ func (c *Core) InstallBeefTrap(handler func()) {
 	gba := c.GBA().ptr
 	if c.realBkpt16Irqh == nil {
 		armCoreToMGBACoreMapping.Set(unsafe.Pointer(gba.cpu), c)
-		c.realBkpt16Irqh = (*C.bbn6_mgba_bkpt16_irqh)(unsafe.Pointer(gba.cpu.irqh.bkpt16))
-		C.bbn6_mgba_ARMInterruptHandler_setBkpt16(&gba.cpu.irqh, (*C.bbn6_mgba_bkpt16_irqh)(C.bbn6_cgo_hijackedGBABkpt16IRQH_trampoline))
+		c.realBkpt16Irqh = (*C.tango_mgba_bkpt16_irqh)(unsafe.Pointer(gba.cpu.irqh.bkpt16))
+		C.tango_mgba_ARMInterruptHandler_setBkpt16(&gba.cpu.irqh, (*C.tango_mgba_bkpt16_irqh)(C.tango_cgo_hijackedGBABkpt16IRQH_trampoline))
 	}
 	c.beefTrap = handler
 }

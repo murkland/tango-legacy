@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"unsafe"
 
-	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/tango/mgba"
 )
 
 /*

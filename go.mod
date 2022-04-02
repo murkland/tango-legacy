@@ -1,4 +1,4 @@
-module github.com/murkland/bbn6
+module github.com/murkland/tango
 
 go 1.18
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/tango/mgba"
 )
 
 var coreOptions = mgba.CoreOptions{
@@ -32,7 +32,7 @@ func newCore(romPath string) (*mgba.Core, error) {
 		return nil, err
 	}
 
-	core.Config().Init("bbn6")
+	core.Config().Init("tango")
 	core.Config().Load()
 	core.SetAudioBufferSize(coreOptions.AudioBuffers)
 

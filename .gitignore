@@ -1,6 +1,6 @@
 /build
 *.gba
 *.sav
-bbn6.toml
+tango.toml
 *.log
 /replays

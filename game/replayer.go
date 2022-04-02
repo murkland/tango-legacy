@@ -3,12 +3,12 @@ package game
 import (
 	"fmt"
 
-	"github.com/murkland/bbn6/bn6"
-	"github.com/murkland/bbn6/input"
-	"github.com/murkland/bbn6/mgba"
-	"github.com/murkland/bbn6/replay"
-	"github.com/murkland/bbn6/trapper"
 	"github.com/murkland/ringbuf"
+	"github.com/murkland/tango/bn6"
+	"github.com/murkland/tango/input"
+	"github.com/murkland/tango/mgba"
+	"github.com/murkland/tango/replay"
+	"github.com/murkland/tango/trapper"
 )
 
 type Replayer struct {

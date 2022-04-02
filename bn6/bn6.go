@@ -3,7 +3,7 @@ package bn6
 import (
 	"math/rand"
 
-	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/tango/mgba"
 )
 
 type BN6 struct {

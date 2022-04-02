@@ -3,7 +3,7 @@ package trapper
 import (
 	"fmt"
 
-	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/tango/mgba"
 )
 
 type Trapper struct {

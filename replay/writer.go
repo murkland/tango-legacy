@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/murkland/bbn6/input"
-	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/tango/input"
+	"github.com/murkland/tango/mgba"
 )
 
 const replayVersion = 0x06

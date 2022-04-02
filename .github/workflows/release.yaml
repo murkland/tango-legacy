@@ -23,14 +23,14 @@ jobs:
             - name: build mgba
               run: cd external/mgba && mkdir build && cd build && cmake .. -DLIBMGBA_ONLY=ON -DCMAKE_TOOLCHAIN_FILE=../../../mgba/Toolchain-x86_64-w64-mingw32.cmake && make
 
-            - name: build bbn6
+            - name: build tango
               run: GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
 
             - name: generate readme
               run: pandoc --standalone -o README.html README.md
 
             - name: zip artifacts
-              run: cd build && mkdir bbn6-${{ github.ref_name }} && cp bbn6.exe replayview.exe ../hub.bat ../README.html ../logo.png ../LICENSE bbn6-${{ github.ref_name }} && zip -r bbn6.zip bbn6-${{ github.ref_name }}
+              run: cd build && mkdir tango-${{ github.ref_name }} && cp tango.exe replayview.exe ../hub.bat ../README.html ../logo.png ../LICENSE tango-${{ github.ref_name }} && zip -r tango.zip tango-${{ github.ref_name }}
 
             - name: upload artifact
               uses: actions/upload-release-asset@v1
@@ -38,6 +38,6 @@ jobs:
                   GITHUB_TOKEN: ${{ github.token }}
               with:
                   upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./build/bbn6.zip
-                  asset_name: bbn6-${{ github.ref_name }}-windows-amd64.zip
+                  asset_path: ./build/tango.zip
+                  asset_name: tango-${{ github.ref_name }}-windows-amd64.zip
                   asset_content_type: application/zip

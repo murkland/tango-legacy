@@ -11,19 +11,19 @@ import (
 
 	"github.com/Xuanwo/go-locale"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/murkland/bbn6/bn6"
-	"github.com/murkland/bbn6/config"
-	"github.com/murkland/bbn6/game"
-	"github.com/murkland/bbn6/mgba"
-	_ "github.com/murkland/bbn6/translations"
+	"github.com/murkland/tango/bn6"
+	"github.com/murkland/tango/config"
+	"github.com/murkland/tango/game"
+	"github.com/murkland/tango/mgba"
+	_ "github.com/murkland/tango/translations"
 	"github.com/ncruces/zenity"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/message"
 )
 
 var (
-	logFile    = flag.String("log_file", "bbn6.log", "file to log to")
-	configPath = flag.String("config_path", "bbn6.toml", "path to config")
+	logFile    = flag.String("log_file", "tango.log", "file to log to")
+	configPath = flag.String("config_path", "tango.toml", "path to config")
 	romPath    = flag.String("rom_path", "", "path to rom to start immediately")
 )
 
@@ -93,7 +93,7 @@ func main() {
 				}
 				defer core.Close()
 
-				core.Config().Init("bbn6")
+				core.Config().Init("tango")
 				core.Config().Load()
 
 				vf := mgba.OpenVF(path, os.O_RDONLY)
@@ -121,7 +121,7 @@ func main() {
 		keys := maps.Keys(options)
 		sort.Strings(keys)
 
-		key, err := zenity.List(p.Sprintf("SELECT_ROM"), keys, zenity.Title("bbn6"))
+		key, err := zenity.List(p.Sprintf("SELECT_ROM"), keys, zenity.Title("tango"))
 		if err != nil {
 			log.Fatalf("failed to select game: %s", err)
 		}
@@ -131,7 +131,7 @@ func main() {
 
 	log.Printf("loading rom: %s", *romPath)
 
-	ebiten.SetWindowTitle("bbn6")
+	ebiten.SetWindowTitle("tango")
 	ebiten.SetWindowResizable(true)
 	ebiten.SetRunnableOnUnfocused(true)
 	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMaximum)

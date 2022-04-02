@@ -13,16 +13,16 @@ import (
 	"time"
 
 	"github.com/keegancsmith/nth"
-	"github.com/murkland/bbn6/config"
-	"github.com/murkland/bbn6/input"
-	"github.com/murkland/bbn6/mgba"
-	"github.com/murkland/bbn6/packets"
-	"github.com/murkland/bbn6/replay"
 	"github.com/murkland/clone"
 	"github.com/murkland/ctxwebrtc"
 	"github.com/murkland/ringbuf"
 	signorclient "github.com/murkland/signor/client"
 	"github.com/murkland/syncrand"
+	"github.com/murkland/tango/config"
+	"github.com/murkland/tango/input"
+	"github.com/murkland/tango/mgba"
+	"github.com/murkland/tango/packets"
+	"github.com/murkland/tango/replay"
 	"github.com/pion/webrtc/v3"
 	"golang.org/x/exp/constraints"
 	"golang.org/x/sync/errgroup"
@@ -312,7 +312,7 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 		iq: input.NewQueue(60),
 	}
 
-	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.bbn6replay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
+	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.tangoreplay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
 	log.Printf("writing replay: %s", fn)
 
 	il, err := replay.NewWriter(fn, core)

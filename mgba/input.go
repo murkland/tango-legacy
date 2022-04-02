@@ -3,7 +3,7 @@ package mgba
 /*
 #include <mgba/core/core.h>
 
-void bbn6_mgba_mCore_setKeys(struct mCore* core, uint32_t keys) {
+void tango_mgba_mCore_setKeys(struct mCore* core, uint32_t keys) {
 	core->setKeys(core, keys);
 }
 */
@@ -25,5 +25,5 @@ const (
 )
 
 func (c *Core) SetKeys(keys Keys) {
-	C.bbn6_mgba_mCore_setKeys(c.ptr, C.uint32_t(keys))
+	C.tango_mgba_mCore_setKeys(c.ptr, C.uint32_t(keys))
 }

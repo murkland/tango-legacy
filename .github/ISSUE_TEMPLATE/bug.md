@@ -1,18 +1,18 @@
 ---
 name: bug
 about: something isn't working right
-title: ''
+title: ""
 labels: type:bug
-assignees: ''
-
+assignees: ""
 ---
 
 **important details**
-- **operating system:** mac/windows/linux (pick one)
-- **cpu (if known):**
-- **graphics card (if known):**
 
-please attach bbn6.log, if available.
+-   **operating system:** mac/windows/linux (pick one)
+-   **cpu (if known):**
+-   **graphics card (if known):**
+
+please attach tango.log, if available.
 
 **what happened?**
 what was the buggy behavior?

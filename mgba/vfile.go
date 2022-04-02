@@ -3,7 +3,7 @@ package mgba
 /*
 #include <mgba-util/vfs.h>
 
-bool bbn6_mgba_util_VFile_close(struct VFile* vf) {
+bool tango_mgba_util_VFile_close(struct VFile* vf) {
 	return vf->close(vf);
 }
 */
@@ -55,7 +55,7 @@ func (vf *VFile) Close() bool {
 	if vf.ptr == nil {
 		return true
 	}
-	r := bool(C.bbn6_mgba_util_VFile_close(vf.ptr))
+	r := bool(C.tango_mgba_util_VFile_close(vf.ptr))
 	if !r {
 		return false
 	}

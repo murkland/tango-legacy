@@ -4,15 +4,15 @@ package mgba
 #include <mgba/core/core.h>
 #include <mgba/internal/gba/serialize.h>
 
-size_t bbn6_mgba_mCore_stateSize(struct mCore* core) {
+size_t tango_mgba_mCore_stateSize(struct mCore* core) {
 	return core->stateSize(core);
 }
 
-bool bbn6_mgba_mCore_saveState(struct mCore* core, void* state) {
+bool tango_mgba_mCore_saveState(struct mCore* core, void* state) {
 	return core->saveState(core, state);
 }
 
-bool bbn6_mgba_mCore_loadState(struct mCore* core, void* state) {
+bool tango_mgba_mCore_loadState(struct mCore* core, void* state) {
 	return core->loadState(core, state);
 }
 */
@@ -47,9 +47,9 @@ func toState(buf unsafe.Pointer, size int) *State {
 }
 
 func (c *Core) SaveState() *State {
-	size := int(C.bbn6_mgba_mCore_stateSize(c.ptr))
+	size := int(C.tango_mgba_mCore_stateSize(c.ptr))
 	buf := unsafe.Pointer(C.malloc(C.size_t(size)))
-	ok := C.bbn6_mgba_mCore_saveState(c.ptr, buf)
+	ok := C.tango_mgba_mCore_saveState(c.ptr, buf)
 	if !ok {
 		C.free(buf)
 		return nil
@@ -58,7 +58,7 @@ func (c *Core) SaveState() *State {
 }
 
 func (c *Core) LoadState(state *State) bool {
-	return bool(C.bbn6_mgba_mCore_loadState(c.ptr, state.ptr))
+	return bool(C.tango_mgba_mCore_loadState(c.ptr, state.ptr))
 }
 
 func (s *State) Bytes() []byte {

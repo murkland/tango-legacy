@@ -2,8 +2,8 @@ package game
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/murkland/bbn6/config"
-	"github.com/murkland/bbn6/mgba"
+	"github.com/murkland/tango/config"
+	"github.com/murkland/tango/mgba"
 )
 
 func ebitenToMgbaKeys(keymapping config.Keymapping, pressedKeys []ebiten.Key) mgba.Keys {

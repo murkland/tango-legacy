@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/murkland/bbn6/mgba"
-	"github.com/murkland/bbn6/replay"
+	"github.com/murkland/tango/mgba"
+	"github.com/murkland/tango/replay"
 )
 
 var (

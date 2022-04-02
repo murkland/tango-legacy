@@ -1,10 +1,10 @@
-# bingus battle network 6 (bbn6)
+# bingus battle network 6 (tango)
 
 ![bingus battle network 6](logo.png)
 
 [![murkland](https://discordapp.com/api/guilds/936475149069336596/widget.png?style=shield)](https://discord.gg/zbQngJHwSg)
 
-netplay for mega man battle network 6 in the style of <https://github.com/ssbmars/BBN3-netcode>. the b in bbn6 does NOT stand for "better".
+netplay for mega man battle network 6 in the style of <https://github.com/ssbmars/BBN3-netcode>. the b in tango does NOT stand for "better".
 
 BBN6 はロックマンエグゼ６ネットプレイシステムです。
 
@@ -34,6 +34,6 @@ BBN6 はロックマンエグゼ６ネットプレイシステムです。
 
 ## thank you / 感謝
 
-too many to count! a full list of credits is available with each release on the [releases page](https://github.com/murkland/bbn6/releases)!
+too many to count! a full list of credits is available with each release on the [releases page](https://github.com/murkland/tango/releases)!
 
-[リリースのページ](https://github.com/murkland/bbn6/releases)で各リリースのクレジットを見ることができます。
+[リリースのページ](https://github.com/murkland/tango/releases)で各リリースのクレジットを見ることができます。

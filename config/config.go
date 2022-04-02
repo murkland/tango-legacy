@@ -88,7 +88,7 @@ var DefaultConfig = Config{
 		DebugSpew: ebiten.KeyBackquote,
 	},
 	Matchmaking: Matchmaking{
-		ConnectAddr: "bbn6mm.murk.land:80",
+		ConnectAddr: "tangomm.murk.land:80",
 	},
 	WebRTC: webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
