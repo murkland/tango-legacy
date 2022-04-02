@@ -4,9 +4,8 @@ go 1.18
 
 require (
 	github.com/BurntSushi/toml v1.0.0
+	github.com/Xuanwo/go-locale v1.1.0
 	github.com/hajimehoshi/ebiten/v2 v2.2.5
-	github.com/hajimehoshi/oto/v2 v2.1.0-alpha.8.0.20220324173401-b1c7eb112a82
-	github.com/keegancsmith/nth v0.0.0-20160926112203-ee21de2f07b8
 	github.com/klauspost/compress v1.15.1
 	github.com/murkland/clone v0.0.0-20220305211650-2e9ef76f1dca
 	github.com/murkland/ctxwebrtc v0.0.0-20220306073518-b5815ce4a060
@@ -17,13 +16,7 @@ require (
 	github.com/pion/webrtc/v3 v3.1.23
 	golang.org/x/exp v0.0.0-20220323204016-c86f0da35e87
 	golang.org/x/image v0.0.0-20211028202545-6944b10bf410
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-)
-
-require (
-	github.com/Xuanwo/go-locale v1.1.0 // indirect
-	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
-	golang.org/x/tools v0.1.10 // indirect
+	golang.org/x/text v0.3.7
 )
 
 require (
@@ -33,9 +26,9 @@ require (
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/hajimehoshi/oto/v2 v2.1.0-alpha.8.0.20220324173401-b1c7eb112a82 // indirect
 	github.com/jezek/xgb v0.0.0-20210312150743-0e0f116e1240 // indirect
 	github.com/josephspurrier/goversioninfo v1.3.0 // indirect
-	github.com/murkland/gbarom v0.0.0-20220305211653-6a9b5253e1ca
 	github.com/pion/datachannel v1.5.2 // indirect
 	github.com/pion/dtls/v2 v2.1.2 // indirect
 	github.com/pion/ice/v2 v2.1.20 // indirect
@@ -57,8 +50,8 @@ require (
 	golang.org/x/exp/shiny v0.0.0-20220324144552-032f0433de08 // indirect
 	golang.org/x/mobile v0.0.0-20220104184238-4a8be17bd2e3 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect
-	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/genproto v0.0.0-20220324131243-acbaeb5b85eb // indirect
 	google.golang.org/grpc v1.45.0 // indirect
