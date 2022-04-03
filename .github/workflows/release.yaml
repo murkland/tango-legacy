@@ -5,8 +5,8 @@ on:
         types: [created]
 
 jobs:
-    release-windows-amd64:
-        name: release windows/amd64
+    release-windows-i686:
+        name: release windows/i686
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
@@ -21,10 +21,10 @@ jobs:
               run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake pandoc
 
             - name: build mgba
-              run: cd external/mgba && mkdir build && cd build && cmake .. -DLIBMGBA_ONLY=ON -DCMAKE_TOOLCHAIN_FILE=../../../mgba/Toolchain-x86_64-w64-mingw32.cmake && make
+              run: cd external/mgba && mkdir build && cd build && cmake .. -DLIBMGBA_ONLY=ON -DCMAKE_TOOLCHAIN_FILE=../../../mgba/Toolchain-i686-w64-mingw32.cmake && make
 
             - name: build tango
-              run: GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
+              run: GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
 
             - name: generate readme
               run: pandoc --standalone -o README.html README.md
@@ -39,5 +39,5 @@ jobs:
               with:
                   upload_url: ${{ github.event.release.upload_url }}
                   asset_path: ./build/tango.zip
-                  asset_name: tango-${{ github.ref_name }}-windows-amd64.zip
+                  asset_name: tango-${{ github.ref_name }}-windows-i686.zip
                   asset_content_type: application/zip
