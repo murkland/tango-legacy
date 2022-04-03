@@ -36,6 +36,8 @@ type Match struct {
 	gameTitle string
 	gameCRC32 uint32
 
+	localInputDelay int
+
 	cancel context.CancelFunc
 
 	negotiationErrCh chan error
@@ -79,6 +81,8 @@ func New(conf config.Config, sessionID string, matchType uint16, gameTitle strin
 		matchType: matchType,
 		gameTitle: gameTitle,
 		gameCRC32: gameCRC32,
+
+		localInputDelay: 2,
 
 		negotiationErrCh: make(chan error),
 
