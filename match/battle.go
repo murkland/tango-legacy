@@ -105,7 +105,7 @@ func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {
 	if len(inputPairs) > 0 {
 		b.lastCommittedRemoteInput = inputPairs[len(inputPairs)-1][1-b.LocalPlayerIndex()]
 	}
-	left := b.iq.Peek(b.LocalPlayerIndex())
+	left := b.iq.PeekLocal()
 	return inputPairs, left
 }
 
@@ -140,4 +140,12 @@ func (b *Battle) ReplayWriter() *replay.Writer {
 
 func (b *Battle) IsP2() bool {
 	return b.isP2
+}
+
+func (b *Battle) LocalDelay() int {
+	return b.iq.LocalDelay()
+}
+
+func (b *Battle) SetLocalDelay(localDelay int) {
+	b.iq.SetLocalDelay(localDelay)
 }

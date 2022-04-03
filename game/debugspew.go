@@ -46,7 +46,7 @@ func (g *Game) spewDebug(screen *ebiten.Image) {
 		if battle != nil {
 			lines = append(lines,
 				fmt.Sprintf("is p2:   %t", battle.IsP2()),
-				fmt.Sprintf("qlen:    %2d:%2d", battle.QueueLength(battle.LocalPlayerIndex()), battle.QueueLength(battle.RemotePlayerIndex())),
+				fmt.Sprintf("qlen:    %2d:%2d (local delay %d)", battle.QueueLength(battle.LocalPlayerIndex()), battle.QueueLength(battle.RemotePlayerIndex()), battle.LocalDelay()),
 				fmt.Sprintf("fftime:  %s", g.fastforwarder.lastFastforwardDuration),
 			)
 		}

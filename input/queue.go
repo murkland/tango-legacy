@@ -14,17 +14,17 @@ type Queue struct {
 	localPlayerIndex int
 	qs               [2]*ringbuf.RingBuf[Input]
 	consumable       [][2]Input
-	delay            int
+	localDelay       int
 }
 
-func NewQueue(n int, delay int, localPlayerIndex int) *Queue {
+func NewQueue(n int, localDelay int, localPlayerIndex int) *Queue {
 	iq := &Queue{
 		localPlayerIndex: localPlayerIndex,
 		qs: [2]*ringbuf.RingBuf[Input]{
 			ringbuf.New[Input](n),
 			ringbuf.New[Input](n),
 		},
-		delay: delay,
+		localDelay: localDelay,
 	}
 	iq.cond = sync.NewCond(&iq.mu)
 	return iq
@@ -57,19 +57,16 @@ func (q *Queue) AddInput(ctx context.Context, playerIndex int, input Input) erro
 	return nil
 }
 
-func (q *Queue) Peek(playerIndex int) []Input {
+func (q *Queue) PeekLocal() []Input {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	n := q.qs[playerIndex].Used()
-	if playerIndex == q.localPlayerIndex {
-		n -= q.delay
-	}
+	n := q.qs[q.localPlayerIndex].Used() - q.localDelay
 	if n < 0 {
 		return nil
 	}
 	inputs := make([]Input, n)
-	q.qs[playerIndex].Peek(inputs, 0)
+	q.qs[q.localPlayerIndex].Peek(inputs, 0)
 	return inputs
 }
 
@@ -81,7 +78,7 @@ func (q *Queue) QueueLength(playerIndex int) int {
 }
 
 func (q *Queue) advanceManyLocked() [][2]Input {
-	n := q.qs[q.localPlayerIndex].Used() - q.delay
+	n := q.qs[q.localPlayerIndex].Used() - q.localDelay
 	if q.qs[1-q.localPlayerIndex].Used() < n {
 		n = q.qs[1-q.localPlayerIndex].Used()
 	}
@@ -111,4 +108,12 @@ func (q *Queue) Consume() [][2]Input {
 	consumable := q.consumable
 	q.consumable = nil
 	return consumable
+}
+
+func (q *Queue) LocalDelay() int {
+	return q.localDelay
+}
+
+func (q *Queue) SetLocalDelay(localDelay int) {
+	q.localDelay = localDelay
 }
