@@ -30,7 +30,7 @@ type Game struct {
 	p    *message.Printer
 
 	mainCore      *mgba.Core
-	fastforwarder *fastforwarder
+	fastforwarder *Fastforwarder
 
 	joyflags mgba.Keys
 
@@ -78,7 +78,7 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 	}
 	ebiten.SetWindowTitle("tango: " + mainCore.GameTitle())
 
-	fastforwarder, err := newFastforwarder(romPath, bn6)
+	fastforwarder, err := NewFastforwarder(romPath, bn6)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		inputPairs, left := battle.ConsumeInputs()
-		committedState, dirtyState, err := g.fastforwarder.fastforward(battle.CommittedState(), battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
+		committedState, dirtyState, err := g.fastforwarder.Fastforward(battle.CommittedState(), battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
 			log.Fatalf("failed to fastforward: %s", err)
 		}

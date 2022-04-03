@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/murkland/ringbuf"
 	"github.com/murkland/tango/bn6"
@@ -13,10 +14,11 @@ import (
 	"github.com/murkland/tango/trapper"
 )
 
-type fastforwarder struct {
-	core  *mgba.Core
-	bn6   *bn6.BN6
-	state *fastforwarderState
+type Fastforwarder struct {
+	core                    *mgba.Core
+	bn6                     *bn6.BN6
+	state                   *fastforwarderState
+	lastFastforwardDuration time.Duration
 }
 
 type fastforwarderState struct {
@@ -27,13 +29,13 @@ type fastforwarderState struct {
 	predicting       bool
 }
 
-func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
+func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 	core, err := newCore(romPath)
 	if err != nil {
 		return nil, err
 	}
 
-	ff := &fastforwarder{core, bn6, nil}
+	ff := &Fastforwarder{core, bn6, nil, 0}
 
 	tp := trapper.New(core)
 
@@ -103,7 +105,7 @@ func newFastforwarder(romPath string, bn6 *bn6.BN6) (*fastforwarder, error) {
 	return ff, nil
 }
 
-func (ff *fastforwarder) applyInputs(state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input) (*mgba.State, error) {
+func (ff *Fastforwarder) applyInputs(state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input) (*mgba.State, error) {
 	ff.state = &fastforwarderState{
 		saveState:        state,
 		localPlayerIndex: localPlayerIndex,
@@ -141,7 +143,9 @@ func (ff *fastforwarder) applyInputs(state *mgba.State, rw *replay.Writer, local
 // fastforward fastfowards the state to the new state.
 //
 // BEWARE: only one thread may call fastforward at a time.
-func (ff *fastforwarder) fastforward(state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input, lastCommittedRemoteInput input.Input, localPlayerInputsLeft []input.Input) (*mgba.State, *mgba.State, error) {
+func (ff *Fastforwarder) Fastforward(state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input, lastCommittedRemoteInput input.Input, localPlayerInputsLeft []input.Input) (*mgba.State, *mgba.State, error) {
+	startTime := time.Now()
+
 	if !ff.core.LoadState(state) {
 		return nil, nil, errors.New("failed to load state")
 	}
@@ -174,6 +178,8 @@ func (ff *fastforwarder) fastforward(state *mgba.State, rw *replay.Writer, local
 	if err != nil {
 		return nil, nil, err
 	}
+
+	ff.lastFastforwardDuration = time.Now().Sub(startTime)
 
 	return committedState, dirtyState, nil
 }
