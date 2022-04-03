@@ -2,8 +2,12 @@ package match
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log"
+	"path/filepath"
+	"time"
 
-	"github.com/murkland/ringbuf"
 	"github.com/murkland/tango/input"
 	"github.com/murkland/tango/mgba"
 	"github.com/murkland/tango/replay"
@@ -13,8 +17,6 @@ type Battle struct {
 	isP2 bool
 
 	rw *replay.Writer
-
-	localInputBuffer *ringbuf.RingBuf[uint16]
 
 	iq *input.Queue
 
@@ -26,6 +28,36 @@ type Battle struct {
 	lastCommittedRemoteInput input.Input
 
 	committedState *mgba.State
+}
+
+func (m *Match) NewBattle(core *mgba.Core) error {
+	m.battleMu.Lock()
+	defer m.battleMu.Unlock()
+
+	if m.battle != nil {
+		return errors.New("battle already started")
+	}
+
+	b := &Battle{
+		isP2: !m.wonLastBattle,
+
+		lastCommittedRemoteInput: input.Input{Joyflags: 0xfc00},
+
+		iq: input.NewQueue(60, 2),
+	}
+
+	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.tangoreplay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
+	log.Printf("writing replay: %s", fn)
+
+	il, err := replay.NewWriter(fn, core)
+	if err != nil {
+		return err
+	}
+	b.rw = il
+	m.battle = b
+	m.battleNumber++
+	log.Printf("battle %d started, won last battle (is p1) = %t", m.battleNumber, m.wonLastBattle)
+	return nil
 }
 
 func (b *Battle) LocalPlayerIndex() int {
@@ -79,17 +111,6 @@ func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {
 
 func (b *Battle) AddInput(ctx context.Context, playerIndex int, input input.Input) error {
 	return b.iq.AddInput(ctx, playerIndex, input)
-}
-
-func (b *Battle) AddLocalBufferedInputAndConsume(nextJoyflags uint16) uint16 {
-	joyflags := uint16(0xfc00)
-	if b.localInputBuffer.Free() == 0 {
-		var joyflagsBuf [1]uint16
-		b.localInputBuffer.Pop(joyflagsBuf[:], 0)
-		joyflags = joyflagsBuf[0]
-	}
-	b.localInputBuffer.Push([]uint16{nextJoyflags})
-	return joyflags
 }
 
 func (b *Battle) AddLocalPendingTurn(turn []byte) {

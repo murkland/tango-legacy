@@ -258,8 +258,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		lastCommittedRemoteInput := battle.LastCommittedRemoteInput()
 		remoteTick := lastCommittedRemoteInput.LocalTick
 
-		nextJoyflags := g.bn6.LocalJoyflags(core)
-		joyflags := battle.AddLocalBufferedInputAndConsume(nextJoyflags)
+		joyflags := g.bn6.LocalJoyflags(core)
 
 		customScreenState := g.bn6.LocalCustomScreenState(core)
 

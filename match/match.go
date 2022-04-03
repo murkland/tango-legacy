@@ -8,20 +8,15 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"path/filepath"
 	"sync"
-	"time"
 
 	"github.com/murkland/clone"
 	"github.com/murkland/ctxwebrtc"
-	"github.com/murkland/ringbuf"
 	signorclient "github.com/murkland/signor/client"
 	"github.com/murkland/syncrand"
 	"github.com/murkland/tango/config"
 	"github.com/murkland/tango/input"
-	"github.com/murkland/tango/mgba"
 	"github.com/murkland/tango/packets"
-	"github.com/murkland/tango/replay"
 	"github.com/pion/webrtc/v3"
 )
 
@@ -216,40 +211,6 @@ func (m *Match) handleConn(ctx context.Context) error {
 			battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{LocalTick: int(p.LocalTick), RemoteTick: int(p.RemoteTick), Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
 		}
 	}
-}
-
-const localInputBufferSize = 2
-
-func (m *Match) NewBattle(core *mgba.Core) error {
-	m.battleMu.Lock()
-	defer m.battleMu.Unlock()
-
-	if m.battle != nil {
-		return errors.New("battle already started")
-	}
-
-	b := &Battle{
-		isP2: !m.wonLastBattle,
-
-		lastCommittedRemoteInput: input.Input{Joyflags: 0xfc00},
-
-		localInputBuffer: ringbuf.New[uint16](localInputBufferSize),
-
-		iq: input.NewQueue(60),
-	}
-
-	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.tangoreplay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
-	log.Printf("writing replay: %s", fn)
-
-	il, err := replay.NewWriter(fn, core)
-	if err != nil {
-		return err
-	}
-	b.rw = il
-	m.battle = b
-	m.battleNumber++
-	log.Printf("battle %d started, won last battle (is p1) = %t", m.battleNumber, m.wonLastBattle)
-	return nil
 }
 
 func (m *Match) EndBattle() error {

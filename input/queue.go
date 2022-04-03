@@ -13,14 +13,16 @@ type Queue struct {
 
 	qs         [2]*ringbuf.RingBuf[Input]
 	consumable [][2]Input
+	delay      int
 }
 
-func NewQueue(n int) *Queue {
+func NewQueue(n int, delay int) *Queue {
 	iq := &Queue{
 		qs: [2]*ringbuf.RingBuf[Input]{
 			ringbuf.New[Input](n),
 			ringbuf.New[Input](n),
 		},
+		delay: delay,
 	}
 	iq.cond = sync.NewCond(&iq.mu)
 	return iq
@@ -71,9 +73,13 @@ func (q *Queue) QueueLength(playerIndex int) int {
 }
 
 func (q *Queue) advanceManyLocked() [][2]Input {
-	n := q.qs[0].Used()
-	if q.qs[1].Used() < n {
-		n = q.qs[1].Used()
+	n := q.qs[0].Used() - q.delay
+	if q.qs[1].Used()-q.delay < n {
+		n = q.qs[1].Used() - q.delay
+	}
+
+	if n < 0 {
+		return nil
 	}
 
 	p1Inputs := make([]Input, n)
