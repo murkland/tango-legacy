@@ -5,9 +5,16 @@ on:
         types: [created]
 
 jobs:
-    release-windows-amd64:
-        name: release windows/amd64
+    release:
+        name: release
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                include:
+                    - goos: windows
+                      goarch: amd64
+                      cc: x86_64-w64-mingw32-gcc
+                      cmake_toolchain: Toolchain-x86_64-w64-mingw32.cmake
         steps:
             - uses: actions/checkout@v2
               with:
@@ -21,14 +28,14 @@ jobs:
               run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake pandoc
 
             - name: build mgba
-              run: cd external/mgba && mkdir build && cd build && cmake .. -DLIBMGBA_ONLY=ON -DCMAKE_TOOLCHAIN_FILE=../../../mgba/Toolchain-x86_64-w64-mingw32.cmake && make
+              run: cd external/mgba && mkdir build && cd build && cmake .. -DLIBMGBA_ONLY=ON -DCMAKE_TOOLCHAIN_FILE=../../../mgba/${{ matrix.cmake_toolchain }} && make
 
             - name: build tango
-              run: GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
+              run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=1 CC=${{ matrix.cc }} CGO_CFLAGS=-D__STDC_NO_THREADS__=1 ./build.sh
 
             - name: generate readme
               run: pandoc --standalone -o README.html README.md
-            
+
             - name: zip artifacts
               run: cd build && mkdir tango-${{ github.ref_name }} && mkdir tango-${{ github.ref_name }}/roms && mkdir tango-${{ github.ref_name }}/saves && cp tango.exe replayview.exe ../hub.bat ../keys.txt ../README.html ../logo.png ../LICENSE tango-${{ github.ref_name }} && zip -r tango.zip tango-${{ github.ref_name }}
 
@@ -39,5 +46,5 @@ jobs:
               with:
                   upload_url: ${{ github.event.release.upload_url }}
                   asset_path: ./build/tango.zip
-                  asset_name: tango-${{ github.ref_name }}-windows-amd64.zip
+                  asset_name: tango-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip
                   asset_content_type: application/zip
