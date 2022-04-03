@@ -286,6 +286,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if err != nil {
 			log.Fatalf("failed to fastforward: %s", err)
 		}
+		// TODO: Adjust input lag appropriately here as well to cap runahead to 8 ticks.
 		tps := expectedFPS + (remoteTick - localTick) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick)
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 		battle.SetCommittedState(committedState)
