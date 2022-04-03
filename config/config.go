@@ -54,14 +54,14 @@ func (ait *AudioInterpolationType) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (ait *AudioInterpolationType) MarshalText() ([]byte, error) {
-	switch *ait {
+func (ait AudioInterpolationType) MarshalText() ([]byte, error) {
+	switch ait {
 	case AudioInterpolationTypeRubbery:
 		return []byte("rubbery"), nil
 	case AudioInterpolationTypeClippy:
 		return []byte("clippy"), nil
 	default:
-		return nil, fmt.Errorf("unknown audio interpolation type: %v", *ait)
+		return nil, fmt.Errorf("unknown audio interpolation type: %v", ait)
 	}
 }
 
@@ -73,48 +73,50 @@ type Config struct {
 	WebRTC      webrtc.Configuration
 }
 
-var DefaultConfig = Config{
-	Keymapping: Keymapping{
-		A:         Key(ebiten.KeyZ),
-		B:         Key(ebiten.KeyX),
-		L:         Key(ebiten.KeyA),
-		R:         Key(ebiten.KeyS),
-		Left:      Key(ebiten.KeyArrowLeft),
-		Right:     Key(ebiten.KeyArrowRight),
-		Up:        Key(ebiten.KeyArrowUp),
-		Down:      Key(ebiten.KeyArrowDown),
-		Start:     Key(ebiten.KeyEnter),
-		Select:    Key(ebiten.KeyBackspace),
-		DebugSpew: Key(ebiten.KeyBackquote),
-	},
-	Audio: Audio{
-		Interpolation: AudioInterpolationTypeClippy,
-	},
-	Netplay: Netplay{
-		InputDelay: 3,
-	},
-	Matchmaking: Matchmaking{
-		ConnectAddr: "tangomm.murk.land:80",
-	},
-	WebRTC: webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{"stun:stun.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun1.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun2.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun3.l.google.com:19302"},
-			},
-			{
-				URLs: []string{"stun:stun4.l.google.com:19302"},
+func Default() Config {
+	return Config{
+		Keymapping: Keymapping{
+			A:         Key(ebiten.KeyZ),
+			B:         Key(ebiten.KeyX),
+			L:         Key(ebiten.KeyA),
+			R:         Key(ebiten.KeyS),
+			Left:      Key(ebiten.KeyArrowLeft),
+			Right:     Key(ebiten.KeyArrowRight),
+			Up:        Key(ebiten.KeyArrowUp),
+			Down:      Key(ebiten.KeyArrowDown),
+			Start:     Key(ebiten.KeyEnter),
+			Select:    Key(ebiten.KeyBackspace),
+			DebugSpew: Key(ebiten.KeyBackquote),
+		},
+		Audio: Audio{
+			Interpolation: AudioInterpolationTypeClippy,
+		},
+		Netplay: Netplay{
+			InputDelay: 3,
+		},
+		Matchmaking: Matchmaking{
+			ConnectAddr: "tangomm.murk.land:80",
+		},
+		WebRTC: webrtc.Configuration{
+			ICEServers: []webrtc.ICEServer{
+				{
+					URLs: []string{"stun:stun.l.google.com:19302"},
+				},
+				{
+					URLs: []string{"stun:stun1.l.google.com:19302"},
+				},
+				{
+					URLs: []string{"stun:stun2.l.google.com:19302"},
+				},
+				{
+					URLs: []string{"stun:stun3.l.google.com:19302"},
+				},
+				{
+					URLs: []string{"stun:stun4.l.google.com:19302"},
+				},
 			},
 		},
-	},
+	}
 }
 
 func Save(config Config, w io.Writer) error {
@@ -122,10 +124,10 @@ func Save(config Config, w io.Writer) error {
 }
 
 func Load(r io.Reader) (Config, error) {
-	var c Config
+	c := Default()
 
 	if _, err := toml.NewDecoder(r).Decode(&c); err != nil {
-		return Config{}, err
+		return c, err
 	}
 
 	return c, nil

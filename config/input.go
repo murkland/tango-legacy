@@ -139,10 +139,10 @@ func (k *Key) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (k *Key) MarshalText() ([]byte, error) {
-	name, ok := keyCodeToKeyName[ebiten.Key(*k)]
+func (k Key) MarshalText() ([]byte, error) {
+	name, ok := keyCodeToKeyName[ebiten.Key(k)]
 	if !ok {
-		return nil, fmt.Errorf("unknown key: %v", *k)
+		return nil, fmt.Errorf("unknown key: %v", k)
 	}
 	return []byte(name), nil
 }

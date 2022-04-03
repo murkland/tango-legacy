@@ -38,29 +38,27 @@ func main() {
 	log.Printf("selected language: %s", lang)
 	p := message.NewPrinter(lang)
 
-	var conf config.Config
-	confF, err := os.Open(*configPath)
+	conf := config.Default()
+	confF, err := os.OpenFile(*configPath, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			log.Printf("config doesn't exist, making a new one at: %s", *configPath)
-			confF, err = os.Create(*configPath)
-			if err != nil {
-				log.Fatalf("failed to open config: %s", err)
-			}
-			conf = config.DefaultConfig
-			if err := config.Save(conf, confF); err != nil {
-				log.Fatalf("failed to save config: %s", err)
-			}
-		} else {
-			log.Fatalf("failed to open config: %s", err)
-		}
+		log.Fatalf("failed to open config: %s", err)
 	} else {
 		conf, err = config.Load(confF)
 		if err != nil {
 			log.Fatalf("failed to open config: %s", err)
 		}
-		confF.Close()
 	}
+
+	if err := confF.Truncate(0); err != nil {
+		log.Fatalf("failed to truncate config: %s", err)
+	}
+	if _, err := confF.Seek(0, os.SEEK_SET); err != nil {
+		log.Fatalf("failed to seek config: %s", err)
+	}
+	if err := config.Save(conf, confF); err != nil {
+		log.Fatalf("failed to save config: %s", err)
+	}
+	confF.Close()
 
 	os.MkdirAll("saves", 0o700)
 	os.MkdirAll("roms", 0o700)
