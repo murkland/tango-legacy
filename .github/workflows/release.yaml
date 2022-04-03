@@ -30,7 +30,7 @@ jobs:
               run: pandoc --standalone -o README.html README.md
             
             - name: zip artifacts
-              run: cd build && mkdir tango-${{ github.ref_name }} && mkdir tango-${{ github.ref_name }}/roms && mkdir tango-${{ github.ref_name }}/saves && cp tango.exe replayview.exe ../hub.bat ../README.html ../logo.png ../LICENSE tango-${{ github.ref_name }} && zip -r tango.zip tango-${{ github.ref_name }}
+              run: cd build && mkdir tango-${{ github.ref_name }} && mkdir tango-${{ github.ref_name }}/roms && mkdir tango-${{ github.ref_name }}/saves && cp tango.exe replayview.exe ../hub.bat ../keys.txt ../README.html ../logo.png ../LICENSE tango-${{ github.ref_name }} && zip -r tango.zip tango-${{ github.ref_name }}
 
             - name: upload artifact
               uses: actions/upload-release-asset@v1
