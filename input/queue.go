@@ -59,7 +59,10 @@ func (q *Queue) Peek(playerIndex int) []Input {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	n := q.qs[playerIndex].Used()
+	n := q.qs[playerIndex].Used() - q.delay
+	if n < 0 {
+		return nil
+	}
 	inputs := make([]Input, n)
 	q.qs[playerIndex].Peek(inputs, 0)
 	return inputs
