@@ -4,6 +4,8 @@ package mgba
 #include <mgba/core/cpu.h>
 #include <mgba/internal/gba/gba.h>
 
+static const int tango_Trapper_imm = 0xef;
+
 struct Trapper {
 	struct mCPUComponent cpuComponent;
 	void (*realBkpt16)(struct ARMCore* cpu, int immediate);
@@ -22,7 +24,7 @@ static void tango_mCPUComponent_setCallbacks_Trapper(struct mCPUComponent* cpuCo
 static void tango_Trapper_bkpt16(struct ARMCore* cpu, int immediate) {
 	struct GBA* gba = (struct GBA*) cpu->master;
 	struct Trapper* component = (struct Trapper*) gba->cpu->components[CPU_COMPONENT_MISC_1];
-	if (immediate == 0xef) {
+	if (immediate == tango_Trapper_imm) {
 		tango_Trapper_handle(component);
 		return;
 	}
@@ -62,8 +64,6 @@ func tango_Trapper_handle(component *C.struct_Trapper) {
 	t.Handle()
 }
 
-const trapOpcode = 0xbeef // bkpt 0xef
-
 type trap struct {
 	original uint16
 	handler  func()
@@ -94,7 +94,7 @@ func (t *Trapper) Add(addr uint32, handler func()) {
 		panic(fmt.Sprintf("trap at 0x%08x already exists", addr))
 	}
 	tr := trap{t.core.RawRead16(addr, -1), handler}
-	t.core.RawWrite16(addr, -1, trapOpcode)
+	t.core.RawWrite16(addr, -1, 0xbe00|C.tango_Trapper_imm)
 	t.traps[addr] = tr
 }
 
