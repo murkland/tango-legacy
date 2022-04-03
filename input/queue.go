@@ -11,13 +11,15 @@ type Queue struct {
 	mu   sync.Mutex
 	cond *sync.Cond
 
-	qs         [2]*ringbuf.RingBuf[Input]
-	consumable [][2]Input
-	delay      int
+	localPlayerIndex int
+	qs               [2]*ringbuf.RingBuf[Input]
+	consumable       [][2]Input
+	delay            int
 }
 
-func NewQueue(n int, delay int) *Queue {
+func NewQueue(n int, delay int, localPlayerIndex int) *Queue {
 	iq := &Queue{
+		localPlayerIndex: localPlayerIndex,
 		qs: [2]*ringbuf.RingBuf[Input]{
 			ringbuf.New[Input](n),
 			ringbuf.New[Input](n),
@@ -59,7 +61,10 @@ func (q *Queue) Peek(playerIndex int) []Input {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	n := q.qs[playerIndex].Used() - q.delay
+	n := q.qs[playerIndex].Used()
+	if playerIndex == q.localPlayerIndex {
+		n -= q.delay
+	}
 	if n < 0 {
 		return nil
 	}
@@ -76,9 +81,9 @@ func (q *Queue) QueueLength(playerIndex int) int {
 }
 
 func (q *Queue) advanceManyLocked() [][2]Input {
-	n := q.qs[0].Used() - q.delay
-	if q.qs[1].Used()-q.delay < n {
-		n = q.qs[1].Used() - q.delay
+	n := q.qs[q.localPlayerIndex].Used() - q.delay
+	if q.qs[1-q.localPlayerIndex].Used() < n {
+		n = q.qs[1-q.localPlayerIndex].Used()
 	}
 
 	if n < 0 {
