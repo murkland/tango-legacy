@@ -12,7 +12,7 @@ tango（タンゴ）はロックマンエグゼ６ネットプレイシステム
 
 -   add your legally-obtained roms in the `roms` folder and your hard-earned saves on the `saves` folder
     
-    合法的に入手したROMは `roms` フォルダに、苦労して保存したものは `saves` フォルダに保存してください。
+    `roms` ディレクトリにROMファイルを、`saves` ディレクトリにセーブファイルを置いてください。
 
 -   if you are on windows, just run `hub.bat`. if you are on not windows, you're on your own! (for now)
 
@@ -28,13 +28,13 @@ tango（タンゴ）はロックマンエグゼ６ネットプレイシステム
 
 ## remapping controls / コントロールリマッピング
 
--   after executing `hub.bat` once, a new file named `tango.toml` will be created on your folder
+-   after executing `hub.bat` once, a configuration file named `tango.toml` will be created in your folder
 
-    `hub.bat`を一回実行すると、あなたのフォルダに `tango.toml` という名前のファイルが作成されます。    
+    `hub.bat` を初めて起動すると、`tango.toml` という名前の設定ファイルが作成されます。
 
--   you can edit the `[Keymapping]` section to change your enabled keys. The list of valid keys is included in the `keys.txt` file
+-   you can edit the `[Keymapping]` section to change your keybindings. The list of valid keys is included in the `keys.txt` file
 
-    は、`[Keymapping]`セクションを編集して、有効なキーを変更することができます。有効なキーの一覧は `keys.txt` ファイルに含まれています。
+    `[Keymapping]` セクションを編集し、キーバインドを変更することができます。キーのリストは `keys.txt` ファイルに記載されています。
 
 ## supported games / 対応ゲーム
 
