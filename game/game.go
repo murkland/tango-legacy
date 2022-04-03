@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -409,8 +410,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			volume := g.gameAudioPlayer.Volume()
 			g.gameAudioPlayer.SetVolume(0)
 			code, err := zenity.Entry(g.p.Sprintf("ENTER_MATCHMAKING_CODE"), zenity.Title("tango"))
+			code = strings.ReplaceAll(strings.ToLower(code), " ", "")
 			g.gameAudioPlayer.SetVolume(volume)
-			if err != nil {
+			if err != nil || code == "" {
 				log.Printf("matchmaking dialog did not return a code: %s", err)
 				g.bn6.DropMatchmakingFromCommMenu(core, 0)
 			} else {
