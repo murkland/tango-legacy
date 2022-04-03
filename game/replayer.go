@@ -8,7 +8,6 @@ import (
 	"github.com/murkland/tango/input"
 	"github.com/murkland/tango/mgba"
 	"github.com/murkland/tango/replay"
-	"github.com/murkland/tango/trapper"
 )
 
 type Replayer struct {
@@ -45,7 +44,7 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 
 	rp := &Replayer{core, bn6, r, nil}
 
-	tp := trapper.New(rp.core)
+	tp := mgba.NewTrapper(core)
 
 	tp.Add(bn6.Offsets.ROM.A_main__readJoyflags, func() {
 		var inputPairBuf [1][2]input.Input
@@ -95,7 +94,7 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 		rp.Reset()
 	})
 
-	rp.core.InstallBeefTrap(tp.BeefHandler)
+	tp.Attach(core.GBA())
 
 	return rp, nil
 }

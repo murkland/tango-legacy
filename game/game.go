@@ -21,7 +21,6 @@ import (
 	"github.com/murkland/tango/input"
 	"github.com/murkland/tango/match"
 	"github.com/murkland/tango/mgba"
-	"github.com/murkland/tango/trapper"
 	"github.com/ncruces/zenity"
 	"golang.org/x/text/message"
 )
@@ -142,7 +141,7 @@ func New(conf config.Config, p *message.Printer, romPath string) (*Game, error) 
 }
 
 func (g *Game) InstallTraps(core *mgba.Core) error {
-	tp := trapper.New(core)
+	tp := mgba.NewTrapper(core)
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_init__call__battle_copyInputData, func() {
 		match := g.Match()
@@ -476,7 +475,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		core.GBA().ThumbWritePC()
 	})
 
-	core.InstallBeefTrap(tp.BeefHandler)
+	tp.Attach(core.GBA())
 
 	return nil
 }

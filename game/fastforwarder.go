@@ -11,7 +11,6 @@ import (
 	"github.com/murkland/tango/input"
 	"github.com/murkland/tango/mgba"
 	"github.com/murkland/tango/replay"
-	"github.com/murkland/tango/trapper"
 )
 
 type Fastforwarder struct {
@@ -37,7 +36,7 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 
 	ff := &Fastforwarder{core, bn6, nil, 0}
 
-	tp := trapper.New(core)
+	tp := mgba.NewTrapper(core)
 
 	tp.Add(bn6.Offsets.ROM.A_main__readJoyflags, func() {
 		var inputPairBuf [1][2]input.Input
@@ -98,7 +97,7 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 		core.GBA().SetRegister(0, 2)
 	})
 
-	core.InstallBeefTrap(tp.BeefHandler)
+	tp.Attach(core.GBA())
 
 	core.Reset()
 
