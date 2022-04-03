@@ -11,7 +11,7 @@ import (
 	"github.com/murkland/tango/mgba"
 )
 
-const replayVersion = 0x07
+const replayVersion = 0x08
 const replayHeader = "TOOT"
 
 type Writer struct {

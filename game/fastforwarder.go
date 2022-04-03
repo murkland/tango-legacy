@@ -115,10 +115,6 @@ func (ff *fastforwarder) applyInputs(state *mgba.State, rw *replay.Writer, local
 	}()
 	ff.state.inputPairs.Push(inputPairs)
 
-	if !ff.core.LoadState(ff.state.saveState) {
-		return nil, errors.New("failed to load state")
-	}
-
 	for ff.state.inputPairs.Used() > 0 {
 		var inputPairBuf [1][2]input.Input
 		ff.state.inputPairs.Peek(inputPairBuf[:], 0)

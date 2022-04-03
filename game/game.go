@@ -192,12 +192,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		log.Printf("init received")
 		g.bn6.SetPlayerMarshaledBattleState(core, battle.RemotePlayerIndex(), remoteInit)
-		committedState := core.SaveState()
-		battle.SetCommittedState(committedState)
 
-		if err := battle.ReplayWriter().WriteState(battle.LocalPlayerIndex(), committedState); err != nil {
-			log.Fatalf("failed to write to replay: %s", err)
-		}
 		if err := battle.ReplayWriter().WriteInit(battle.LocalPlayerIndex(), localInit); err != nil {
 			log.Fatalf("failed to write to replay: %s", err)
 		}
@@ -239,12 +234,22 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Fatalf("attempting to copy input data while no battle was active!")
 		}
 
-		core.GBA().SetRegister(0, 0x0)
-		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
-		core.GBA().ThumbWritePC()
-
 		if match.Aborted() {
+			core.GBA().SetRegister(0, 0x0)
+			core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
+			core.GBA().ThumbWritePC()
 			return
+		}
+
+		if battle.CommittedState() == nil {
+			committedState := core.SaveState()
+			battle.SetCommittedState(committedState)
+
+			log.Printf("battle state committed")
+
+			if err := battle.ReplayWriter().WriteState(battle.LocalPlayerIndex(), committedState); err != nil {
+				log.Fatalf("failed to write to replay: %s", err)
+			}
 		}
 
 		ctx := context.Background()

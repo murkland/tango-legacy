@@ -26,12 +26,14 @@ type Replay struct {
 // u8[4]: TOOT
 // u8: replay version
 // u8: local player index
-// u32: state size
-// state size: state
 //
 // init (two of them):
-// u8: player index
 // init size: init
+//
+// state:
+// u8: player index
+// u32: state size
+// state size: state
 //
 // inputs:
 // u32: tick
@@ -66,22 +68,6 @@ func Unmarshal(r io.Reader) (*Replay, error) {
 		return nil, fmt.Errorf("unsupported replay version: %02x vs %02x", version, replayVersion)
 	}
 
-	var localPlayerIndex uint8
-	if err := binary.Read(zr, binary.LittleEndian, &localPlayerIndex); err != nil {
-		return nil, err
-	}
-
-	var stateSize uint32
-	if err := binary.Read(zr, binary.LittleEndian, &stateSize); err != nil {
-		return nil, err
-	}
-
-	stateBytes := make([]byte, int(stateSize))
-	if _, err := io.ReadFull(zr, stateBytes); err != nil {
-		return nil, err
-	}
-	state := mgba.StateFromBytes(stateBytes)
-
 	// read inits
 	var init [2][]byte
 	for i := 0; i < 2; i++ {
@@ -97,6 +83,23 @@ func Unmarshal(r io.Reader) (*Replay, error) {
 
 		init[playerIndex] = marshaled[:]
 	}
+
+	// read state
+	var localPlayerIndex uint8
+	if err := binary.Read(zr, binary.LittleEndian, &localPlayerIndex); err != nil {
+		return nil, err
+	}
+
+	var stateSize uint32
+	if err := binary.Read(zr, binary.LittleEndian, &stateSize); err != nil {
+		return nil, err
+	}
+
+	stateBytes := make([]byte, int(stateSize))
+	if _, err := io.ReadFull(zr, stateBytes); err != nil {
+		return nil, err
+	}
+	state := mgba.StateFromBytes(stateBytes)
 
 	// read inputs
 	var inputPairs [][2]input.Input
