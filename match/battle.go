@@ -44,7 +44,7 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 		lastCommittedRemoteInput: input.Input{Joyflags: 0xfc00},
 	}
 
-	b.iq = input.NewQueue(60, 2, b.LocalPlayerIndex())
+	b.iq = input.NewQueue(60, m.conf.Netplay.InputDelay, b.LocalPlayerIndex())
 
 	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.tangoreplay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
 	log.Printf("writing replay: %s", fn)

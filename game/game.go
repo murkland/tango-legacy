@@ -498,7 +498,7 @@ func (g *Game) Update() error {
 		g.mainCore.SetKeys(g.joyflags)
 	}
 
-	if g.conf.Keymapping.DebugSpew != -1 && inpututil.IsKeyJustPressed(g.conf.Keymapping.DebugSpew) {
+	if g.conf.Keymapping.DebugSpew != -1 && inpututil.IsKeyJustPressed(ebiten.Key(g.conf.Keymapping.DebugSpew)) {
 		g.debugSpew = !g.debugSpew
 	}
 

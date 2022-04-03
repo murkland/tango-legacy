@@ -9,34 +9,34 @@ import (
 func ebitenToMgbaKeys(keymapping config.Keymapping, pressedKeys []ebiten.Key) mgba.Keys {
 	keys := mgba.Keys(0)
 	for _, key := range pressedKeys {
-		if key == keymapping.A {
+		if key == ebiten.Key(keymapping.A) {
 			keys |= mgba.KeysA
 		}
-		if key == keymapping.B {
+		if key == ebiten.Key(keymapping.B) {
 			keys |= mgba.KeysB
 		}
-		if key == keymapping.L {
+		if key == ebiten.Key(keymapping.L) {
 			keys |= mgba.KeysL
 		}
-		if key == keymapping.R {
+		if key == ebiten.Key(keymapping.R) {
 			keys |= mgba.KeysR
 		}
-		if key == keymapping.Left {
+		if key == ebiten.Key(keymapping.Left) {
 			keys |= mgba.KeysLeft
 		}
-		if key == keymapping.Right {
+		if key == ebiten.Key(keymapping.Right) {
 			keys |= mgba.KeysRight
 		}
-		if key == keymapping.Up {
+		if key == ebiten.Key(keymapping.Up) {
 			keys |= mgba.KeysUp
 		}
-		if key == keymapping.Down {
+		if key == ebiten.Key(keymapping.Down) {
 			keys |= mgba.KeysDown
 		}
-		if key == keymapping.Start {
+		if key == ebiten.Key(keymapping.Start) {
 			keys |= mgba.KeysStart
 		}
-		if key == keymapping.Select {
+		if key == ebiten.Key(keymapping.Select) {
 			keys |= mgba.KeysSelect
 		}
 	}

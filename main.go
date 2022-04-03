@@ -66,7 +66,7 @@ func main() {
 	os.MkdirAll("roms", 0o700)
 	os.MkdirAll("replays", 0o700)
 
-	log.Printf("config settings: %+v", conf.ToRaw())
+	log.Printf("config settings: %+v", conf)
 
 	mgba.SetDefaultLogger(func(category string, level int, message string) {
 		if level&0x7 == 0 {

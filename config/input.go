@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -126,18 +128,21 @@ func init() {
 	}
 }
 
-func keyCode(name string) ebiten.Key {
-	key, ok := keyNameToKeyCode[name]
+type Key ebiten.Key
+
+func (k *Key) UnmarshalText(text []byte) error {
+	key, ok := keyNameToKeyCode[string(text)]
 	if !ok {
-		return -1
+		return fmt.Errorf("unknown key: %s", string(text))
 	}
-	return key
+	*k = Key(key)
+	return nil
 }
 
-func keyName(key ebiten.Key) string {
-	name, ok := keyCodeToKeyName[key]
+func (k *Key) MarshalText() ([]byte, error) {
+	name, ok := keyCodeToKeyName[ebiten.Key(*k)]
 	if !ok {
-		return ""
+		return nil, fmt.Errorf("unknown key: %v", *k)
 	}
-	return name
+	return []byte(name), nil
 }

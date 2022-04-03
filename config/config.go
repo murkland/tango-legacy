@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/BurntSushi/toml"
@@ -9,33 +10,21 @@ import (
 )
 
 type Keymapping struct {
-	A         ebiten.Key
-	B         ebiten.Key
-	L         ebiten.Key
-	R         ebiten.Key
-	Left      ebiten.Key
-	Right     ebiten.Key
-	Up        ebiten.Key
-	Down      ebiten.Key
-	Start     ebiten.Key
-	Select    ebiten.Key
-	DebugSpew ebiten.Key
+	A         Key
+	B         Key
+	L         Key
+	R         Key
+	Left      Key
+	Right     Key
+	Up        Key
+	Down      Key
+	Start     Key
+	Select    Key
+	DebugSpew Key
 }
 
-func (k Keymapping) ToRaw() RawKeymapping {
-	return RawKeymapping{
-		A:         keyName(k.A),
-		B:         keyName(k.B),
-		L:         keyName(k.L),
-		R:         keyName(k.R),
-		Left:      keyName(k.Left),
-		Right:     keyName(k.Right),
-		Up:        keyName(k.Up),
-		Down:      keyName(k.Down),
-		Start:     keyName(k.Start),
-		Select:    keyName(k.Select),
-		DebugSpew: keyName(k.DebugSpew),
-	}
+type Netplay struct {
+	InputDelay int
 }
 
 type Matchmaking struct {
@@ -53,39 +42,56 @@ type Audio struct {
 	Interpolation AudioInterpolationType
 }
 
-func (a Audio) ToRaw() RawAudio {
-	interpolation := "clippy"
-	switch a.Interpolation {
-	case AudioInterpolationTypeRubbery:
-		interpolation = "rubbery"
-	case AudioInterpolationTypeClippy:
-		interpolation = "clippy"
+func (ait *AudioInterpolationType) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "rubbery":
+		*ait = AudioInterpolationTypeRubbery
+	case "clippy":
+		*ait = AudioInterpolationTypeClippy
+	default:
+		return fmt.Errorf("unknown audio interpolation type: %s", string(text))
 	}
-	return RawAudio{
-		Interpolation: interpolation,
+	return nil
+}
+
+func (ait *AudioInterpolationType) MarshalText() ([]byte, error) {
+	switch *ait {
+	case AudioInterpolationTypeRubbery:
+		return []byte("rubbery"), nil
+	case AudioInterpolationTypeClippy:
+		return []byte("clippy"), nil
+	default:
+		return nil, fmt.Errorf("unknown audio interpolation type: %v", *ait)
 	}
 }
 
 type Config struct {
 	Keymapping  Keymapping
 	Audio       Audio
+	Netplay     Netplay
 	Matchmaking Matchmaking
 	WebRTC      webrtc.Configuration
 }
 
 var DefaultConfig = Config{
 	Keymapping: Keymapping{
-		A:         ebiten.KeyZ,
-		B:         ebiten.KeyX,
-		L:         ebiten.KeyA,
-		R:         ebiten.KeyS,
-		Left:      ebiten.KeyArrowLeft,
-		Right:     ebiten.KeyArrowRight,
-		Up:        ebiten.KeyArrowUp,
-		Down:      ebiten.KeyArrowDown,
-		Start:     ebiten.KeyEnter,
-		Select:    ebiten.KeyBackspace,
-		DebugSpew: ebiten.KeyBackquote,
+		A:         Key(ebiten.KeyZ),
+		B:         Key(ebiten.KeyX),
+		L:         Key(ebiten.KeyA),
+		R:         Key(ebiten.KeyS),
+		Left:      Key(ebiten.KeyArrowLeft),
+		Right:     Key(ebiten.KeyArrowRight),
+		Up:        Key(ebiten.KeyArrowUp),
+		Down:      Key(ebiten.KeyArrowDown),
+		Start:     Key(ebiten.KeyEnter),
+		Select:    Key(ebiten.KeyBackspace),
+		DebugSpew: Key(ebiten.KeyBackquote),
+	},
+	Audio: Audio{
+		Interpolation: AudioInterpolationTypeClippy,
+	},
+	Netplay: Netplay{
+		InputDelay: 3,
 	},
 	Matchmaking: Matchmaking{
 		ConnectAddr: "tangomm.murk.land:80",
@@ -111,88 +117,16 @@ var DefaultConfig = Config{
 	},
 }
 
-type RawKeymapping struct {
-	A         string
-	B         string
-	L         string
-	R         string
-	Left      string
-	Right     string
-	Up        string
-	Down      string
-	Start     string
-	Select    string
-	DebugSpew string
-}
-
-func (rk RawKeymapping) ToParsed() Keymapping {
-	return Keymapping{
-		A:         keyCode(rk.A),
-		B:         keyCode(rk.B),
-		L:         keyCode(rk.L),
-		R:         keyCode(rk.R),
-		Left:      keyCode(rk.Left),
-		Right:     keyCode(rk.Right),
-		Up:        keyCode(rk.Up),
-		Down:      keyCode(rk.Down),
-		Start:     keyCode(rk.Start),
-		Select:    keyCode(rk.Select),
-		DebugSpew: keyCode(rk.DebugSpew),
-	}
-}
-
-type RawAudio struct {
-	Interpolation string
-}
-
-type RawConfig struct {
-	Keymapping  RawKeymapping
-	Audio       RawAudio
-	Matchmaking Matchmaking
-	WebRTC      webrtc.Configuration
-}
-
-func (c Config) ToRaw() RawConfig {
-	return RawConfig{
-		Keymapping:  c.Keymapping.ToRaw(),
-		Audio:       c.Audio.ToRaw(),
-		Matchmaking: c.Matchmaking,
-		WebRTC:      c.WebRTC,
-	}
-}
-
-func (rc RawConfig) ToParsed() Config {
-	return Config{
-		Keymapping:  rc.Keymapping.ToParsed(),
-		Audio:       rc.Audio.ToParsed(),
-		Matchmaking: rc.Matchmaking,
-		WebRTC:      rc.WebRTC,
-	}
-}
-
-func (ra RawAudio) ToParsed() Audio {
-	interpolation := AudioInterpolationTypeClippy
-	switch ra.Interpolation {
-	case "rubbery":
-		interpolation = AudioInterpolationTypeRubbery
-	case "clippy":
-		interpolation = AudioInterpolationTypeClippy
-	}
-	return Audio{
-		Interpolation: interpolation,
-	}
-}
-
 func Save(config Config, w io.Writer) error {
-	return toml.NewEncoder(w).Encode(config.ToRaw())
+	return toml.NewEncoder(w).Encode(config)
 }
 
 func Load(r io.Reader) (Config, error) {
-	var rawConfig RawConfig
+	var c Config
 
-	if _, err := toml.NewDecoder(r).Decode(&rawConfig); err != nil {
+	if _, err := toml.NewDecoder(r).Decode(&c); err != nil {
 		return Config{}, err
 	}
 
-	return rawConfig.ToParsed(), nil
+	return c, nil
 }
