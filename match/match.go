@@ -197,9 +197,8 @@ func (m *Match) handleConn(ctx context.Context) error {
 
 		switch p := packet.(type) {
 		case packets.Init:
-			battle := m.Battle()
-			if p.BattleNumber != uint8(battle.number) {
-				log.Panicf("mismatched battle number, expected %d but got %d", battle.number, p.BattleNumber)
+			if p.BattleNumber != uint8(m.battleNumber) {
+				log.Fatalf("mismatched battle number, expected %d but got %d", m.battleNumber, p.BattleNumber)
 			}
 			select {
 			case m.remoteInitCh <- p.Marshaled[:]:
