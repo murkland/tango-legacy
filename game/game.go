@@ -443,7 +443,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			}
 
 			g.bn6.StartBattleFromCommMenu(core)
-			log.Printf("m started")
+			log.Printf("match started")
 		}
 	})
 
@@ -458,7 +458,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_waitForFriend__ret__cancel, func() {
-		log.Printf("m canceled by user")
+		log.Printf("match canceled by user")
 		g.endMatch()
 
 		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
@@ -466,7 +466,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_endBattle__entry, func() {
-		log.Printf("m ended")
+		log.Printf("match ended")
 		g.endMatch()
 	})
 
