@@ -113,7 +113,3 @@ func (q *Queue) Consume() [][2]Input {
 func (q *Queue) LocalDelay() int {
 	return q.localDelay
 }
-
-func (q *Queue) SetLocalDelay(localDelay int) {
-	q.localDelay = localDelay
-}
