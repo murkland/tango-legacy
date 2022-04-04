@@ -14,7 +14,8 @@ import (
 )
 
 type Battle struct {
-	isP2 bool
+	number int
+	isP2   bool
 
 	rw *replay.Writer
 
@@ -39,7 +40,8 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 	}
 
 	b := &Battle{
-		isP2: !m.wonLastBattle,
+		number: m.battleNumber,
+		isP2:   !m.wonLastBattle,
 
 		lastCommittedRemoteInput: input.Input{Joyflags: 0xfc00},
 	}
@@ -55,7 +57,6 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 	}
 	b.rw = il
 	m.battle = b
-	m.battleNumber++
 	log.Printf("battle %d started, won last battle (is p1) = %t", m.battleNumber, m.wonLastBattle)
 	return nil
 }

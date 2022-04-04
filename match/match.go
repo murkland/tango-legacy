@@ -197,6 +197,10 @@ func (m *Match) handleConn(ctx context.Context) error {
 
 		switch p := packet.(type) {
 		case packets.Init:
+			battle := m.Battle()
+			if p.BattleNumber != uint8(battle.number) {
+				log.Fatalf("mismatched battle number, expected %d but got %d", battle.number, p.BattleNumber)
+			}
 			select {
 			case m.remoteInitCh <- p.Marshaled[:]:
 			case <-ctx.Done():
@@ -204,8 +208,8 @@ func (m *Match) handleConn(ctx context.Context) error {
 			}
 		case packets.Input:
 			battle := m.Battle()
-			if battle == nil {
-				log.Printf("received input packet while battle was apparently not active, dropping it (this may cause a desync!)")
+			if p.BattleNumber != uint8(battle.number) {
+				log.Printf("mismatched battle number, expected %d but got %d, droopping packet", battle.number, p.BattleNumber)
 				continue
 			}
 			battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{LocalTick: int(p.LocalTick), RemoteTick: int(p.RemoteTick), Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
@@ -226,6 +230,7 @@ func (m *Match) endBattleLocked() error {
 		return err
 	}
 	m.battle = nil
+	m.battleNumber++
 	return nil
 }
 
@@ -282,12 +287,14 @@ func (m *Match) PollForReady(ctx context.Context) error {
 
 func (m *Match) SendInit(ctx context.Context, init []byte) error {
 	var pkt packets.Init
+	pkt.BattleNumber = uint8(m.Battle().number)
 	copy(pkt.Marshaled[:], init)
 	return packets.Send(ctx, m.dc, pkt, nil)
 }
 
 func (m *Match) SendInput(ctx context.Context, localTick uint32, remoteTick uint32, joyflags uint16, customScreenState uint8, turn []byte) error {
 	var pkt packets.Input
+	pkt.BattleNumber = uint8(m.Battle().number)
 	pkt.LocalTick = localTick
 	pkt.RemoteTick = remoteTick
 	pkt.Joyflags = joyflags

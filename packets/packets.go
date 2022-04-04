@@ -19,7 +19,7 @@ var (
 
 var ErrUnknownPacket = errors.New("unknown packet")
 
-const ProtocolVersion = 0x0a
+const ProtocolVersion = 0x0b
 
 type packetType uint8
 
@@ -51,13 +51,15 @@ type Hello2 struct {
 func (Hello2) packetType() packetType { return packetTypeHello2 }
 
 type Init struct {
-	Marshaled [0x100]uint8
+	BattleNumber uint8
+	Marshaled    [0x100]uint8
 }
 
 func (Init) packetType() packetType { return packetTypeInit }
 
 // Input has an occasional 256 byte trailer.
 type Input struct {
+	BattleNumber      uint8
 	LocalTick         uint32
 	RemoteTick        uint32
 	Joyflags          uint16
