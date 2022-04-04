@@ -151,7 +151,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		battle := m.Battle()
 		if battle == nil {
-			log.Fatalf("attempting to copy init data while no battle was active!")
+			log.Panicf("attempting to copy init data while no battle was active!")
 		}
 
 		core.GBA().SetRegister(0, 0x0)
@@ -167,14 +167,14 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		battle := m.Battle()
 		if battle == nil {
-			log.Fatalf("attempting to marshal init data while no battle was active!")
+			log.Panicf("attempting to marshal init data while no battle was active!")
 		}
 
 		ctx := context.Background()
 
 		localInit := g.bn6.LocalMarshaledBattleState(core)
 		if err := m.SendInit(ctx, localInit); err != nil {
-			log.Fatalf("failed to send init info: %s", err)
+			log.Panicf("failed to send init info: %s", err)
 		}
 
 		log.Printf("init sent")
@@ -187,17 +187,17 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				m.Abort()
 				return
 			}
-			log.Fatalf("failed to receive init info: %s", err)
+			log.Panicf("failed to receive init info: %s", err)
 		}
 
 		log.Printf("init received")
 		g.bn6.SetPlayerMarshaledBattleState(core, battle.RemotePlayerIndex(), remoteInit)
 
 		if err := battle.ReplayWriter().WriteInit(battle.LocalPlayerIndex(), localInit); err != nil {
-			log.Fatalf("failed to write to replay: %s", err)
+			log.Panicf("failed to write to replay: %s", err)
 		}
 		if err := battle.ReplayWriter().WriteInit(battle.RemotePlayerIndex(), remoteInit); err != nil {
-			log.Fatalf("failed to write to replay: %s", err)
+			log.Panicf("failed to write to replay: %s", err)
 		}
 	})
 
@@ -209,7 +209,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		battle := m.Battle()
 		if battle == nil {
-			log.Fatalf("attempting to marshal turn data while no battle was active!")
+			log.Panicf("attempting to marshal turn data while no battle was active!")
 		}
 
 		battle.AddLocalPendingTurn(g.bn6.LocalMarshaledBattleState(core))
@@ -231,7 +231,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		battle := m.Battle()
 		if battle == nil {
-			log.Fatalf("attempting to copy input data while no battle was active!")
+			log.Panicf("attempting to copy input data while no battle was active!")
 		}
 
 		if m.Aborted() {
@@ -248,7 +248,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Printf("battle state committed")
 
 			if err := battle.ReplayWriter().WriteState(battle.LocalPlayerIndex(), committedState); err != nil {
-				log.Fatalf("failed to write to replay: %s", err)
+				log.Panicf("failed to write to replay: %s", err)
 			}
 		}
 
@@ -274,18 +274,18 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				m.Abort()
 				return
 			}
-			log.Fatalf("failed to add input: %s", err)
+			log.Panicf("failed to add input: %s", err)
 		}
 
 		if err := m.SendInput(ctx, uint32(localTick), uint32(remoteTick), joyflags, customScreenState, turn); err != nil {
-			log.Fatalf("failed to send input: %s", err)
+			log.Panicf("failed to send input: %s", err)
 		}
 
 		inputPairs, left := battle.ConsumeInputs()
 		committedTick, committedState := battle.CommittedTickAndState()
 		newTick, committedState, dirtyState, err := g.fastforwarder.Fastforward(committedTick, committedState, battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
-			log.Fatalf("failed to fastforward: %s", err)
+			log.Panicf("failed to fastforward: %s", err)
 		}
 		// TODO: Adjust input lag appropriately here as well to cap runahead to 8 ticks.
 		tps := expectedFPS + (remoteTick - localTick) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick)
@@ -316,7 +316,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		battle := m.Battle()
 		if battle == nil {
-			log.Fatalf("turn ended while no battle was active!")
+			log.Panicf("turn ended while no battle was active!")
 		}
 
 		tick := battle.DirtyTick()
@@ -330,7 +330,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		if err := m.NewBattle(g.mainCore); err != nil {
-			log.Fatalf("failed to start new battle: %s", err)
+			log.Panicf("failed to start new battle: %s", err)
 		}
 	})
 
@@ -341,7 +341,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		if err := m.EndBattle(); err != nil {
-			log.Fatalf("failed to end battle: %s", err)
+			log.Panicf("failed to end battle: %s", err)
 		}
 
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
@@ -355,7 +355,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		battle := m.Battle()
 		if battle == nil {
-			log.Fatalf("attempted to get battle p2 information while no battle was active!")
+			log.Panicf("attempted to get battle p2 information while no battle was active!")
 		}
 
 		core.GBA().SetRegister(0, uint32(battle.LocalPlayerIndex()))
@@ -369,7 +369,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		battle := m.Battle()
 		if battle == nil {
-			log.Fatalf("attempted to get link p2 information while no battle was active!")
+			log.Panicf("attempted to get link p2 information while no battle was active!")
 		}
 
 		core.GBA().SetRegister(0, uint32(battle.LocalPlayerIndex()))
