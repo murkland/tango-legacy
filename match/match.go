@@ -209,7 +209,7 @@ func (m *Match) handleConn(ctx context.Context) error {
 		case packets.Input:
 			battle := m.Battle()
 			if p.BattleNumber != uint8(battle.number) {
-				log.Printf("mismatched battle number, expected %d but got %d, droopping packet", battle.number, p.BattleNumber)
+				log.Printf("mismatched battle number, expected %d but got %d, dropping input", battle.number, p.BattleNumber)
 				continue
 			}
 			battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{LocalTick: int(p.LocalTick), RemoteTick: int(p.RemoteTick), Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
