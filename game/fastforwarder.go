@@ -56,16 +56,14 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 		ip := inputPairBuf[0]
 
 		if ip[0].LocalTick != ip[1].LocalTick {
-			ff.state.err = fmt.Errorf("p1 tick != p2 tick: %d != %d", ip[0].LocalTick, ip[1].LocalTick)
+			ff.state.err = fmt.Errorf("p1 tick != p2 tick (predicting = %t): %d != %d", ff.state.predicting, ip[0].LocalTick, ip[1].LocalTick)
 			return
 		}
 
 		if ip[0].LocalTick != ff.state.tick {
-			ff.state.err = fmt.Errorf("input tick != state tick: %d != %d", ip[0].LocalTick, ff.state.tick)
+			ff.state.err = fmt.Errorf("input tick != state tick (predicting = %t): %d != %d", ff.state.predicting, ip[0].LocalTick, ff.state.tick)
 			return
 		}
-
-		ff.state.tick++
 
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
@@ -82,6 +80,8 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 				log.Printf("p2 turn committed at tick %d", ip[1].LocalTick)
 			}
 		}
+
+		ff.state.tick++
 
 		if ff.state.inputPairs.Used() == 0 {
 			ff.state.saveState = core.SaveState()

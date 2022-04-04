@@ -45,7 +45,7 @@ func main() {
 		p1 := inputPair[0]
 		p2 := inputPair[1]
 
-		fmt.Fprintf(os.Stdout, "%d: rngstate=%08x p1joyflags=%04x p2joyflags=%04x p1custstate=%d p2custstate=%d\n", p1.Tick, replay.RNGStates[i], p1.Joyflags, p2.Joyflags, p1.CustomScreenState, p2.CustomScreenState)
+		fmt.Fprintf(os.Stdout, "%d: rngstate=%08x p1joyflags=%04x p2joyflags=%04x p1custstate=%d p2custstate=%d\n", p1.LocalTick, replay.RNGStates[i], p1.Joyflags, p2.Joyflags, p1.CustomScreenState, p2.CustomScreenState)
 
 		if p1.Turn != nil {
 			fmt.Fprintf(os.Stdout, " +p1 turn: %s\n", hex.EncodeToString(p1.Turn))
