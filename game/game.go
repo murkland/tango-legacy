@@ -241,9 +241,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		if battle.CommittedState() == nil {
+		if _, committedState := battle.CommittedTickAndState(); committedState == nil {
 			committedState := core.SaveState()
-			battle.SetCommittedState(&match.State{State: committedState, Tick: 0})
+			battle.SetCommittedTickAndState(0, committedState)
 
 			log.Printf("battle state committed")
 
@@ -254,7 +254,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		ctx := context.Background()
 
-		localTick := battle.PostIncrementTick()
+		localTick := battle.PostIncrementDirtyTick()
 		lastCommittedRemoteInput := battle.LastCommittedRemoteInput()
 		remoteTick := lastCommittedRemoteInput.LocalTick
 
@@ -282,15 +282,16 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		inputPairs, left := battle.ConsumeInputs()
-		committedState, dirtyState, err := g.fastforwarder.Fastforward(battle.CommittedState(), battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
+		committedTick, committedState := battle.CommittedTickAndState()
+		newTick, committedState, dirtyState, err := g.fastforwarder.Fastforward(committedTick, committedState, battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
 			log.Fatalf("failed to fastforward: %s", err)
 		}
 		// TODO: Adjust input lag appropriately here as well to cap runahead to 8 ticks.
 		tps := expectedFPS + (remoteTick - localTick) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick)
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
-		battle.SetCommittedState(committedState)
-		g.mainCore.LoadState(dirtyState.State)
+		battle.SetCommittedTickAndState(newTick, committedState)
+		g.mainCore.LoadState(dirtyState)
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_runUnpausedStep__cmp__retval, func() {
@@ -318,7 +319,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Fatalf("turn ended while no battle was active!")
 		}
 
-		tick := battle.Tick()
+		tick := battle.DirtyTick()
 		log.Printf("turn ended on %d, rng state = %08x", tick, g.bn6.RNG2State(core))
 	})
 

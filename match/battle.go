@@ -13,11 +13,6 @@ import (
 	"github.com/murkland/tango/replay"
 )
 
-type State struct {
-	State *mgba.State
-	Tick  int
-}
-
 type Battle struct {
 	number int
 	isP2   bool
@@ -29,11 +24,12 @@ type Battle struct {
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
 
-	tick int
-
 	lastCommittedRemoteInput input.Input
 
-	committedState *State
+	committedState *mgba.State
+	committedTick  int
+
+	dirtyTick int
 }
 
 func (m *Match) NewBattle(core *mgba.Core) error {
@@ -81,14 +77,14 @@ func (b *Battle) QueueLength(playerIndex int) int {
 	return b.iq.QueueLength(playerIndex)
 }
 
-func (b *Battle) PostIncrementTick() int {
-	tick := b.tick
-	b.tick++
-	return tick
+func (b *Battle) PostIncrementDirtyTick() int {
+	dirtyTick := b.dirtyTick
+	b.dirtyTick++
+	return dirtyTick
 }
 
-func (b *Battle) Tick() int {
-	return b.tick
+func (b *Battle) DirtyTick() int {
+	return b.dirtyTick
 }
 
 func (b *Battle) Close() error {
@@ -98,12 +94,13 @@ func (b *Battle) Close() error {
 	return nil
 }
 
-func (b *Battle) SetCommittedState(state *State) {
+func (b *Battle) SetCommittedTickAndState(tick int, state *mgba.State) {
+	b.committedTick = tick
 	b.committedState = state
 }
 
-func (b *Battle) CommittedState() *State {
-	return b.committedState
+func (b *Battle) CommittedTickAndState() (int, *mgba.State) {
+	return b.committedTick, b.committedState
 }
 
 func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {
