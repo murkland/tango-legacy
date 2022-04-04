@@ -491,7 +491,7 @@ func (g *Game) Update() error {
 	g.joyflags = ebitenToMgbaKeys(g.conf.Keymapping, inpututil.AppendPressedKeys(nil))
 
 	if g.Match() == nil {
-		// Use regular input handling outside of a m.
+		// Use regular input handling outside of a match.
 		g.mainCore.SetKeys(g.joyflags)
 	}
 
