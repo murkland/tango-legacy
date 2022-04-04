@@ -235,10 +235,11 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Panicf("attempting to copy input data while no battle was active!")
 		}
 
+		core.GBA().SetRegister(0, 0x0)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
+		core.GBA().ThumbWritePC()
+
 		if m.Aborted() {
-			core.GBA().SetRegister(0, 0x0)
-			core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
-			core.GBA().ThumbWritePC()
 			return
 		}
 
