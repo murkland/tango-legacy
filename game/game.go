@@ -144,12 +144,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	tp := mgba.NewTrapper(core)
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_init__call__battle_copyInputData, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
-		battle := match.Battle()
+		battle := m.Battle()
 		if battle == nil {
 			log.Fatalf("attempting to copy input data while no battle was active!")
 		}
@@ -160,12 +160,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_init_marshal__ret, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
-		battle := match.Battle()
+		battle := m.Battle()
 		if battle == nil {
 			log.Fatalf("attempting to marshal init data while no battle was active!")
 		}
@@ -173,18 +173,18 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		ctx := context.Background()
 
 		localInit := g.bn6.LocalMarshaledBattleState(core)
-		if err := match.SendInit(ctx, localInit); err != nil {
+		if err := m.SendInit(ctx, localInit); err != nil {
 			log.Fatalf("failed to send init info: %s", err)
 		}
 
 		log.Printf("init sent")
 		g.bn6.SetPlayerMarshaledBattleState(core, battle.LocalPlayerIndex(), localInit)
 
-		remoteInit, err := match.ReadRemoteInit(ctx)
+		remoteInit, err := m.ReadRemoteInit(ctx)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
-				match.Abort()
+				m.Abort()
 				return
 			}
 			log.Fatalf("failed to receive init info: %s", err)
@@ -202,12 +202,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_turn_marshal__ret, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
-		battle := match.Battle()
+		battle := m.Battle()
 		if battle == nil {
 			log.Fatalf("attempting to marshal turn data while no battle was active!")
 		}
@@ -216,25 +216,25 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_main__readJoyflags, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 		core.GBA().SetRegister(4, uint32(g.joyflags|0xfc00))
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
-		battle := match.Battle()
+		battle := m.Battle()
 		if battle == nil {
 			log.Fatalf("attempting to copy input data while no battle was active!")
 		}
 
-		if match.Aborted() {
+		if m.Aborted() {
 			core.GBA().SetRegister(0, 0x0)
 			core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 			core.GBA().ThumbWritePC()
@@ -243,7 +243,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		if battle.CommittedState() == nil {
 			committedState := core.SaveState()
-			battle.SetCommittedState(committedState)
+			battle.SetCommittedState(&match.State{State: committedState, Tick: 0})
 
 			log.Printf("battle state committed")
 
@@ -271,13 +271,13 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 				log.Printf("could not queue local input within %s, dropping connection", timeout)
 				g.mainCore.GBA().Sync().SetFPSTarget(float32(expectedFPS))
-				match.Abort()
+				m.Abort()
 				return
 			}
 			log.Fatalf("failed to add input: %s", err)
 		}
 
-		if err := match.SendInput(ctx, uint32(localTick), uint32(remoteTick), joyflags, customScreenState, turn); err != nil {
+		if err := m.SendInput(ctx, uint32(localTick), uint32(remoteTick), joyflags, customScreenState, turn); err != nil {
 			log.Fatalf("failed to send input: %s", err)
 		}
 
@@ -290,30 +290,30 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		tps := expectedFPS + (remoteTick - localTick) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick)
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 		battle.SetCommittedState(committedState)
-		g.mainCore.LoadState(dirtyState)
+		g.mainCore.LoadState(dirtyState.State)
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_runUnpausedStep__cmp__retval, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
 		r := core.GBA().Register(0)
 		if r == 1 {
-			match.SetWonLastBattle(true)
+			m.SetWonLastBattle(true)
 		} else if r == 2 {
-			match.SetWonLastBattle(false)
+			m.SetWonLastBattle(false)
 		}
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_updating__ret__go_to_custom_screen, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
-		battle := match.Battle()
+		battle := m.Battle()
 		if battle == nil {
 			log.Fatalf("turn ended while no battle was active!")
 		}
@@ -323,23 +323,23 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_start__ret, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
-		if err := match.NewBattle(g.mainCore); err != nil {
+		if err := m.NewBattle(g.mainCore); err != nil {
 			log.Fatalf("failed to start new battle: %s", err)
 		}
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_end__entry, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
-		if err := match.EndBattle(); err != nil {
+		if err := m.EndBattle(); err != nil {
 			log.Fatalf("failed to end battle: %s", err)
 		}
 
@@ -347,12 +347,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_isP2__tst, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
-		battle := match.Battle()
+		battle := m.Battle()
 		if battle == nil {
 			log.Fatalf("attempted to get battle p2 information while no battle was active!")
 		}
@@ -361,12 +361,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_link_isP2__ret, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
-		battle := match.Battle()
+		battle := m.Battle()
 		if battle == nil {
 			log.Fatalf("attempted to get link p2 information while no battle was active!")
 		}
@@ -375,8 +375,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_getCopyDataInputState__ret, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
 
@@ -386,7 +386,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		r0 = 2
-		if match.Aborted() {
+		if m.Aborted() {
 			r0 = 4
 		}
 		core.GBA().SetRegister(0, r0)
@@ -415,12 +415,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				log.Printf("matchmaking dialog did not return a code: %s", err)
 				g.bn6.DropMatchmakingFromCommMenu(core, 0)
 			} else {
-				match, err := match.New(g.conf, code, g.bn6.MatchType(g.mainCore), g.mainCore.GameTitle(), g.mainCore.CRC32())
+				m, err := match.New(g.conf, code, g.bn6.MatchType(g.mainCore), g.mainCore.GameTitle(), g.mainCore.CRC32())
 				if err != nil {
 					// TODO: handle this better.
-					log.Fatalf("failed to start match: %s", err)
+					log.Fatalf("failed to start m: %s", err)
 				}
-				g.match = match
+				g.match = m
 				go g.match.Run(ctx)
 			}
 		}
@@ -436,29 +436,29 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 					log.Printf("mismatch: %s", err)
 				} else {
 					g.bn6.DropMatchmakingFromCommMenu(core, bn6.DropMatchmakingTypeConnectionError)
-					log.Printf("failed to poll match: %s", err)
+					log.Printf("failed to poll m: %s", err)
 				}
 				g.match = nil
 				return
 			}
 
 			g.bn6.StartBattleFromCommMenu(core)
-			log.Printf("match started")
+			log.Printf("m started")
 		}
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_initBattle__entry, func() {
-		match := g.Match()
-		if match == nil {
+		m := g.Match()
+		if m == nil {
 			return
 		}
-		battleSettingsAndBackground := g.bn6.RandomBattleSettingsAndBackground(match.RandSource(), uint8(match.Type()&0xff))
+		battleSettingsAndBackground := g.bn6.RandomBattleSettingsAndBackground(m.RandSource(), uint8(m.Type()&0xff))
 		log.Printf("selected battle settings and background: %04x", battleSettingsAndBackground)
 		g.bn6.SetLinkBattleSettingsAndBackground(g.mainCore, battleSettingsAndBackground)
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_waitForFriend__ret__cancel, func() {
-		log.Printf("match canceled by user")
+		log.Printf("m canceled by user")
 		g.endMatch()
 
 		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
@@ -466,7 +466,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_commMenu_endBattle__entry, func() {
-		log.Printf("match ended")
+		log.Printf("m ended")
 		g.endMatch()
 	})
 
@@ -495,7 +495,7 @@ func (g *Game) Update() error {
 	g.joyflags = ebitenToMgbaKeys(g.conf.Keymapping, inpututil.AppendPressedKeys(nil))
 
 	if g.Match() == nil {
-		// Use regular input handling outside of a match.
+		// Use regular input handling outside of a m.
 		g.mainCore.SetKeys(g.joyflags)
 	}
 

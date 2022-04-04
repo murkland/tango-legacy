@@ -13,6 +13,11 @@ import (
 	"github.com/murkland/tango/replay"
 )
 
+type State struct {
+	State *mgba.State
+	Tick  int
+}
+
 type Battle struct {
 	number int
 	isP2   bool
@@ -28,7 +33,7 @@ type Battle struct {
 
 	lastCommittedRemoteInput input.Input
 
-	committedState *mgba.State
+	committedState *State
 }
 
 func (m *Match) NewBattle(core *mgba.Core) error {
@@ -93,11 +98,11 @@ func (b *Battle) Close() error {
 	return nil
 }
 
-func (b *Battle) SetCommittedState(state *mgba.State) {
+func (b *Battle) SetCommittedState(state *State) {
 	b.committedState = state
 }
 
-func (b *Battle) CommittedState() *mgba.State {
+func (b *Battle) CommittedState() *State {
 	return b.committedState
 }
 
