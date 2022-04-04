@@ -131,15 +131,15 @@ func (ff *Fastforwarder) applyInputs(tick int, state *mgba.State, rw *replay.Wri
 		ip := inputPairBuf[0]
 
 		ff.state.err = nil
-		qlen := ff.state.inputPairs.Used()
-		for ff.state.inputPairs.Used() == qlen {
+		lastTick := ff.state.tick
+		for ff.state.tick == lastTick {
 			ff.core.RunFrame()
 			if ff.state.err != nil {
 				return ff.state.tick, nil, ff.state.err
 			}
 		}
-		if ff.state.inputPairs.Used() != qlen-1 {
-			return ff.state.tick, nil, fmt.Errorf("queue length decreased by more than 1: %d -> %d", qlen, ff.state.inputPairs.Used())
+		if ff.state.tick != lastTick+1 {
+			return ff.state.tick, nil, fmt.Errorf("tick increased by more than 1: %d -> %d", tick, ff.state.tick)
 		}
 
 		if rw != nil {

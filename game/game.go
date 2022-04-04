@@ -283,6 +283,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		inputPairs, left := battle.ConsumeInputs()
 		committedTick, committedState := battle.CommittedTickAndState()
+		if len(inputPairs) > 0 && committedTick != inputPairs[0][0].LocalTick {
+			log.Panicf("first tick in consumed input is not committed tick: %d != %d", inputPairs[0][0].LocalTick, committedTick)
+		}
 		newTick, committedState, dirtyState, err := g.fastforwarder.Fastforward(committedTick, committedState, battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
 			log.Panicf("failed to fastforward: %s", err)
