@@ -418,7 +418,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				m, err := match.New(g.conf, code, g.bn6.MatchType(g.mainCore), g.mainCore.GameTitle(), g.mainCore.CRC32())
 				if err != nil {
 					// TODO: handle this better.
-					log.Fatalf("failed to start m: %s", err)
+					log.Fatalf("failed to start match: %s", err)
 				}
 				g.match = m
 				go g.match.Run(ctx)
@@ -436,7 +436,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 					log.Printf("mismatch: %s", err)
 				} else {
 					g.bn6.DropMatchmakingFromCommMenu(core, bn6.DropMatchmakingTypeConnectionError)
-					log.Printf("failed to poll m: %s", err)
+					log.Printf("failed to poll match: %s", err)
 				}
 				g.match = nil
 				return
