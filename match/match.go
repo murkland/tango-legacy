@@ -207,6 +207,10 @@ func (m *Match) handleConn(ctx context.Context) error {
 			}
 		case packets.Input:
 			battle := m.Battle()
+			if battle == nil {
+				log.Printf("no battle in progress, dropping input")
+				continue
+			}
 			if p.BattleNumber != uint8(battle.number) {
 				log.Printf("mismatched battle number, expected %d but got %d, droopping packet", battle.number, p.BattleNumber)
 				continue
