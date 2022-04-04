@@ -289,7 +289,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 		newTick, committedState, dirtyState, err := g.fastforwarder.Fastforward(committedTick, committedState, battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
-			log.Panicf("failed to fastforward: %s", err)
+			log.Panicf("failed to fastforward: %s\n  inputPairs = %+v\n  left = %+v\n  dirtyTick = %d\n  committedTick = %d", err, inputPairs, left, localTick, committedTick)
 		}
 		tps := expectedFPS + (remoteTick - localTick) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick)
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
