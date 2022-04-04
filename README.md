@@ -4,6 +4,8 @@
 
 [![murkland](https://discordapp.com/api/guilds/936475149069336596/widget.png?style=shield)](https://discord.gg/zbQngJHwSg)
 
+(logo courtesy of [pnw_ssbmars](https://twitter.com/pnw_ssbmars) / ロゴ提供：[pnw_ssbmars](https://twitter.com/pnw_ssbmars))
+
 netplay for mega man battle network games in the style of <https://github.com/ssbmars/BBN3-netcode>.
 
 tango（タンゴ）はロックマンエグゼ６ネットプレイシステムです。
@@ -11,8 +13,8 @@ tango（タンゴ）はロックマンエグゼ６ネットプレイシステム
 ## how to use / 使用方法
 
 -   add your legally-obtained roms in the `roms` folder and your hard-earned saves on the `saves` folder
-    
-    `roms` ディレクトリにROMファイルを、`saves` ディレクトリにセーブファイルを置いてください。
+
+    `roms` ディレクトリに ROM ファイルを、`saves` ディレクトリにセーブファイルを置いてください。
 
 -   if you are on windows, just run `hub.bat`. if you are on not windows, you're on your own! (for now)
 
