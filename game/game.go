@@ -212,6 +212,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Panicf("attempting to marshal turn data while no battle was active!")
 		}
 
+		log.Printf("turn data marshaled on %d", battle.DirtyTick())
 		battle.AddLocalPendingTurn(g.bn6.LocalMarshaledBattleState(core))
 	})
 

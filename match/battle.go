@@ -148,7 +148,3 @@ func (b *Battle) IsP2() bool {
 func (b *Battle) LocalDelay() int {
 	return b.iq.LocalDelay()
 }
-
-func (b *Battle) SetLocalDelay(localDelay int) {
-	b.iq.SetLocalDelay(localDelay)
-}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -30,15 +31,19 @@ func main() {
 		log.Fatalf("failed to locate executable: %s", err)
 	}
 
-	logF, err := os.Create(*logFile)
-	if err != nil {
-		log.Fatalf("failed to open log file: %s", err)
+	var logWriter io.Writer = os.Stderr
+
+	if *logFile != "" {
+		logF, err := os.Create(*logFile)
+		if err != nil {
+			log.Fatalf("failed to open log file: %s", err)
+		}
+		log.Printf("logging to %s", *logFile)
+		logWriter = logF
 	}
 
-	log.Printf("logging to %s", *logFile)
-
 	cmd := exec.Command(execPath, append([]string{"-child"}, os.Args[1:]...)...)
-	cmd.Stderr = logF
+	cmd.Stderr = logWriter
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("child exited with error: %s", err)
 	}
