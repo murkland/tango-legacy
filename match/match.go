@@ -72,7 +72,7 @@ func (m *Match) Aborted() bool {
 	return m.aborted
 }
 
-func New(conf config.Config, sessionID string, matchType uint16, gameTitle string, gameCRC32 uint32) (*Match, error) {
+func New(conf config.Config, sessionID string, matchType uint16, gameTitle string, gameCRC32 uint32) *Match {
 	return &Match{
 		conf:      conf,
 		sessionID: sessionID,
@@ -83,7 +83,7 @@ func New(conf config.Config, sessionID string, matchType uint16, gameTitle strin
 		negotiationErrCh: make(chan error),
 
 		remoteInitCh: make(chan []byte),
-	}, nil
+	}
 }
 
 func (m *Match) negotiate(ctx context.Context) error {
