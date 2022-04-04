@@ -151,7 +151,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		battle := m.Battle()
 		if battle == nil {
-			log.Panicf("attempting to copy input data while no battle was active!")
+			log.Panicf("attempting to copy init data while no battle was active!")
 		}
 
 		core.GBA().SetRegister(0, 0x0)
