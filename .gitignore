@@ -4,3 +4,4 @@
 tango.toml
 *.log
 /replays
+*.syso

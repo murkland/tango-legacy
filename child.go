@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
+	"image"
+	"image/png"
 	"log"
 	"os"
 	"path/filepath"
@@ -29,7 +33,15 @@ var (
 
 var version string
 
+//go:embed icon.png
+var icon []byte
+
 func childMain() {
+	img, err := png.Decode(bytes.NewReader(icon))
+	if err == nil {
+		ebiten.SetWindowIcon([]image.Image{img})
+	}
+
 	log.Printf("welcome to tango %s", version)
 
 	lang, _ := locale.Detect()
