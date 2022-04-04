@@ -2,9 +2,9 @@
 
 ![tango](logo.png)
 
-[![murkland](https://discordapp.com/api/guilds/936475149069336596/widget.png?style=shield)](https://discord.gg/zbQngJHwSg)
-
 (logo courtesy of [pnw_ssbmars](https://twitter.com/pnw_ssbmars) / ロゴ提供：[pnw_ssbmars](https://twitter.com/pnw_ssbmars))
+
+[![murkland](https://discordapp.com/api/guilds/936475149069336596/widget.png?style=shield)](https://discord.gg/zbQngJHwSg)
 
 netplay for mega man battle network games in the style of <https://github.com/ssbmars/BBN3-netcode>.
 
