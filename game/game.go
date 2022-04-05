@@ -276,13 +276,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		inputPairs, left := battle.ConsumeInputs()
-		if len(inputPairs) == 0 && len(left) == 0 {
-			// Rerun this function until we have viable inputs.
-			g.mainCore.GBA().SetRegister(15, g.bn6.Offsets.ROM.A_main__readJoyflags)
-			g.mainCore.GBA().ThumbWritePC()
-			return
-		}
-
 		committedState, dirtyState, lastInput, err := g.fastforwarder.Fastforward(battle.CommittedState(), battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
 			log.Panicf("failed to fastforward: %s\n  inputPairs = %+v\n  left = %+v", err, inputPairs, left)
@@ -338,10 +331,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		r := core.GBA().Register(0)
-		if r == 1 {
+		switch core.GBA().Register(0) {
+		case 1:
 			m.SetWonLastBattle(true)
-		} else if r == 2 {
+		case 2:
 			m.SetWonLastBattle(false)
 		}
 	})

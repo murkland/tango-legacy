@@ -53,6 +53,18 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 		var inputPairBuf [1][2]input.Input
 		ff.state.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
+
+		if ip[0].LocalTick != ip[1].LocalTick {
+			ff.state.err = fmt.Errorf("p1 tick != p2 tick: %d != %d", ip[0].LocalTick, ip[1].LocalTick)
+			return
+		}
+
+		inBattleTime := int(ff.bn6.InBattleTime(ff.core))
+		if ip[0].LocalTick != inBattleTime {
+			ff.state.err = fmt.Errorf("input tick != in battle tick: %d != %d", ip[0].LocalTick, inBattleTime)
+			return
+		}
+
 		core.GBA().SetRegister(4, uint32(ip[ff.state.localPlayerIndex].Joyflags))
 	})
 
@@ -69,17 +81,6 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 		ff.state.inputPairs.Pop(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
 
-		if ip[0].LocalTick != ip[1].LocalTick {
-			ff.state.err = fmt.Errorf("p1 tick != p2 tick: %d != %d", ip[0].LocalTick, ip[1].LocalTick)
-			return
-		}
-
-		inBattleTime := int(ff.bn6.InBattleTime(ff.core))
-		if ip[0].LocalTick != inBattleTime {
-			ff.state.err = fmt.Errorf("input tick != in battle tick: %d != %d", ip[0].LocalTick, inBattleTime)
-			return
-		}
-
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
@@ -92,6 +93,7 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 			log.Printf("p2 turn committed at tick %d", ip[1].LocalTick)
 		}
 
+		inBattleTime := int(ff.bn6.InBattleTime(ff.core))
 		if inBattleTime < ff.state.commitTime {
 			if err := ff.state.rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
 				ff.state.err = err
