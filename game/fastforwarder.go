@@ -68,7 +68,7 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
-		if ff.state.inputPairs.Used() == 0 {
+		if ff.state.inputPairs.Used() == 0 || ff.state.dirtyState != nil {
 			return
 		}
 
