@@ -47,6 +47,10 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 	tp := mgba.NewTrapper(core)
 
 	tp.Add(bn6.Offsets.ROM.A_main__readJoyflags, func() {
+		if rp.currentInputPairs.Used() == 0 {
+			return
+		}
+
 		var inputPairBuf [1][2]input.Input
 		rp.currentInputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
@@ -57,6 +61,10 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 		rp.core.GBA().SetRegister(0, 0)
 		rp.core.GBA().SetRegister(15, rp.core.GBA().Register(15)+4)
 		rp.core.GBA().ThumbWritePC()
+
+		if rp.currentInputPairs.Used() == 0 {
+			return
+		}
 
 		var inputPairBuf [1][2]input.Input
 		rp.currentInputPairs.Pop(inputPairBuf[:], 0)
