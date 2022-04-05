@@ -338,6 +338,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if !battleOver {
 			return
 		}
+		// TODO: We shouldn't have to do this, we should know when the battle is over.
 		battle.SetOver()
 	})
 
