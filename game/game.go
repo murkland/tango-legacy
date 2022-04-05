@@ -294,7 +294,9 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		tps := expectedFPS + (remoteTick - localTick) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick)
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 		battle.SetCommittedTickAndState(newTick, committedState)
-		g.mainCore.LoadState(dirtyState)
+		if !g.mainCore.LoadState(dirtyState) {
+			log.Panicf("failed to load dirty state")
+		}
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_runUnpausedStep__cmp__retval, func() {
@@ -303,10 +305,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		r := core.GBA().Register(0)
-		if r == 1 {
+		switch core.GBA().Register(0) {
+		case 1:
 			m.SetWonLastBattle(true)
-		} else if r == 2 {
+		case 2:
 			m.SetWonLastBattle(false)
 		}
 	})
