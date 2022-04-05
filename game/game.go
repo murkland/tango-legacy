@@ -421,8 +421,14 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				log.Printf("matchmaking dialog did not return a code: %s", err)
 				g.bn6.DropMatchmakingFromCommMenu(core, 0)
 			} else {
-				g.match = match.New(g.conf, code, g.bn6.MatchType(g.mainCore), g.mainCore.GameTitle(), g.mainCore.CRC32())
-				go g.match.Run(ctx)
+				match := match.New(g.conf, code, g.bn6.MatchType(g.mainCore), g.mainCore.GameTitle(), g.mainCore.CRC32())
+				g.match = match
+				go func() {
+					if err := match.Run(ctx); err != nil {
+						log.Printf("match ended with error: %s", err)
+						match.Abort()
+					}
+				}()
 			}
 		}
 

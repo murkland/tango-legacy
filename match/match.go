@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net"
 	"sync"
 
 	"github.com/murkland/clone"
@@ -35,8 +36,6 @@ type Match struct {
 	matchType uint16
 	gameTitle string
 	gameCRC32 uint32
-
-	cancel context.CancelFunc
 
 	negotiationErrCh chan error
 	peerConn         *webrtc.PeerConnection
@@ -192,6 +191,9 @@ func (m *Match) handleConn(ctx context.Context) error {
 	for {
 		packet, trailer, err := packets.Recv(ctx, m.dc)
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return nil
+			}
 			return err
 		}
 
@@ -235,9 +237,6 @@ func (m *Match) endBattleLocked() error {
 }
 
 func (m *Match) Run(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	m.cancel = cancel
-
 	defer m.Close()
 
 	if err := m.negotiate(ctx); err != nil {
@@ -252,10 +251,6 @@ func (m *Match) Run(ctx context.Context) error {
 func (m *Match) Close() error {
 	m.battleMu.Lock()
 	defer m.battleMu.Unlock()
-	if m.cancel != nil {
-		m.cancel()
-		m.cancel = nil
-	}
 	if m.battle != nil {
 		m.endBattleLocked()
 	}
