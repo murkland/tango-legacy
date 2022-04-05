@@ -90,7 +90,7 @@ func NewReplayer(romPath string, r *replay.Replay) (*Replayer, error) {
 		core.GBA().SetRegister(0, 2)
 	})
 
-	tp.Add(bn6.Offsets.ROM.A_commMenu_endBattle__entry, func() {
+	tp.Add(bn6.Offsets.ROM.A_battle_end__entry, func() {
 		rp.Reset()
 	})
 
