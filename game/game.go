@@ -231,7 +231,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		if !battle.IsAcceptingInput() {
+		if !battle.IsAcceptingInput() || battle.IsOver() {
 			return
 		}
 
@@ -298,14 +298,14 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		battle := m.Battle()
-		if battle == nil {
-			log.Panicf("attempting to copy input data while no battle was active!")
-		}
-
 		core.GBA().SetRegister(0, 0x0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
 		core.GBA().ThumbWritePC()
+
+		battle := m.Battle()
+		if battle == nil {
+			return
+		}
 
 		if !battle.IsAcceptingInput() {
 			battle.StartAcceptingInput()
@@ -320,15 +320,27 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
+		battle := m.Battle()
+		if battle == nil {
+			return
+		}
+
+		battleOver := true
 		switch core.GBA().Register(0) {
 		case 1:
 			m.SetWonLastBattle(true)
 		case 2:
 			m.SetWonLastBattle(false)
+		default:
+			battleOver = false
 		}
+
+		if !battleOver {
+			return
+		}
+		battle.SetOver()
 	})
 
-	// TODO: Move this to fastforwarder.
 	tp.Add(g.bn6.Offsets.ROM.A_battle_updating__ret__go_to_custom_screen, func() {
 		m := g.Match()
 		if m == nil {
@@ -354,7 +366,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 	})
 
-	// TODO: Move this to fastforwarder.
 	tp.Add(g.bn6.Offsets.ROM.A_battle_end__entry, func() {
 		m := g.Match()
 		if m == nil {

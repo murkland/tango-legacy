@@ -25,6 +25,7 @@ type Battle struct {
 	localPendingTurn              []byte
 
 	isAcceptingInput bool
+	isOver           bool
 
 	lastCommittedRemoteInput input.Input
 
@@ -145,4 +146,12 @@ func (b *Battle) StartAcceptingInput() {
 
 func (b *Battle) IsAcceptingInput() bool {
 	return b.isAcceptingInput
+}
+
+func (b *Battle) SetOver() {
+	b.isOver = true
+}
+
+func (b *Battle) IsOver() bool {
+	return b.isOver
 }
