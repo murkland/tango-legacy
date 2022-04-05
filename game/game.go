@@ -242,9 +242,11 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		if _, committedState := battle.CommittedTickAndState(); committedState == nil {
+		localTick := int(g.bn6.InBattleTime(core))
+
+		if battle.CommittedState() == nil {
 			committedState := core.SaveState()
-			battle.SetCommittedTickAndState(0, committedState)
+			battle.SetCommittedState(committedState)
 
 			log.Printf("battle state committed")
 
@@ -255,7 +257,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 
 		ctx := context.Background()
 
-		localTick := battle.PostIncrementDirtyTick()
 		lastCommittedRemoteInput := battle.LastCommittedRemoteInput()
 		remoteTick := lastCommittedRemoteInput.LocalTick
 
@@ -283,17 +284,13 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		inputPairs, left := battle.ConsumeInputs()
-		committedTick, committedState := battle.CommittedTickAndState()
-		if len(inputPairs) > 0 && committedTick != inputPairs[0][0].LocalTick {
-			log.Panicf("first tick in consumed input is not committed tick: %d != %d", inputPairs[0][0].LocalTick, committedTick)
-		}
-		newTick, committedState, dirtyState, err := g.fastforwarder.Fastforward(committedTick, committedState, battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
+		committedState, dirtyState, err := g.fastforwarder.Fastforward(battle.CommittedState(), battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
-			log.Panicf("failed to fastforward: %s\n  inputPairs = %+v\n  left = %+v\n  dirtyTick = %d\n  committedTick = %d", err, inputPairs, left, localTick, committedTick)
+			log.Panicf("failed to fastforward: %s\n  inputPairs = %+v\n  left = %+v\n  localTick = %d", err, inputPairs, left, localTick)
 		}
 		tps := expectedFPS + (remoteTick - localTick) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick)
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
-		battle.SetCommittedTickAndState(newTick, committedState)
+		battle.SetCommittedState(committedState)
 		if !g.mainCore.LoadState(dirtyState) {
 			log.Panicf("failed to load dirty state")
 		}
@@ -325,7 +322,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		tick := battle.DirtyTick()
-		log.Printf("turn ended on %d, rng state = %08x", tick, g.bn6.RNG2State(core))
+		log.Printf("turn ended on %d (in battle time %d), rng state = %08x", tick, g.bn6.InBattleTime(core), g.bn6.RNG2State(core))
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_start__ret, func() {

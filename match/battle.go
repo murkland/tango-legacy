@@ -27,7 +27,6 @@ type Battle struct {
 	lastCommittedRemoteInput input.Input
 
 	committedState *mgba.State
-	committedTick  int
 
 	dirtyTick int
 }
@@ -94,13 +93,12 @@ func (b *Battle) Close() error {
 	return nil
 }
 
-func (b *Battle) SetCommittedTickAndState(tick int, state *mgba.State) {
-	b.committedTick = tick
+func (b *Battle) SetCommittedState(state *mgba.State) {
 	b.committedState = state
 }
 
-func (b *Battle) CommittedTickAndState() (int, *mgba.State) {
-	return b.committedTick, b.committedState
+func (b *Battle) CommittedState() *mgba.State {
+	return b.committedState
 }
 
 func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {

@@ -118,3 +118,7 @@ func (b *BN6) RandomBattleSettingsAndBackground(randSource rand.Source, matchTyp
 
 	return uint16(hi<<0x8 | lo)
 }
+
+func (b *BN6) InBattleTime(core *mgba.Core) uint32 {
+	return core.RawRead32(b.Offsets.EWRAM.A_BattleState+0x60, -1)
+}
