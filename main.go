@@ -2,16 +2,19 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"time"
 
 	"github.com/apenwarr/fixconsole"
 )
 
 var (
-	logFile = flag.String("log_file", "tango.log", "file to log to")
+	logsDir = flag.String("logs_dir", "logs", "file to log to")
 	child   = flag.Bool("child", false, "is this the child process?")
 )
 
@@ -33,12 +36,14 @@ func main() {
 
 	var logWriter io.Writer = os.Stderr
 
-	if *logFile != "" {
-		logF, err := os.Create(*logFile)
+	if *logsDir != "" {
+		os.MkdirAll(*logsDir, 0o700)
+
+		logF, err := os.Create(filepath.Join(*logsDir, fmt.Sprintf("tango_%s.log", time.Now().Format("20060102030405"))))
 		if err != nil {
 			log.Panicf("failed to open log file: %s", err)
 		}
-		log.Printf("logging to %s", *logFile)
+		log.Printf("logging to %s", logF.Name())
 		logWriter = logF
 	}
 
