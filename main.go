@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	logFile = flag.String("log_file", "tango.log", "file to log to")
+	logsDir = flag.String("logs_dir", "logs", "directory to log to (set to empty to log to stderr)")
 	child   = flag.Bool("child", false, "is this the child process?")
 )
 
