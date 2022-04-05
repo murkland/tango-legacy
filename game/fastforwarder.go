@@ -40,6 +40,11 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 	tp := mgba.NewTrapper(core)
 
 	tp.Add(bn6.Offsets.ROM.A_main__readJoyflags, func() {
+		if ff.state.inputPairs.Used() == 0 {
+			ff.state.saveState = core.SaveState()
+			return
+		}
+
 		var inputPairBuf [1][2]input.Input
 		ff.state.inputPairs.Peek(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
@@ -50,6 +55,10 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 		core.GBA().SetRegister(0, 0)
 		core.GBA().SetRegister(15, core.GBA().Register(15)+4)
 		core.GBA().ThumbWritePC()
+
+		if ff.state.inputPairs.Used() == 0 {
+			return
+		}
 
 		var inputPairBuf [1][2]input.Input
 		ff.state.inputPairs.Pop(inputPairBuf[:], 0)
@@ -82,10 +91,6 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 		}
 
 		ff.state.tick++
-
-		if ff.state.inputPairs.Used() == 0 {
-			ff.state.saveState = core.SaveState()
-		}
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_battle_isP2__tst, func() {
@@ -114,7 +119,6 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 
 func (ff *Fastforwarder) applyInputs(tick int, state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input) (int, *mgba.State, error) {
 	ff.state = &fastforwarderState{
-		saveState:        state,
 		tick:             tick,
 		localPlayerIndex: localPlayerIndex,
 		inputPairs:       ringbuf.New[[2]input.Input](len(inputPairs)),
@@ -125,28 +129,26 @@ func (ff *Fastforwarder) applyInputs(tick int, state *mgba.State, rw *replay.Wri
 	}()
 	ff.state.inputPairs.Push(inputPairs)
 
-	for ff.state.inputPairs.Used() > 0 {
-		var inputPairBuf [1][2]input.Input
-		ff.state.inputPairs.Peek(inputPairBuf[:], 0)
-		ip := inputPairBuf[0]
-
+	for ff.state.saveState == nil {
 		ff.state.err = nil
-		lastTick := ff.state.tick
-		for ff.state.tick == lastTick {
-			ff.core.RunFrame()
-			if ff.state.err != nil {
-				return ff.state.tick, nil, ff.state.err
-			}
-		}
-		if ff.state.tick != lastTick+1 {
-			return ff.state.tick, nil, fmt.Errorf("tick increased by more than 1: %d -> %d", tick, ff.state.tick)
+		ff.core.RunFrame()
+		if ff.state.err != nil {
+			return ff.state.tick, nil, ff.state.err
 		}
 
-		if rw != nil {
-			if err := rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
-				return ff.state.tick, nil, err
-			}
-		}
+		// var inputPairBuf [1][2]input.Input
+		// ff.state.inputPairs.Peek(inputPairBuf[:], 0)
+		// ip := inputPairBuf[0]
+
+		// if rw != nil {
+		// 	if err := rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
+		// 		return ff.state.tick, nil, err
+		// 	}
+		// }
+	}
+
+	if ff.state.tick != tick+len(inputPairs) {
+		return ff.state.tick, nil, fmt.Errorf("expected tick %d but got tick %d", tick+len(inputPairs), ff.state.tick)
 	}
 
 	return ff.state.tick, ff.state.saveState, nil
@@ -161,6 +163,9 @@ func (ff *Fastforwarder) Fastforward(tick int, state *mgba.State, rw *replay.Wri
 	if !ff.core.LoadState(state) {
 		return tick, nil, nil, errors.New("failed to load state")
 	}
+
+	ff.core.GBA().SetRegister(15, ff.bn6.Offsets.ROM.A_main__readJoyflags)
+	ff.core.GBA().ThumbWritePC()
 
 	// Run the paired inputs we already have and create the new committed state.
 	committedTick, committedState, err := ff.applyInputs(tick, state, rw, localPlayerIndex, inputPairs)

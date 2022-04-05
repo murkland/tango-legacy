@@ -221,31 +221,23 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if m == nil {
 			return
 		}
-		core.GBA().SetRegister(4, uint32(g.joyflags|0xfc00))
-	})
-
-	tp.Add(g.bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
-		m := g.Match()
-		if m == nil {
-			return
-		}
-
-		battle := m.Battle()
-		if battle == nil {
-			log.Panicf("attempting to copy input data while no battle was active!")
-		}
-
-		core.GBA().SetRegister(0, 0x0)
-		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
-		core.GBA().ThumbWritePC()
 
 		if m.Aborted() {
 			return
 		}
 
+		battle := m.Battle()
+		if battle == nil {
+			return
+		}
+
+		if !battle.IsAcceptingInput() {
+			return
+		}
+
 		if _, committedState := battle.CommittedTickAndState(); committedState == nil {
 			committedState := core.SaveState()
-			battle.SetCommittedTickAndState(0, committedState)
+			battle.SetCommittedTickAndState(1, committedState)
 
 			log.Printf("battle state committed")
 
@@ -253,14 +245,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 				log.Panicf("failed to write to replay: %s", err)
 			}
 		}
-
 		ctx := context.Background()
 
-		localTick := battle.PostIncrementDirtyTick()
+		joyflags := uint16(g.joyflags | 0xfc00)
+		localTick := battle.PreIncrementDirtyTick()
 		lastCommittedRemoteInput := battle.LastCommittedRemoteInput()
 		remoteTick := lastCommittedRemoteInput.LocalTick
-
-		joyflags := g.bn6.LocalJoyflags(core)
 
 		customScreenState := g.bn6.LocalCustomScreenState(core)
 
@@ -296,6 +286,24 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 		battle.SetCommittedTickAndState(newTick, committedState)
 		g.mainCore.LoadState(dirtyState)
+	})
+
+	tp.Add(g.bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
+		m := g.Match()
+		if m == nil {
+			return
+		}
+
+		battle := m.Battle()
+		if battle == nil {
+			log.Panicf("attempting to copy input data while no battle was active!")
+		}
+
+		core.GBA().SetRegister(0, 0x0)
+		core.GBA().SetRegister(15, core.GBA().Register(15)+0x4)
+		core.GBA().ThumbWritePC()
+
+		battle.StartAcceptingInput()
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_runUnpausedStep__cmp__retval, func() {

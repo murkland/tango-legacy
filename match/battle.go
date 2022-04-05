@@ -24,6 +24,8 @@ type Battle struct {
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
 
+	isAcceptingInput bool
+
 	lastCommittedRemoteInput input.Input
 
 	committedState *mgba.State
@@ -77,10 +79,9 @@ func (b *Battle) QueueLength(playerIndex int) int {
 	return b.iq.QueueLength(playerIndex)
 }
 
-func (b *Battle) PostIncrementDirtyTick() int {
-	dirtyTick := b.dirtyTick
+func (b *Battle) PreIncrementDirtyTick() int {
 	b.dirtyTick++
-	return dirtyTick
+	return b.dirtyTick
 }
 
 func (b *Battle) DirtyTick() int {
@@ -147,4 +148,12 @@ func (b *Battle) IsP2() bool {
 
 func (b *Battle) LocalDelay() int {
 	return b.iq.LocalDelay()
+}
+
+func (b *Battle) StartAcceptingInput() {
+	b.isAcceptingInput = true
+}
+
+func (b *Battle) IsAcceptingInput() bool {
+	return b.isAcceptingInput
 }
