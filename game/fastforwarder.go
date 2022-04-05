@@ -164,6 +164,10 @@ func (ff *Fastforwarder) Fastforward(tick int, state *mgba.State, rw *replay.Wri
 		return tick, nil, nil, err
 	}
 
+	if !ff.core.LoadState(committedState) {
+		return tick, nil, nil, errors.New("failed to load committed state")
+	}
+
 	// Predict input pairs before fastforwarding dirty state.
 	predictedInputPairs := make([][2]input.Input, len(localPlayerInputsLeft))
 	for i, inp := range localPlayerInputsLeft {

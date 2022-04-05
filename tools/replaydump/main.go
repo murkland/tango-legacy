@@ -28,13 +28,13 @@ func main() {
 	replayName := flag.Arg(0)
 	f, err := os.Open(replayName)
 	if err != nil {
-		log.Fatalf("failed to open replay: %s", err)
+		log.Panicf("failed to open replay: %s", err)
 	}
 	defer f.Close()
 
 	replay, err := replay.Unmarshal(f)
 	if err != nil {
-		log.Fatalf("failed to open replay: %s", err)
+		log.Panicf("failed to open replay: %s", err)
 	}
 
 	for i := 0; i < 2; i++ {

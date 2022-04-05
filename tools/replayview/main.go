@@ -98,25 +98,25 @@ func main() {
 	if replayName == "" {
 		fn, err := zenity.SelectFile(zenity.Title("Select a replay to watch"))
 		if err != nil {
-			log.Fatalf("failed to prompt for replay: %s", err)
+			log.Panicf("failed to prompt for replay: %s", err)
 		}
 		replayName = fn
 	}
 
 	f, err := os.Open(replayName)
 	if err != nil {
-		log.Fatalf("failed to open replay: %s", err)
+		log.Panicf("failed to open replay: %s", err)
 	}
 	defer f.Close()
 
 	r, err := replay.Unmarshal(f)
 	if err != nil {
-		log.Fatalf("failed to open replay: %s", err)
+		log.Panicf("failed to open replay: %s", err)
 	}
 
 	roms, err := os.ReadDir("roms")
 	if err != nil {
-		log.Fatalf("failed to open roms directory: %s", err)
+		log.Panicf("failed to open roms directory: %s", err)
 	}
 
 	var romPath string
@@ -161,12 +161,12 @@ func main() {
 	}
 
 	if romPath == "" {
-		log.Fatalf("failed find eligible rom")
+		log.Panicf("failed find eligible rom")
 	}
 
 	replayer, err := game.NewReplayer(romPath, r)
 	if err != nil {
-		log.Fatalf("failed to make replayer: %s", err)
+		log.Panicf("failed to make replayer: %s", err)
 	}
 
 	audioCtx := audio.NewContext(replayer.Core().Options().SampleRate)
@@ -179,7 +179,7 @@ func main() {
 
 	gameAudioPlayer, err := audioCtx.NewPlayer(av.NewRubberyAudioReader(replayer.Core(), replayer.Core().Options().SampleRate))
 	if err != nil {
-		log.Fatalf("failed to create audio player: %s", err)
+		log.Panicf("failed to create audio player: %s", err)
 	}
 	gameAudioPlayer.SetBufferSize(time.Duration(replayer.Core().AudioBufferSize()+1) * time.Second / time.Duration(replayer.Core().Options().SampleRate))
 	gameAudioPlayer.Play()
@@ -200,7 +200,7 @@ func main() {
 	})
 
 	if !g.t.Start() {
-		log.Fatalf("failed to start mgba thread")
+		log.Panicf("failed to start mgba thread")
 	}
 	g.t.Pause()
 	replayer.Reset()
@@ -212,6 +212,6 @@ func main() {
 	ebiten.SetRunnableOnUnfocused(true)
 
 	if err := ebiten.RunGame(g); err != nil {
-		log.Fatalf("failed to run mgba: %s", err)
+		log.Panicf("failed to run mgba: %s", err)
 	}
 }

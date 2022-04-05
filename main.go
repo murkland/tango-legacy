@@ -17,7 +17,7 @@ var (
 func main() {
 	flag.Parse()
 	if err := fixconsole.FixConsoleIfNeeded(); err != nil {
-		log.Fatalf("failed to fix console: %s", err)
+		log.Panicf("failed to fix console: %s", err)
 	}
 
 	if *child {
@@ -27,12 +27,12 @@ func main() {
 
 	execPath, err := os.Executable()
 	if err != nil {
-		log.Fatalf("failed to locate executable: %s", err)
+		log.Panicf("failed to locate executable: %s", err)
 	}
 
 	logF, err := os.Create(*logFile)
 	if err != nil {
-		log.Fatalf("failed to open log file: %s", err)
+		log.Panicf("failed to open log file: %s", err)
 	}
 
 	log.Printf("logging to %s", *logFile)
@@ -40,6 +40,6 @@ func main() {
 	cmd := exec.Command(execPath, append([]string{"-child"}, os.Args[1:]...)...)
 	cmd.Stderr = logF
 	if err := cmd.Run(); err != nil {
-		log.Fatalf("child exited with error: %s", err)
+		log.Panicf("child exited with error: %s", err)
 	}
 }

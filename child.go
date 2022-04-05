@@ -52,22 +52,22 @@ func childMain() {
 	conf := config.Default()
 	confF, err := os.OpenFile(*configPath, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
-		log.Fatalf("failed to open config: %s", err)
+		log.Panicf("failed to open config: %s", err)
 	} else {
 		conf, err = config.Load(confF)
 		if err != nil {
-			log.Fatalf("failed to open config: %s", err)
+			log.Panicf("failed to open config: %s", err)
 		}
 	}
 
 	if err := confF.Truncate(0); err != nil {
-		log.Fatalf("failed to truncate config: %s", err)
+		log.Panicf("failed to truncate config: %s", err)
 	}
 	if _, err := confF.Seek(0, os.SEEK_SET); err != nil {
-		log.Fatalf("failed to seek config: %s", err)
+		log.Panicf("failed to seek config: %s", err)
 	}
 	if err := config.Save(conf, confF); err != nil {
-		log.Fatalf("failed to save config: %s", err)
+		log.Panicf("failed to save config: %s", err)
 	}
 	confF.Close()
 
@@ -87,7 +87,7 @@ func childMain() {
 	if *romPath == "" {
 		roms, err := os.ReadDir("roms")
 		if err != nil {
-			log.Fatalf("failed to open roms directory: %s", err)
+			log.Panicf("failed to open roms directory: %s", err)
 		}
 
 		options := map[string]string{}
@@ -131,7 +131,7 @@ func childMain() {
 
 		key, err := zenity.List(p.Sprintf("SELECT_ROM"), keys, zenity.Title("tango"))
 		if err != nil {
-			log.Fatalf("failed to select game: %s", err)
+			log.Panicf("failed to select game: %s", err)
 		}
 
 		*romPath = filepath.Join("roms", options[key])
@@ -145,11 +145,11 @@ func childMain() {
 
 	g, err := game.New(conf, p, *romPath)
 	if err != nil {
-		log.Fatalf("failed to start game: %s", err)
+		log.Panicf("failed to start game: %s", err)
 	}
 
 	if err := ebiten.RunGame(g); err != nil {
-		log.Fatalf("failed to run game: %s", err)
+		log.Panicf("failed to run game: %s", err)
 	}
 
 	g.Finish()
