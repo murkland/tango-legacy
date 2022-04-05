@@ -313,6 +313,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 	})
 
+	// TODO: Move this to fastforwarder.
 	tp.Add(g.bn6.Offsets.ROM.A_battle_runUnpausedStep__cmp__retval, func() {
 		m := g.Match()
 		if m == nil {
@@ -327,6 +328,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 	})
 
+	// TODO: Move this to fastforwarder.
 	tp.Add(g.bn6.Offsets.ROM.A_battle_updating__ret__go_to_custom_screen, func() {
 		m := g.Match()
 		if m == nil {
@@ -352,6 +354,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 	})
 
+	// TODO: Move this to fastforwarder.
 	tp.Add(g.bn6.Offsets.ROM.A_battle_end__entry, func() {
 		m := g.Match()
 		if m == nil {
