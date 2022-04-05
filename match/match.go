@@ -197,9 +197,6 @@ func (m *Match) handleConn(ctx context.Context) error {
 
 		switch p := packet.(type) {
 		case packets.Init:
-			if p.BattleNumber != uint8(m.battleNumber) {
-				log.Fatalf("mismatched battle number, expected %d but got %d", m.battleNumber, p.BattleNumber)
-			}
 			select {
 			case m.remoteInitCh <- p.Marshaled[:]:
 			case <-ctx.Done():
