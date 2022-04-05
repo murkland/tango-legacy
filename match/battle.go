@@ -28,10 +28,8 @@ type Battle struct {
 
 	lastCommittedRemoteInput input.Input
 
+	dirtyInput     *[2]input.Input
 	committedState *mgba.State
-	committedTick  int
-
-	dirtyTick int
 }
 
 func (m *Match) NewBattle(core *mgba.Core) error {
@@ -42,6 +40,8 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 		return errors.New("battle already started")
 	}
 
+	inputDelay := m.conf.Netplay.InputDelay
+
 	b := &Battle{
 		number: m.battleNumber,
 		isP2:   !m.wonLastBattle,
@@ -49,7 +49,7 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 		lastCommittedRemoteInput: input.Input{Joyflags: 0xfc00},
 	}
 
-	b.iq = input.NewQueue(60, m.conf.Netplay.InputDelay, b.LocalPlayerIndex())
+	b.iq = input.NewQueue(60, inputDelay, b.LocalPlayerIndex())
 
 	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.tangoreplay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
 	log.Printf("writing replay: %s", fn)
@@ -79,15 +79,6 @@ func (b *Battle) QueueLength(playerIndex int) int {
 	return b.iq.QueueLength(playerIndex)
 }
 
-func (b *Battle) PreIncrementDirtyTick() int {
-	b.dirtyTick++
-	return b.dirtyTick
-}
-
-func (b *Battle) DirtyTick() int {
-	return b.dirtyTick
-}
-
 func (b *Battle) Close() error {
 	if err := b.rw.Close(); err != nil {
 		return err
@@ -95,13 +86,22 @@ func (b *Battle) Close() error {
 	return nil
 }
 
-func (b *Battle) SetCommittedTickAndState(tick int, state *mgba.State) {
-	b.committedTick = tick
+func (b *Battle) SetCommittedState(state *mgba.State) {
 	b.committedState = state
 }
 
-func (b *Battle) CommittedTickAndState() (int, *mgba.State) {
-	return b.committedTick, b.committedState
+func (b *Battle) CommittedState() *mgba.State {
+	return b.committedState
+}
+
+func (b *Battle) SetDirtyInput(ip *[2]input.Input) {
+	b.dirtyInput = ip
+}
+
+func (b *Battle) ConsumeDirtyInput() *[2]input.Input {
+	ip := b.dirtyInput
+	b.dirtyInput = nil
+	return ip
 }
 
 func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {

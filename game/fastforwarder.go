@@ -24,9 +24,10 @@ type fastforwarderState struct {
 	err              error
 	localPlayerIndex int
 	inputPairs       *ringbuf.RingBuf[[2]input.Input]
-	saveState        *mgba.State
-	tick             int
-	predicting       bool
+	commitTime       int
+	committedState   *mgba.State
+	dirtyState       *mgba.State
+	rw               *replay.Writer
 }
 
 func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
@@ -40,9 +41,13 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 	tp := mgba.NewTrapper(core)
 
 	tp.Add(bn6.Offsets.ROM.A_main__readJoyflags, func() {
-		if ff.state.inputPairs.Used() == 0 {
-			ff.state.saveState = core.SaveState()
-			return
+		if int(ff.bn6.InBattleTime(ff.core)) == ff.state.commitTime {
+			ff.state.committedState = core.SaveState()
+		}
+
+		// The dirty state is 1 tick before all input pairs, such that the final input can run on the main core safely.
+		if ff.state.inputPairs.Used() == 1 {
+			ff.state.dirtyState = core.SaveState()
 		}
 
 		var inputPairBuf [1][2]input.Input
@@ -65,32 +70,34 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 		ip := inputPairBuf[0]
 
 		if ip[0].LocalTick != ip[1].LocalTick {
-			ff.state.err = fmt.Errorf("p1 tick != p2 tick (predicting = %t): %d != %d", ff.state.predicting, ip[0].LocalTick, ip[1].LocalTick)
+			ff.state.err = fmt.Errorf("p1 tick != p2 tick: %d != %d", ip[0].LocalTick, ip[1].LocalTick)
 			return
 		}
 
-		if ip[0].LocalTick != ff.state.tick {
-			ff.state.err = fmt.Errorf("input tick != state tick (predicting = %t): %d != %d", ff.state.predicting, ip[0].LocalTick, ff.state.tick)
+		inBattleTime := int(ff.bn6.InBattleTime(ff.core))
+		if ip[0].LocalTick != inBattleTime {
+			ff.state.err = fmt.Errorf("input tick != in battle tick: %d != %d", ip[0].LocalTick, inBattleTime)
 			return
 		}
 
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
-			if !ff.state.predicting {
-				log.Printf("p1 turn committed at tick %d", ip[0].LocalTick)
-			}
+			log.Printf("p1 turn committed at tick %d", ip[0].LocalTick)
 		}
 
 		bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
 		if ip[1].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
-			if !ff.state.predicting {
-				log.Printf("p2 turn committed at tick %d", ip[1].LocalTick)
-			}
+			log.Printf("p2 turn committed at tick %d", ip[1].LocalTick)
 		}
 
-		ff.state.tick++
+		if inBattleTime < ff.state.commitTime {
+			if err := ff.state.rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
+				ff.state.err = err
+				return
+			}
+		}
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_battle_isP2__tst, func() {
@@ -117,61 +124,20 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 	return ff, nil
 }
 
-func (ff *Fastforwarder) applyInputs(tick int, state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input) (int, *mgba.State, error) {
-	ff.state = &fastforwarderState{
-		tick:             tick,
-		localPlayerIndex: localPlayerIndex,
-		inputPairs:       ringbuf.New[[2]input.Input](len(inputPairs)),
-		predicting:       rw == nil,
-	}
-	defer func() {
-		ff.state = nil
-	}()
-	ff.state.inputPairs.Push(inputPairs)
-
-	for ff.state.saveState == nil {
-		ff.state.err = nil
-		ff.core.RunFrame()
-		if ff.state.err != nil {
-			return ff.state.tick, nil, ff.state.err
-		}
-
-		// var inputPairBuf [1][2]input.Input
-		// ff.state.inputPairs.Peek(inputPairBuf[:], 0)
-		// ip := inputPairBuf[0]
-
-		// if rw != nil {
-		// 	if err := rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
-		// 		return ff.state.tick, nil, err
-		// 	}
-		// }
-	}
-
-	if ff.state.tick != tick+len(inputPairs) {
-		return ff.state.tick, nil, fmt.Errorf("expected tick %d but got tick %d", tick+len(inputPairs), ff.state.tick)
-	}
-
-	return ff.state.tick, ff.state.saveState, nil
-}
-
-// fastforward fastfowards the state to the new state.
+// Fastforward fastfowards the state to the new state.
+//
+// The committed state MAY be after the dirty state -- the dirty state is exactly 1 tick before the final state, and the caller must make sure to run the inputs in its own core, if they exist.
 //
 // BEWARE: only one thread may call fastforward at a time.
-func (ff *Fastforwarder) Fastforward(tick int, state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input, lastCommittedRemoteInput input.Input, localPlayerInputsLeft []input.Input) (int, *mgba.State, *mgba.State, error) {
+func (ff *Fastforwarder) Fastforward(state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input, lastCommittedRemoteInput input.Input, localPlayerInputsLeft []input.Input) (*mgba.State, *mgba.State, *[2]input.Input, error) {
 	startTime := time.Now()
 
 	if !ff.core.LoadState(state) {
-		return tick, nil, nil, errors.New("failed to load state")
+		return nil, nil, nil, errors.New("failed to load state")
 	}
 
-	ff.core.GBA().SetRegister(15, ff.bn6.Offsets.ROM.A_main__readJoyflags)
-	ff.core.GBA().ThumbWritePC()
-
-	// Run the paired inputs we already have and create the new committed state.
-	committedTick, committedState, err := ff.applyInputs(tick, state, rw, localPlayerIndex, inputPairs)
-	if err != nil {
-		return tick, nil, nil, err
-	}
+	startInBattleTime := int(ff.bn6.InBattleTime(ff.core))
+	commitTime := startInBattleTime + len(inputPairs)
 
 	// Predict input pairs before fastforwarding dirty state.
 	predictedInputPairs := make([][2]input.Input, len(localPlayerInputsLeft))
@@ -190,13 +156,34 @@ func (ff *Fastforwarder) Fastforward(tick int, state *mgba.State, rw *replay.Wri
 		}
 	}
 
-	// Run the local inputs and predict what the remote side did and create the new dirty state.
-	_, dirtyState, err := ff.applyInputs(committedTick, committedState, nil, localPlayerIndex, predictedInputPairs)
-	if err != nil {
-		return committedTick, nil, nil, err
+	inputPairs = append(inputPairs, predictedInputPairs...)
+
+	// Rewind state to a point where inputs can be applied safely.
+	ff.core.GBA().SetRegister(15, ff.bn6.Offsets.ROM.A_main__readJoyflags)
+	ff.core.GBA().ThumbWritePC()
+
+	lastInput := inputPairs[len(inputPairs)-1]
+
+	ff.state = &fastforwarderState{
+		localPlayerIndex: localPlayerIndex,
+		inputPairs:       ringbuf.New[[2]input.Input](len(inputPairs)),
+		commitTime:       commitTime,
+		rw:               rw,
+	}
+	defer func() {
+		ff.state = nil
+	}()
+	ff.state.inputPairs.Push(inputPairs)
+
+	for ff.state.inputPairs.Used() > 0 {
+		ff.state.err = nil
+		ff.core.RunFrame()
+		if ff.state.err != nil {
+			return nil, nil, nil, ff.state.err
+		}
 	}
 
 	ff.lastFastforwardDuration = time.Now().Sub(startTime)
 
-	return committedTick, committedState, dirtyState, nil
+	return ff.state.committedState, ff.state.dirtyState, &lastInput, nil
 }
