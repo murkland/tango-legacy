@@ -28,7 +28,6 @@ type Battle struct {
 
 	lastCommittedRemoteInput input.Input
 
-	dirtyInput     *[2]input.Input
 	committedState *mgba.State
 }
 
@@ -92,16 +91,6 @@ func (b *Battle) SetCommittedState(state *mgba.State) {
 
 func (b *Battle) CommittedState() *mgba.State {
 	return b.committedState
-}
-
-func (b *Battle) SetDirtyInput(ip *[2]input.Input) {
-	b.dirtyInput = ip
-}
-
-func (b *Battle) ConsumeDirtyInput() *[2]input.Input {
-	ip := b.dirtyInput
-	b.dirtyInput = nil
-	return ip
 }
 
 func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {
