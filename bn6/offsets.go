@@ -19,7 +19,7 @@ type ROMOffsets struct {
 	A_battle_copyInputData__entry                                 uint32
 	A_battle_init_marshal__ret                                    uint32
 	A_battle_turn_marshal__ret                                    uint32
-	A_battle_updating__ret__go_to_custom_screen                   uint32
+	A_battle_ending__ret                                          uint32
 	A_battle_start__ret                                           uint32
 	A_battle_end__entry                                           uint32
 	A_battle_isP2__tst                                            uint32
@@ -60,9 +60,8 @@ var offsetsMap = map[string]Offsets{
 			A_battle_copyInputData__entry:                                 0x0801feee,
 			A_battle_init_marshal__ret:                                    0x0800b2b8,
 			A_battle_turn_marshal__ret:                                    0x0800b3d6,
-			A_battle_updating__ret__go_to_custom_screen:                   0x080093ae,
 			A_battle_start__ret:                                           0x08007304,
-			A_battle_end__entry:                                           0x08007ca0,
+			A_battle_ending__ret:                                          0x0800951c,
 			A_battle_isP2__tst:                                            0x0803dd52,
 			A_link_isP2__ret:                                              0x0803dd86,
 			A_commMenu_run_chatbox_script__entry:                          0x08132280,
@@ -85,9 +84,8 @@ var offsetsMap = map[string]Offsets{
 			A_battle_copyInputData__entry:                                 0x0801feee,
 			A_battle_init_marshal__ret:                                    0x0800b2b8,
 			A_battle_turn_marshal__ret:                                    0x0800b3d6,
-			A_battle_updating__ret__go_to_custom_screen:                   0x080093ae,
 			A_battle_start__ret:                                           0x08007304,
-			A_battle_end__entry:                                           0x08007ca0,
+			A_battle_ending__ret:                                          0x0800951c,
 			A_battle_isP2__tst:                                            0x0803dd26,
 			A_link_isP2__ret:                                              0x0803dd5a,
 			A_commMenu_run_chatbox_script__entry:                          0x0813405c,
@@ -110,9 +108,8 @@ var offsetsMap = map[string]Offsets{
 			A_battle_copyInputData__entry:                                 0x08020302,
 			A_battle_init_marshal__ret:                                    0x0800b8a0,
 			A_battle_turn_marshal__ret:                                    0x0800b9be,
-			A_battle_updating__ret__go_to_custom_screen:                   0x0800957e,
 			A_battle_start__ret:                                           0x080072f8,
-			A_battle_end__entry:                                           0x08007c9c,
+			A_battle_ending__ret:                                          0x080096ec,
 			A_battle_isP2__tst:                                            0x0803ed96,
 			A_link_isP2__ret:                                              0x0803edca,
 			A_commMenu_run_chatbox_script__entry:                          0x0813ac4c,
@@ -135,9 +132,8 @@ var offsetsMap = map[string]Offsets{
 			A_battle_copyInputData__entry:                                 0x08020302,
 			A_battle_init_marshal__ret:                                    0x0800b8a0,
 			A_battle_turn_marshal__ret:                                    0x0800b9be,
-			A_battle_updating__ret__go_to_custom_screen:                   0x0800957e,
 			A_battle_start__ret:                                           0x080072f8,
-			A_battle_end__entry:                                           0x08007c9c,
+			A_battle_ending__ret:                                          0x080096ec,
 			A_battle_isP2__tst:                                            0x0803ed6a,
 			A_link_isP2__ret:                                              0x0803ed9e,
 			A_commMenu_run_chatbox_script__entry:                          0x0813ca14,

@@ -80,19 +80,24 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 		ff.state.inputPairs.Pop(inputPairBuf[:], 0)
 		ip := inputPairBuf[0]
 
+		inBattleTime := int(ff.bn6.InBattleTime(ff.core))
+
 		bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
-			log.Printf("p1 turn committed at tick %d", ip[0].LocalTick)
+			if inBattleTime < ff.state.commitTime {
+				log.Printf("p1 turn committed at tick %d", ip[0].LocalTick)
+			}
 		}
 
 		bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
 		if ip[1].Turn != nil {
 			bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
-			log.Printf("p2 turn committed at tick %d", ip[1].LocalTick)
+			if inBattleTime < ff.state.commitTime {
+				log.Printf("p2 turn committed at tick %d", ip[1].LocalTick)
+			}
 		}
 
-		inBattleTime := int(ff.bn6.InBattleTime(ff.core))
 		if inBattleTime < ff.state.commitTime {
 			if err := ff.state.rw.Write(ff.bn6.RNG2State(ff.core), ip); err != nil {
 				ff.state.err = err

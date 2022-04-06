@@ -231,7 +231,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		if !battle.IsAcceptingInput() || battle.IsOver() {
+		if !battle.IsAcceptingInput() {
 			return
 		}
 
@@ -313,7 +313,6 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 	})
 
-	// TODO: Move this to fastforwarder.
 	tp.Add(g.bn6.Offsets.ROM.A_battle_runUnpausedStep__cmp__retval, func() {
 		m := g.Match()
 		if m == nil {
@@ -325,35 +324,12 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		battleOver := true
 		switch core.GBA().Register(0) {
 		case 1:
 			m.SetWonLastBattle(true)
 		case 2:
 			m.SetWonLastBattle(false)
-		default:
-			battleOver = false
 		}
-
-		if !battleOver {
-			return
-		}
-		// TODO: We shouldn't have to do this, we should know when the battle is over.
-		battle.SetOver()
-	})
-
-	tp.Add(g.bn6.Offsets.ROM.A_battle_updating__ret__go_to_custom_screen, func() {
-		m := g.Match()
-		if m == nil {
-			return
-		}
-
-		battle := m.Battle()
-		if battle == nil {
-			log.Panicf("turn ended while no battle was active!")
-		}
-
-		log.Printf("turn ended on %d, rng state = %08x", g.bn6.InBattleTime(g.mainCore), g.bn6.RNG2State(core))
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_start__ret, func() {
@@ -367,7 +343,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 	})
 
-	tp.Add(g.bn6.Offsets.ROM.A_battle_end__entry, func() {
+	tp.Add(g.bn6.Offsets.ROM.A_battle_ending__ret, func() {
 		m := g.Match()
 		if m == nil {
 			return

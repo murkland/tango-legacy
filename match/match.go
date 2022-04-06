@@ -222,6 +222,9 @@ func (m *Match) handleConn(ctx context.Context) error {
 func (m *Match) EndBattle() error {
 	m.battleMu.Lock()
 	defer m.battleMu.Unlock()
+	if m.battle == nil {
+		return nil
+	}
 	return m.endBattleLocked()
 }
 
