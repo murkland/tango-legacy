@@ -19,6 +19,7 @@ type ROMOffsets struct {
 	A_battle_copyInputData__entry                                 uint32
 	A_battle_init_marshal__ret                                    uint32
 	A_battle_turn_marshal__ret                                    uint32
+	A_battle_callJumpTable__post_increment_timer                  uint32
 	A_battle_ending__ret                                          uint32
 	A_battle_start__ret                                           uint32
 	A_battle_isP2__tst                                            uint32
@@ -59,6 +60,7 @@ var offsetsMap = map[string]Offsets{
 			A_battle_copyInputData__entry:                                 0x0801feee,
 			A_battle_init_marshal__ret:                                    0x0800b2b8,
 			A_battle_turn_marshal__ret:                                    0x0800b3d6,
+			A_battle_callJumpTable__post_increment_timer:                  0x0800781e,
 			A_battle_start__ret:                                           0x08007304,
 			A_battle_ending__ret:                                          0x0800951c,
 			A_battle_isP2__tst:                                            0x0803dd52,
@@ -83,6 +85,7 @@ var offsetsMap = map[string]Offsets{
 			A_battle_copyInputData__entry:                                 0x0801feee,
 			A_battle_init_marshal__ret:                                    0x0800b2b8,
 			A_battle_turn_marshal__ret:                                    0x0800b3d6,
+			A_battle_callJumpTable__post_increment_timer:                  0x0800781e,
 			A_battle_start__ret:                                           0x08007304,
 			A_battle_ending__ret:                                          0x0800951c,
 			A_battle_isP2__tst:                                            0x0803dd26,
@@ -107,6 +110,7 @@ var offsetsMap = map[string]Offsets{
 			A_battle_copyInputData__entry:                                 0x08020302,
 			A_battle_init_marshal__ret:                                    0x0800b8a0,
 			A_battle_turn_marshal__ret:                                    0x0800b9be,
+			A_battle_callJumpTable__post_increment_timer:                  0x08007812,
 			A_battle_start__ret:                                           0x080072f8,
 			A_battle_ending__ret:                                          0x080096ec,
 			A_battle_isP2__tst:                                            0x0803ed96,
@@ -131,6 +135,7 @@ var offsetsMap = map[string]Offsets{
 			A_battle_copyInputData__entry:                                 0x08020302,
 			A_battle_init_marshal__ret:                                    0x0800b8a0,
 			A_battle_turn_marshal__ret:                                    0x0800b9be,
+			A_battle_callJumpTable__post_increment_timer:                  0x08007812,
 			A_battle_start__ret:                                           0x080072f8,
 			A_battle_ending__ret:                                          0x080096ec,
 			A_battle_isP2__tst:                                            0x0803ed6a,
