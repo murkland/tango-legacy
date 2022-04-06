@@ -93,10 +93,8 @@ type CoreOptions struct {
 }
 
 type Core struct {
-	ptr            *C.struct_mCore
-	config         *Config
-	realBkpt16Irqh *C.tango_mgba_bkpt16_irqh
-	beefTrap       func()
+	ptr    *C.struct_mCore
+	config *Config
 }
 
 func NewGBACore() (*Core, error) {
@@ -105,7 +103,7 @@ func NewGBACore() (*Core, error) {
 		return nil, errors.New("could not create core")
 	}
 
-	core := &Core{ptr, &Config{&ptr.config, false}, nil, nil}
+	core := &Core{ptr, &Config{&ptr.config, false}}
 
 	if !C.tango_mgba_mCore_init(core.ptr) {
 		return nil, errors.New("could not initialize core")
