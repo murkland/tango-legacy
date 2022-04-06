@@ -277,16 +277,16 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		}
 
 		inputPairs, left := battle.ConsumeInputs()
-		committedState, dirtyState, err := g.fastforwarder.Fastforward(battle.CommittedState(), battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
+		committedState, dirtyState, lastInput, err := g.fastforwarder.Fastforward(battle.CommittedState(), battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
 			log.Panicf("failed to fastforward: %s\n  inputPairs = %+v\n  left = %+v", err, inputPairs, left)
 		}
 		battle.SetCommittedState(committedState)
+		battle.SetLastInput(lastInput)
 
 		tps := expectedFPS + (remoteTick - localTick) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick)
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 
-		// This will jump to after A_battle_update__call__battle_copyInputData.
 		if !g.mainCore.LoadState(dirtyState) {
 			log.Panicf("failed to load dirty state")
 		}
@@ -310,6 +310,18 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if !battle.IsAcceptingInput() {
 			battle.StartAcceptingInput()
 			return
+		}
+
+		ip := battle.LastInput()
+
+		g.bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
+		if ip[0].Turn != nil {
+			g.bn6.SetPlayerMarshaledBattleState(core, 0, ip[0].Turn)
+		}
+
+		g.bn6.SetPlayerInputState(core, 1, ip[1].Joyflags, ip[1].CustomScreenState)
+		if ip[1].Turn != nil {
+			g.bn6.SetPlayerMarshaledBattleState(core, 1, ip[1].Turn)
 		}
 	})
 
@@ -505,7 +517,8 @@ func (g *Game) Update() error {
 
 	g.joyflags = ebitenToMgbaKeys(g.conf.Keymapping, inpututil.AppendPressedKeys(nil))
 
-	if g.Match() == nil {
+	match := g.Match()
+	if match == nil || match.Battle() == nil {
 		// Use regular input handling outside of a match.
 		g.mainCore.SetKeys(g.joyflags)
 	}

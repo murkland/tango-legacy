@@ -29,6 +29,7 @@ type Battle struct {
 
 	lastCommittedRemoteInput input.Input
 
+	lastInput      *[2]input.Input
 	committedState *mgba.State
 }
 
@@ -92,6 +93,14 @@ func (b *Battle) SetCommittedState(state *mgba.State) {
 
 func (b *Battle) CommittedState() *mgba.State {
 	return b.committedState
+}
+
+func (b *Battle) SetLastInput(lastInput *[2]input.Input) {
+	b.lastInput = lastInput
+}
+
+func (b *Battle) LastInput() *[2]input.Input {
+	return b.lastInput
 }
 
 func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {

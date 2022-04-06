@@ -46,6 +46,10 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 			ff.state.committedState = core.SaveState()
 		}
 
+		if ff.state.inputPairs.Used() == 1 {
+			ff.state.dirtyState = core.SaveState()
+		}
+
 		if ff.state.inputPairs.Used() == 0 {
 			return
 		}
@@ -104,10 +108,6 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 				return
 			}
 		}
-
-		if ff.state.inputPairs.Used() == 0 {
-			ff.state.dirtyState = core.SaveState()
-		}
 	})
 
 	tp.Add(bn6.Offsets.ROM.A_battle_isP2__tst, func() {
@@ -139,11 +139,11 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 // The committed state MAY be after the dirty state -- the dirty state is exactly 1 tick before the final state, and the caller must make sure to run the inputs in its own core, if they exist.
 //
 // BEWARE: only one thread may call fastforward at a time.
-func (ff *Fastforwarder) Fastforward(state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input, lastCommittedRemoteInput input.Input, localPlayerInputsLeft []input.Input) (*mgba.State, *mgba.State, error) {
+func (ff *Fastforwarder) Fastforward(state *mgba.State, rw *replay.Writer, localPlayerIndex int, inputPairs [][2]input.Input, lastCommittedRemoteInput input.Input, localPlayerInputsLeft []input.Input) (*mgba.State, *mgba.State, *[2]input.Input, error) {
 	startTime := time.Now()
 
 	if !ff.core.LoadState(state) {
-		return nil, nil, errors.New("failed to load state")
+		return nil, nil, nil, errors.New("failed to load state")
 	}
 
 	startInBattleTime := int(ff.bn6.InBattleTime(ff.core))
@@ -187,18 +187,18 @@ func (ff *Fastforwarder) Fastforward(state *mgba.State, rw *replay.Writer, local
 		ff.state.err = nil
 		ff.core.RunFrame()
 		if ff.state.err != nil {
-			return nil, nil, ff.state.err
+			return nil, nil, nil, ff.state.err
 		}
 	}
 	for ff.state.committedState == nil {
 		ff.state.err = nil
 		ff.core.RunFrame()
 		if ff.state.err != nil {
-			return nil, nil, ff.state.err
+			return nil, nil, nil, ff.state.err
 		}
 	}
 
 	ff.lastFastforwardDuration = time.Now().Sub(startTime)
 
-	return ff.state.committedState, ff.state.dirtyState, nil
+	return ff.state.committedState, ff.state.dirtyState, &inputPairs[len(inputPairs)-1], nil
 }
