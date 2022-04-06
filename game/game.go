@@ -312,7 +312,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			return
 		}
 
-		ip := battle.LastInput()
+		ip := battle.ConsumeLastInput()
 
 		g.bn6.SetPlayerInputState(core, 0, ip[0].Joyflags, ip[0].CustomScreenState)
 		if ip[0].Turn != nil {

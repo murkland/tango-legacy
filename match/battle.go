@@ -99,8 +99,10 @@ func (b *Battle) SetLastInput(lastInput *[2]input.Input) {
 	b.lastInput = lastInput
 }
 
-func (b *Battle) LastInput() *[2]input.Input {
-	return b.lastInput
+func (b *Battle) ConsumeLastInput() *[2]input.Input {
+	lastInput := b.lastInput
+	b.lastInput = nil
+	return lastInput
 }
 
 func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {
