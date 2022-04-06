@@ -19,7 +19,7 @@ var (
 
 var ErrUnknownPacket = errors.New("unknown packet")
 
-const ProtocolVersion = 0x0b
+const ProtocolVersion = 0x0c
 
 type packetType uint8
 
@@ -52,6 +52,7 @@ func (Hello2) packetType() packetType { return packetTypeHello2 }
 
 type Init struct {
 	BattleNumber uint8
+	InputDelay   uint8
 	Marshaled    [0x100]uint8
 }
 

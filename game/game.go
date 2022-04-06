@@ -173,11 +173,11 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		ctx := context.Background()
 
 		localInit := g.bn6.LocalMarshaledBattleState(core)
-		if err := m.SendInit(ctx, localInit); err != nil {
+		if err := m.SendInit(ctx, battle.LocalDelay(), localInit); err != nil {
 			log.Panicf("failed to send init info: %s", err)
 		}
 
-		log.Printf("init sent")
+		log.Printf("init sent: local delay = %d", battle.LocalDelay())
 		g.bn6.SetPlayerMarshaledBattleState(core, battle.LocalPlayerIndex(), localInit)
 
 		remoteInit, err := m.ReadRemoteInit(ctx)
@@ -190,15 +190,17 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Panicf("failed to receive init info: %s", err)
 		}
 
-		log.Printf("init received")
-		g.bn6.SetPlayerMarshaledBattleState(core, battle.RemotePlayerIndex(), remoteInit)
+		log.Printf("init received: remote delay = %d", remoteInit.InputDelay)
+		g.bn6.SetPlayerMarshaledBattleState(core, battle.RemotePlayerIndex(), remoteInit.Marshaled[:])
 
 		if err := battle.ReplayWriter().WriteInit(battle.LocalPlayerIndex(), localInit); err != nil {
 			log.Panicf("failed to write to replay: %s", err)
 		}
-		if err := battle.ReplayWriter().WriteInit(battle.RemotePlayerIndex(), remoteInit); err != nil {
+		if err := battle.ReplayWriter().WriteInit(battle.RemotePlayerIndex(), remoteInit.Marshaled[:]); err != nil {
 			log.Panicf("failed to write to replay: %s", err)
 		}
+
+		battle.SetRemoteDelay(int(remoteInit.InputDelay))
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_turn_marshal__ret, func() {
@@ -240,18 +242,30 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		inBattleTime := int(g.bn6.InBattleTime(g.mainCore))
 
 		if battle.CommittedState() == nil {
+			for i := 0; i < battle.LocalDelay(); i++ {
+				if err := battle.AddInput(ctx, battle.LocalPlayerIndex(), input.Input{LocalTick: inBattleTime + i, RemoteTick: inBattleTime + i, Joyflags: 0xfc00}); err != nil {
+					log.Panicf("failed to add phony input: %s", err)
+				}
+			}
+
+			for i := 0; i < battle.RemoteDelay(); i++ {
+				if err := battle.AddInput(ctx, battle.RemotePlayerIndex(), input.Input{LocalTick: inBattleTime + i, RemoteTick: inBattleTime + i, Joyflags: 0xfc00}); err != nil {
+					log.Panicf("failed to add phony input: %s", err)
+				}
+			}
+
 			committedState := core.SaveState()
-			battle.SetCommittedState(committedState)
-
-			log.Printf("battle state committed")
-
 			if err := battle.ReplayWriter().WriteState(battle.LocalPlayerIndex(), committedState); err != nil {
 				log.Panicf("failed to write to replay: %s", err)
 			}
+
+			battle.SetCommittedState(committedState)
+
+			log.Printf("battle state committed")
 		}
 
 		joyflags := uint16(g.joyflags | 0xfc00)
-		localTick := inBattleTime
+		localTick := inBattleTime + battle.LocalDelay()
 		lastCommittedRemoteInput := battle.LastCommittedRemoteInput()
 		remoteTick := lastCommittedRemoteInput.LocalTick
 
@@ -284,7 +298,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		battle.SetCommittedState(committedState)
 		battle.SetLastInput(lastInput)
 
-		tps := expectedFPS + (remoteTick - localTick) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick)
+		tps := expectedFPS + (remoteTick - localTick - battle.LocalDelay()) - (lastCommittedRemoteInput.RemoteTick - lastCommittedRemoteInput.LocalTick - battle.RemoteDelay())
 		g.mainCore.GBA().Sync().SetFPSTarget(float32(tps))
 
 		if !g.mainCore.LoadState(dirtyState) {

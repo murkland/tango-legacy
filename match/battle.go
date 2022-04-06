@@ -24,6 +24,9 @@ type Battle struct {
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
 
+	remoteDelay int
+
+	stateCommittedCh chan struct{}
 	isAcceptingInput bool
 	isOver           bool
 
@@ -46,6 +49,8 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 	b := &Battle{
 		number: m.battleNumber,
 		isP2:   !m.wonLastBattle,
+
+		stateCommittedCh: make(chan struct{}),
 
 		lastCommittedRemoteInput: input.Input{Joyflags: 0xfc00},
 	}
@@ -88,6 +93,9 @@ func (b *Battle) Close() error {
 }
 
 func (b *Battle) SetCommittedState(state *mgba.State) {
+	if b.committedState == nil {
+		close(b.stateCommittedCh)
+	}
 	b.committedState = state
 }
 
@@ -149,6 +157,14 @@ func (b *Battle) IsP2() bool {
 
 func (b *Battle) LocalDelay() int {
 	return b.iq.LocalDelay()
+}
+
+func (b *Battle) SetRemoteDelay(remoteDelay int) {
+	b.remoteDelay = remoteDelay
+}
+
+func (b *Battle) RemoteDelay() int {
+	return b.remoteDelay
 }
 
 func (b *Battle) StartAcceptingInput() {
