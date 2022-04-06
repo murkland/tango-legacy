@@ -21,7 +21,6 @@ type ROMOffsets struct {
 	A_battle_turn_marshal__ret                                    uint32
 	A_battle_ending__ret                                          uint32
 	A_battle_start__ret                                           uint32
-	A_battle_end__entry                                           uint32
 	A_battle_isP2__tst                                            uint32
 	A_link_isP2__ret                                              uint32
 	A_commMenu_run_chatbox_script__entry                          uint32
