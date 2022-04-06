@@ -24,12 +24,13 @@ type Battle struct {
 	localPendingTurnWaitTicksLeft int
 	localPendingTurn              []byte
 
+	isAcceptingInput bool
+	isOver           bool
+
 	lastCommittedRemoteInput input.Input
 
+	lastInput      *[2]input.Input
 	committedState *mgba.State
-	committedTick  int
-
-	dirtyTick int
 }
 
 func (m *Match) NewBattle(core *mgba.Core) error {
@@ -40,6 +41,8 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 		return errors.New("battle already started")
 	}
 
+	inputDelay := m.conf.Netplay.InputDelay
+
 	b := &Battle{
 		number: m.battleNumber,
 		isP2:   !m.wonLastBattle,
@@ -47,7 +50,7 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 		lastCommittedRemoteInput: input.Input{Joyflags: 0xfc00},
 	}
 
-	b.iq = input.NewQueue(60, m.conf.Netplay.InputDelay, b.LocalPlayerIndex())
+	b.iq = input.NewQueue(60, inputDelay, b.LocalPlayerIndex())
 
 	fn := filepath.Join("replays", fmt.Sprintf("%s_p%d.tangoreplay", time.Now().Format("20060102030405"), b.LocalPlayerIndex()+1))
 	log.Printf("writing replay: %s", fn)
@@ -77,16 +80,6 @@ func (b *Battle) QueueLength(playerIndex int) int {
 	return b.iq.QueueLength(playerIndex)
 }
 
-func (b *Battle) PostIncrementDirtyTick() int {
-	dirtyTick := b.dirtyTick
-	b.dirtyTick++
-	return dirtyTick
-}
-
-func (b *Battle) DirtyTick() int {
-	return b.dirtyTick
-}
-
 func (b *Battle) Close() error {
 	if err := b.rw.Close(); err != nil {
 		return err
@@ -94,13 +87,22 @@ func (b *Battle) Close() error {
 	return nil
 }
 
-func (b *Battle) SetCommittedTickAndState(tick int, state *mgba.State) {
-	b.committedTick = tick
+func (b *Battle) SetCommittedState(state *mgba.State) {
 	b.committedState = state
 }
 
-func (b *Battle) CommittedTickAndState() (int, *mgba.State) {
-	return b.committedTick, b.committedState
+func (b *Battle) CommittedState() *mgba.State {
+	return b.committedState
+}
+
+func (b *Battle) SetLastInput(lastInput *[2]input.Input) {
+	b.lastInput = lastInput
+}
+
+func (b *Battle) ConsumeLastInput() *[2]input.Input {
+	lastInput := b.lastInput
+	b.lastInput = nil
+	return lastInput
 }
 
 func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {
@@ -147,4 +149,20 @@ func (b *Battle) IsP2() bool {
 
 func (b *Battle) LocalDelay() int {
 	return b.iq.LocalDelay()
+}
+
+func (b *Battle) StartAcceptingInput() {
+	b.isAcceptingInput = true
+}
+
+func (b *Battle) IsAcceptingInput() bool {
+	return b.isAcceptingInput
+}
+
+func (b *Battle) SetOver() {
+	b.isOver = true
+}
+
+func (b *Battle) IsOver() bool {
+	return b.isOver
 }

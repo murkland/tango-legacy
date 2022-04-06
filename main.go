@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	logsDir = flag.String("logs_dir", "logs", "directory to log to (set to empty to log to stderr)")
+	logsDir = flag.String("logs_dir", "logs", "file to log to")
 	child   = flag.Bool("child", false, "is this the child process?")
 )
 
@@ -41,7 +41,7 @@ func main() {
 
 		logF, err := os.Create(filepath.Join(*logsDir, fmt.Sprintf("tango_%s.log", time.Now().Format("20060102030405"))))
 		if err != nil {
-			log.Panicf("failed to open log file: %s", err)
+			log.Fatalf("failed to open log file: %s", err)
 		}
 		log.Printf("logging to %s", logF.Name())
 		logWriter = logF
