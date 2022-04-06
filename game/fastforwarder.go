@@ -149,10 +149,6 @@ func (ff *Fastforwarder) Fastforward(state *mgba.State, rw *replay.Writer, local
 	startInBattleTime := int(ff.bn6.InBattleTime(ff.core))
 	commitTime := startInBattleTime + len(inputPairs)
 
-	if !ff.core.LoadState(committedState) {
-		return tick, nil, nil, errors.New("failed to load committed state")
-	}
-
 	// Predict input pairs before fastforwarding dirty state.
 	predictedInputPairs := make([][2]input.Input, len(localPlayerInputsLeft))
 	for i, inp := range localPlayerInputsLeft {

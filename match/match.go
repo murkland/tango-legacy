@@ -37,6 +37,8 @@ type Match struct {
 	gameTitle string
 	gameCRC32 uint32
 
+	cancel context.CancelFunc
+
 	negotiationErrCh chan error
 	peerConn         *webrtc.PeerConnection
 	dc               *ctxwebrtc.DataChannel
@@ -240,6 +242,9 @@ func (m *Match) endBattleLocked() error {
 }
 
 func (m *Match) Run(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	m.cancel = cancel
+
 	defer m.Close()
 
 	if err := m.negotiate(ctx); err != nil {
