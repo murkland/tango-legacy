@@ -59,7 +59,7 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 		ip := inputPairBuf[0]
 
 		if ip[0].LocalTick != ip[1].LocalTick {
-			ff.state.err = fmt.Errorf("p1 tick != p2 tick: %d != %d", ip[0].LocalTick, ip[1].LocalTick)
+			ff.state.err = fmt.Errorf("p1 tick != p2 tick (in battle tick = %d): %d != %d", inBattleTime, ip[0].LocalTick, ip[1].LocalTick)
 			return
 		}
 
