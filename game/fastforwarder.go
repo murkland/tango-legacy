@@ -26,6 +26,7 @@ type fastforwarderState struct {
 	inputPairs       *ringbuf.RingBuf[[2]input.Input]
 	commitTime       int
 	committedState   *mgba.State
+	dirtyTime        int
 	dirtyState       *mgba.State
 	rw               *replay.Writer
 }
@@ -46,7 +47,7 @@ func NewFastforwarder(romPath string, bn6 *bn6.BN6) (*Fastforwarder, error) {
 			ff.state.committedState = core.SaveState()
 		}
 
-		if ff.state.inputPairs.Used() == 1 {
+		if inBattleTime == ff.state.dirtyTime {
 			ff.state.dirtyState = core.SaveState()
 		}
 
@@ -176,6 +177,7 @@ func (ff *Fastforwarder) Fastforward(state *mgba.State, rw *replay.Writer, local
 		localPlayerIndex: localPlayerIndex,
 		inputPairs:       ringbuf.New[[2]input.Input](len(inputPairs)),
 		commitTime:       commitTime,
+		dirtyTime:        startInBattleTime + len(inputPairs) - 1,
 		rw:               rw,
 	}
 	defer func() {
@@ -183,14 +185,7 @@ func (ff *Fastforwarder) Fastforward(state *mgba.State, rw *replay.Writer, local
 	}()
 	ff.state.inputPairs.Push(inputPairs)
 
-	for ff.state.inputPairs.Used() > 0 {
-		ff.state.err = nil
-		ff.core.RunFrame()
-		if ff.state.err != nil {
-			return nil, nil, nil, ff.state.err
-		}
-	}
-	for ff.state.committedState == nil {
+	for ff.state.committedState == nil || ff.state.dirtyState == nil {
 		ff.state.err = nil
 		ff.core.RunFrame()
 		if ff.state.err != nil {
