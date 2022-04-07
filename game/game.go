@@ -290,7 +290,7 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 			log.Panicf("failed to send input: %s", err)
 		}
 
-		inputPairs, left := battle.ConsumeInputs()
+		inputPairs, left := battle.ConsumeAndPeekLocal()
 		committedState, dirtyState, lastInput, err := g.fastforwarder.Fastforward(battle.CommittedState(), battle.ReplayWriter(), battle.LocalPlayerIndex(), inputPairs, battle.LastCommittedRemoteInput(), left)
 		if err != nil {
 			log.Panicf("failed to fastforward: %s\n  inputPairs = %+v\n  left = %+v", err, inputPairs, left)
@@ -308,6 +308,8 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if newInBattleTime := int(g.bn6.InBattleTime(g.mainCore)); newInBattleTime != inBattleTime {
 			log.Panicf("fastforwarder moved battle time: expected %d, got %d", inBattleTime, newInBattleTime)
 		}
+
+		core.GBA().SetRegister(4, uint32(lastInput[battle.LocalPlayerIndex()].Joyflags))
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {

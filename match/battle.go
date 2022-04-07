@@ -113,12 +113,11 @@ func (b *Battle) ConsumeLastInput() *[2]input.Input {
 	return lastInput
 }
 
-func (b *Battle) ConsumeInputs() ([][2]input.Input, []input.Input) {
-	inputPairs := b.iq.Consume()
+func (b *Battle) ConsumeAndPeekLocal() ([][2]input.Input, []input.Input) {
+	inputPairs, left := b.iq.ConsumeAndPeekLocal()
 	if len(inputPairs) > 0 {
 		b.lastCommittedRemoteInput = inputPairs[len(inputPairs)-1][1-b.LocalPlayerIndex()]
 	}
-	left := b.iq.PeekLocal()
 	return inputPairs, left
 }
 
