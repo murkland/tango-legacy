@@ -304,6 +304,10 @@ func (g *Game) InstallTraps(core *mgba.Core) error {
 		if !g.mainCore.LoadState(dirtyState) {
 			log.Panicf("failed to load dirty state")
 		}
+
+		if newInBattleTime := int(g.bn6.InBattleTime(g.mainCore)); newInBattleTime != inBattleTime {
+			log.Panicf("fastforwarder moved battle time: expected %d, got %d", inBattleTime, newInBattleTime)
+		}
 	})
 
 	tp.Add(g.bn6.Offsets.ROM.A_battle_update__call__battle_copyInputData, func() {
