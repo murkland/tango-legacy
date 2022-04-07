@@ -95,7 +95,7 @@ func Default() Config {
 			InputDelay: 3,
 		},
 		Matchmaking: Matchmaking{
-			ConnectAddr: "tangomm.murk.land:80",
+			ConnectAddr: "mm.tango.murk.land:80",
 		},
 		WebRTC: webrtc.Configuration{
 			ICEServers: []webrtc.ICEServer{
