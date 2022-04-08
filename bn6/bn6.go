@@ -62,7 +62,7 @@ func (b *BN6) SetPlayerInputState(core *mgba.Core, index int, keysPressed uint16
 	ePlayerInput := b.Offsets.EWRAM.A_PlayerInputDataArr + uint32(index)*0x08
 	keysHeld := core.RawRead16(ePlayerInput+0x02, -1)
 	core.RawWrite16(ePlayerInput+0x02, -1, keysPressed)
-	core.RawWrite16(ePlayerInput+0x04, -1, ^keysHeld&keysHeld)
+	core.RawWrite16(ePlayerInput+0x04, -1, ^keysHeld&keysPressed)
 	core.RawWrite16(ePlayerInput+0x06, -1, keysHeld&^keysPressed)
 	core.RawWrite8(b.Offsets.EWRAM.A_BattleState+0x14+uint32(index), -1, customScreenState)
 }
