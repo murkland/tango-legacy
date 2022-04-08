@@ -207,21 +207,28 @@ func (m *Match) handleConn(ctx context.Context) error {
 				return ctx.Err()
 			}
 		case packets.Input:
-			battle := m.Battle()
-			if battle == nil {
-				log.Printf("no battle in progress, dropping input")
-				continue
+			if err := (func() error {
+				m.battleMu.Lock()
+				defer m.battleMu.Unlock()
+
+				if m.battle == nil {
+					log.Printf("no battle in progress, dropping input")
+					return nil
+				}
+				select {
+				case <-m.battle.stateCommittedCh:
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+				if p.BattleNumber != uint8(m.battleNumber) {
+					log.Printf("mismatched battle number, expected %d but got %d, dropping input", m.battleNumber, p.BattleNumber)
+					return nil
+				}
+				m.battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{LocalTick: int(p.LocalTick), RemoteTick: int(p.RemoteTick), Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
+				return nil
+			})(); err != nil {
+				return err
 			}
-			select {
-			case <-battle.stateCommittedCh:
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-			if p.BattleNumber != uint8(battle.number) {
-				log.Printf("mismatched battle number, expected %d but got %d, dropping input", battle.number, p.BattleNumber)
-				continue
-			}
-			battle.AddInput(ctx, m.battle.RemotePlayerIndex(), input.Input{LocalTick: int(p.LocalTick), RemoteTick: int(p.RemoteTick), Joyflags: p.Joyflags, CustomScreenState: p.CustomScreenState, Turn: trailer})
 		}
 	}
 }
@@ -298,16 +305,20 @@ func (m *Match) PollForReady(ctx context.Context) error {
 }
 
 func (m *Match) SendInit(ctx context.Context, inputDelay int, init []byte) error {
+	m.battleMu.Lock()
+	defer m.battleMu.Unlock()
 	var pkt packets.Init
-	pkt.BattleNumber = uint8(m.Battle().number)
+	pkt.BattleNumber = uint8(m.battleNumber)
 	pkt.InputDelay = uint8(inputDelay)
 	copy(pkt.Marshaled[:], init)
 	return packets.Send(ctx, m.dc, pkt, nil)
 }
 
 func (m *Match) SendInput(ctx context.Context, localTick uint32, remoteTick uint32, joyflags uint16, customScreenState uint8, turn []byte) error {
+	m.battleMu.Lock()
+	defer m.battleMu.Unlock()
 	var pkt packets.Input
-	pkt.BattleNumber = uint8(m.Battle().number)
+	pkt.BattleNumber = uint8(m.battleNumber)
 	pkt.LocalTick = localTick
 	pkt.RemoteTick = remoteTick
 	pkt.Joyflags = joyflags

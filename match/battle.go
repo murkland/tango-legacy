@@ -14,8 +14,7 @@ import (
 )
 
 type Battle struct {
-	number int
-	isP2   bool
+	isP2 bool
 
 	rw *replay.Writer
 
@@ -47,8 +46,7 @@ func (m *Match) NewBattle(core *mgba.Core) error {
 	inputDelay := m.conf.Netplay.InputDelay
 
 	b := &Battle{
-		number: m.battleNumber,
-		isP2:   !m.wonLastBattle,
+		isP2: !m.wonLastBattle,
 
 		stateCommittedCh: make(chan struct{}),
 
