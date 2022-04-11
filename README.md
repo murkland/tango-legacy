@@ -1,5 +1,7 @@
 # tango
 
+**tango 1.0.0 is the final release of this version of tango, barring any major issues. all future work on tango is at <https://github.com/murkland/tango2>. tango 1.0.0 は、大きな問題がない限り、このシリーズの最終リリースです。今後の tango の開発は <https://github.com/murkland/tango> で行われます。**
+
 ![tango](logo.png)
 
 (logo courtesy of [pnw_ssbmars](https://twitter.com/pnw_ssbmars) / ロゴ提供：[pnw_ssbmars](https://twitter.com/pnw_ssbmars))
