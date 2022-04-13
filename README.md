@@ -4,7 +4,7 @@
 
 ---
 
-# tango
+# tango-legacy
 
 ![tango](logo.png)
 

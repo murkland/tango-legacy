@@ -28,10 +28,10 @@ type Replay struct {
 // u8: local player index
 //
 // init (two of them):
+// u8: player index
 // init size: init
 //
 // state:
-// u8: player index
 // u32: state size
 // state size: state
 //
