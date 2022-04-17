@@ -1,6 +1,8 @@
-**tango 1.0.0 is the final release of this version of tango, barring any major issues. all future work on tango is at <https://github.com/murkland/tango2>.**
+# IMPORTANT / 注意
 
-**tango 1.0.0 は、大きな問題がない限り、このシリーズの最終リリースです。今後の tango の開発は <https://github.com/murkland/tango2> で行われます。**
+**tango-legacy is no longer supported. please use tango2: <https://github.com/murkland/tango>.**
+
+**tango-legacy のサポートは終了しました。tango2 をご利用ください。<https://github.com/murkland/tango>**
 
 ---
 
